@@ -1,0 +1,262 @@
+#!/bin/bash
+################################################################################
+# Moodle 5.1 AWS Deployment - Configuration Variables
+# Copy this file to variables.sh and customize for your environment
+#
+# cp variables.sh.example variables.sh
+# chmod 600 variables.sh  # Protect sensitive data
+################################################################################
+
+#############################################
+# AWS Configuration
+#############################################
+
+# AWS CLI profile to use (must be configured with 'aws configure')
+export AWS_PROFILE="default"
+
+# AWS region for all resources
+export AWS_REGION="us-east-1"
+
+# Existing EC2 key pair name for SSH access
+# Create one in AWS Console if you don't have it
+export KEY_PAIR_NAME="my-key-pair"
+
+# Path to the private key file
+export KEY_PATH="$HOME/.ssh/${KEY_PAIR_NAME}.pem"
+
+#############################################
+# Project Configuration
+#############################################
+
+# Project name (used for resource naming)
+export PROJECT_NAME="moodle"
+
+# Environment (dev, staging, prod)
+export ENVIRONMENT="prod"
+
+#############################################
+# EC2 Instance Configuration
+#############################################
+
+# Instance type
+# t4g.medium (4GB) - Basic, 100-300 users
+# t4g.large (8GB) - Recommended, 300-1000 users
+# t4g.xlarge (16GB) - High traffic, 1000+ users
+export INSTANCE_TYPE="t4g.medium"
+
+# EBS volumes
+export ROOT_VOLUME_SIZE="15"      # GB - OS and software
+export DATA_VOLUME_SIZE="25"      # GB - Moodledata (adjust based on needs)
+
+# CIDR blocks allowed to SSH (your IP address)
+# Get your IP: curl ifconfig.me
+# Format: "1.2.3.4/32" for single IP, or "0.0.0.0/0" for anywhere (NOT recommended)
+export ALLOWED_SSH_CIDR="0.0.0.0/0"  # CHANGE THIS!
+
+#############################################
+# RDS Database Configuration
+#############################################
+
+# RDS instance class
+# db.t4g.micro (1GB) - < 500 users, ~$12/month
+# db.t4g.small (2GB) - 500-2000 users, ~$24/month
+export DB_INSTANCE_CLASS="db.t4g.micro"
+
+# Database credentials
+export DB_NAME="moodle"
+export DB_USERNAME="moodleadmin"
+export DB_PASSWORD="YourSecurePassword123!"  # CHANGE THIS! Min 8 chars
+
+# Backup settings
+export DB_BACKUP_RETENTION_DAYS="7"
+export DB_MULTI_AZ="false"  # true for high availability (+100% cost)
+
+#############################################
+# Domain & SSL Configuration
+#############################################
+
+# Your domain name
+export DOMAIN_NAME="moodle.example.com"
+
+# Admin email for Let's Encrypt SSL notifications
+export ADMIN_EMAIL="admin@example.com"
+
+# Route 53 configuration (if you want automatic DNS setup)
+export CREATE_ROUTE53_RECORD="false"  # Set to true if domain is in Route 53
+export ROUTE53_ZONE_ID=""             # Your Route 53 hosted zone ID
+
+#############################################
+# Moodle Configuration
+#############################################
+
+# NOTE: Moodle 5.1 requires Apache DocumentRoot to point to
+# /var/www/html/moodle/public (not /var/www/html/moodle)
+# PHP 8.2+ is required (8.4.x recommended)
+
+# Moodle version (branch name from git)
+export MOODLE_VERSION="MOODLE_51_STABLE"
+
+# Moodle admin credentials
+export MOODLE_ADMIN_USER="admin"
+export MOODLE_ADMIN_PASSWORD="AdminPass123!"  # CHANGE THIS! Min 8 chars
+
+# Site information
+export MOODLE_SITE_NAME="My Learning Platform"
+export MOODLE_SITE_SUMMARY="Online courses and training"
+
+#############################################
+# Optimization Settings
+#############################################
+
+# PHP-FPM max_children (0 = auto-calculate based on RAM)
+export PHP_FPM_MAX_CHILDREN="0"
+
+# SWAP configuration
+export ENABLE_SWAP="true"
+export SWAP_SIZE_GB="0"  # 0 = auto-calculate based on RAM
+
+#############################################
+# CloudFront CDN (Optional)
+#############################################
+
+# Enable CloudFront for static assets
+export ENABLE_CLOUDFRONT="false"
+
+#############################################
+# Monitoring & Alerting
+#############################################
+
+# Enable CloudWatch alarms
+export ENABLE_CLOUDWATCH_ALARMS="true"
+
+# Email for alarm notifications (leave empty to skip)
+export ALARM_EMAIL=""
+
+# Alarm thresholds
+export CPU_ALARM_THRESHOLD="80"       # Percent
+export MEMORY_ALARM_THRESHOLD="500"   # MB available
+export DISK_ALARM_THRESHOLD="80"      # Percent used
+
+#############################################
+# Backup Configuration
+#############################################
+
+# Enable automated EBS snapshots
+export ENABLE_EBS_SNAPSHOTS="true"
+
+# Snapshot retention
+export SNAPSHOT_RETENTION_DAYS="7"
+
+# Snapshot schedule (cron expression, UTC)
+export SNAPSHOT_SCHEDULE="cron(0 2 * * ? *)"  # Daily at 2 AM UTC
+
+#############################################
+# Resource Tags
+#############################################
+
+# Common tags applied to all resources
+export TAG_PROJECT="Moodle 5.1"
+export TAG_MANAGED_BY="Terraform"
+export TAG_ENVIRONMENT="Production"
+export TAG_OWNER="your-name"
+export TAG_COST_CENTER="education"
+
+#############################################
+# Validation
+#############################################
+
+# Function to validate required variables
+validate_config() {
+    local errors=0
+
+    # Check required variables
+    if [ -z "$KEY_PAIR_NAME" ]; then
+        echo "ERROR: KEY_PAIR_NAME is not set"
+        ((errors++))
+    fi
+
+    if [ -z "$DOMAIN_NAME" ] || [ "$DOMAIN_NAME" = "moodle.example.com" ]; then
+        echo "ERROR: DOMAIN_NAME must be set to your actual domain"
+        ((errors++))
+    fi
+
+    if [ -z "$ADMIN_EMAIL" ] || [ "$ADMIN_EMAIL" = "admin@example.com" ]; then
+        echo "ERROR: ADMIN_EMAIL must be set to your actual email"
+        ((errors++))
+    fi
+
+    if [ "$DB_PASSWORD" = "YourSecurePassword123!" ]; then
+        echo "WARNING: Using example DB_PASSWORD, please change it"
+        ((errors++))
+    fi
+
+    if [ "$MOODLE_ADMIN_PASSWORD" = "AdminPass123!" ]; then
+        echo "WARNING: Using example MOODLE_ADMIN_PASSWORD, please change it"
+        ((errors++))
+    fi
+
+    if [ "$ALLOWED_SSH_CIDR" = "0.0.0.0/0" ]; then
+        echo "WARNING: SSH is open to the world! Restrict to your IP for security"
+    fi
+
+    if [ $errors -gt 0 ]; then
+        echo ""
+        echo "Please fix the errors above before proceeding"
+        return 1
+    fi
+
+    echo "✓ Configuration validated"
+    return 0
+}
+
+# Auto-validate if sourced
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+    validate_config
+fi
+
+#############################################
+# Helper Functions
+#############################################
+
+# Display current configuration
+show_config() {
+    echo "======================================"
+    echo "Moodle Deployment Configuration"
+    echo "======================================"
+    echo ""
+    echo "AWS:"
+    echo "  Profile: $AWS_PROFILE"
+    echo "  Region: $AWS_REGION"
+    echo "  Key Pair: $KEY_PAIR_NAME"
+    echo ""
+    echo "Instance:"
+    echo "  Type: $INSTANCE_TYPE"
+    echo "  Root Volume: ${ROOT_VOLUME_SIZE}GB"
+    echo "  Data Volume: ${DATA_VOLUME_SIZE}GB"
+    echo ""
+    echo "Database:"
+    echo "  Instance: $DB_INSTANCE_CLASS"
+    echo "  Name: $DB_NAME"
+    echo "  Multi-AZ: $DB_MULTI_AZ"
+    echo ""
+    echo "Domain:"
+    echo "  Name: $DOMAIN_NAME"
+    echo "  Admin Email: $ADMIN_EMAIL"
+    echo ""
+    echo "Moodle:"
+    echo "  Version: $MOODLE_VERSION"
+    echo "  Site Name: $MOODLE_SITE_NAME"
+    echo ""
+    echo "Optimization:"
+    echo "  SWAP: $ENABLE_SWAP (${SWAP_SIZE_GB}GB)"
+    echo "  PHP-FPM max_children: $PHP_FPM_MAX_CHILDREN"
+    echo ""
+    echo "Monitoring:"
+    echo "  CloudWatch: $ENABLE_CLOUDWATCH_ALARMS"
+    echo "  Alarm Email: ${ALARM_EMAIL:-Not configured}"
+    echo ""
+}
+
+# Export function so it's available when sourced
+export -f show_config 2>/dev/null || true
+export -f validate_config 2>/dev/null || true

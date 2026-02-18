@@ -1,0 +1,22 @@
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/tfplan
+terraform/terraform.tfvars
+terraform/.terraform.lock.hcl
+
+# Credentials
+*.pem
+.env
+CREDENCIALES.md
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# OMC
+.omc/

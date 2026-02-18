@@ -1,0 +1,131 @@
+# Terraform Variables Configuration
+# Copy this file to terraform.tfvars and customize for your environment
+#
+# cp terraform.tfvars.example terraform.tfvars
+# chmod 600 terraform.tfvars  # Protect sensitive data
+
+#############################################
+# General Configuration
+#############################################
+
+project_name = "moodle"
+environment  = "prod"
+aws_region   = "us-east-1"
+aws_profile  = "default"
+
+#############################################
+# Network Configuration
+#############################################
+
+# Leave empty to use default VPC
+vpc_id    = ""
+subnet_id = ""
+
+# IMPORTANT: Change this to your IP address!
+# Get your IP: curl ifconfig.me
+allowed_ssh_cidrs = ["0.0.0.0/0"]  # CHANGE THIS!
+
+#############################################
+# EC2 Instance Configuration
+#############################################
+
+instance_type      = "t4g.medium"  # or t4g.large for better performance
+key_pair_name      = "my-key-pair"  # CHANGE THIS!
+root_volume_size   = 15
+data_volume_size   = 25
+ebs_volume_type    = "gp3"
+ebs_iops          = 3000
+ebs_throughput    = 125
+
+# Enable detailed monitoring (additional cost)
+enable_detailed_monitoring = false
+
+#############################################
+# RDS Configuration
+#############################################
+
+create_rds                  = true
+db_instance_class          = "db.t4g.micro"
+db_engine_version          = "10.11.15"
+db_allocated_storage       = 20
+db_max_allocated_storage   = 100
+db_name                    = "moodle"
+db_username                = "moodleadmin"
+db_password                = "YourSecurePassword123!"  # CHANGE THIS!
+db_backup_retention_period = 7
+db_backup_window          = "03:00-04:00"
+db_maintenance_window     = "sun:04:00-sun:05:00"
+db_multi_az               = false
+db_publicly_accessible    = false
+
+#############################################
+# Domain & SSL Configuration
+#############################################
+
+domain_name   = "moodle.example.com"  # CHANGE THIS!
+admin_email   = "admin@example.com"    # CHANGE THIS!
+
+# Route 53 DNS (optional)
+create_route53_record = false
+route53_zone_id      = ""
+
+#############################################
+# CloudFront CDN (Optional)
+#############################################
+
+enable_cloudfront     = false
+cloudfront_price_class = "PriceClass_100"  # US, Canada, Europe
+
+#############################################
+# Monitoring & Alerting
+#############################################
+
+enable_cloudwatch_alarms = true
+alarm_email             = ""  # Leave empty to skip email notifications
+cpu_alarm_threshold     = 80
+memory_alarm_threshold  = 500
+disk_alarm_threshold    = 80
+
+#############################################
+# Backup Configuration
+#############################################
+
+enable_ebs_snapshots    = true
+snapshot_retention_days = 7
+snapshot_schedule       = "cron(0 2 * * ? *)"  # Daily at 2 AM UTC
+
+#############################################
+# Optimization Settings
+#############################################
+
+# 0 = auto-calculate based on RAM
+php_fpm_max_children = 0
+
+# SWAP configuration
+enable_swap  = true
+swap_size_gb = 0  # 0 = auto-calculate
+
+#############################################
+# Moodle Configuration
+#############################################
+
+# NOTE: Moodle 5.1 requires Apache DocumentRoot to point to /var/www/html/moodle/public
+# PHP 8.2+ is required (8.4.x recommended)
+
+moodle_version        = "MOODLE_51_STABLE"
+moodle_admin_user     = "admin"
+moodle_admin_password = "AdminPass123!"  # CHANGE THIS!
+moodle_site_name      = "My Learning Platform"
+moodle_site_summary   = "Online courses and training"
+
+#############################################
+# Resource Tags
+#############################################
+
+tags = {
+  Project     = "Moodle 5.1"
+  ManagedBy   = "Terraform"
+  Environment = "Production"
+  Owner       = "your-name"
+  CostCenter  = "education"
+}
