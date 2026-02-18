@@ -1,0 +1,43 @@
+{
+  "name": "angular-best-practices",
+  "version": "1.0.0",
+  "description": "Skill de mejores prácticas para desarrollo Angular 21.1+",
+  "keywords": [
+    "angular",
+    "best-practices",
+    "typescript",
+    "signals",
+    "standalone",
+    "vitest",
+    "performance",
+    "security",
+    "accessibility",
+    "agent-skill"
+  ],
+  "author": "Tu Equipo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tu-org/angular-best-practices"
+  },
+  "angularVersion": ">=21.1.0",
+  "skillFormat": "1.0",
+  "categories": [
+    "architecture",
+    "performance",
+    "security",
+    "accessibility",
+    "error-handling",
+    "testing",
+    "tooling"
+  ],
+  "rulesCount": 25,
+  "compatibleWith": [
+    "claude-code",
+    "cursor",
+    "copilot"
+  ],
+  "complementarySkills": [
+    "web-design-guidelines"
+  ]
+}
