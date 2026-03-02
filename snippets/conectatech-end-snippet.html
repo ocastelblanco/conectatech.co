@@ -1,0 +1,62 @@
+<script>
+  /********* MODIFICA EL HEADER DE CADA CURSO - COSMOVISIÓN CRISTIANA ***********/
+  const courseHeaderImageElement = document.querySelector("#courseheaderimage");
+  if (courseHeaderImageElement !== null) {
+    const tituloCursoElement = courseHeaderImageElement.querySelector(".page-header-headings > *");
+    generaDivGrado(tituloCursoElement, courseHeaderImageElement);
+  }
+
+  /********* MODIFICA LA CARD DE CADA CURSO (MIS CURSOS) - COSMOVISIÓN CRISTIANA ***********/
+  function procesarCards() {
+    // Seleccionar todas las cards de curso dentro de .card-grid (para limitar)
+    const cardGrids = document.querySelectorAll('.card-grid');
+    if (!cardGrids.length) return;
+    cardGrids.forEach(grid => {
+      const cards = grid.querySelectorAll('.card.course-card');
+      cards.forEach(cardCurso => {
+        const tituloCursoElement = cardCurso.querySelector(".coursename span.multiline > span:last-of-type");
+        const cardCursoTop = cardCurso.querySelector(".card-img-top");
+        if (tituloCursoElement) generaDivGrado(tituloCursoElement, cardCursoTop);
+      });
+    });
+  }
+  // Observar cambios en el DOM para detectar cuando se agregan cards
+  const observer = new MutationObserver(function (mutations) {
+    procesarCards();
+  });
+  // Iniciar observación en el body, pero filtrando por si hay un contenedor más específico
+  // Observamos todo el documento, pero podemos restringir a un contenedor principal si se desea
+  const targetNode = document.querySelector('body');
+  if (targetNode) {
+    observer.observe(targetNode, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  // Ejecutar una vez al inicio por si las cards ya están presentes
+  procesarCards();
+
+  /********* FUNCIONES PARA COSMOVISIÓN CRISTIANA ***********/
+  function extraeMateriaCurso(nombre) {
+    const materia = nombre.trim().match(/^(.+?)(?=\s?-\s?)/g);
+    const grado = nombre.trim().match(/(?<=\s?-\s?).*/g);
+    if (materia && grado) return [materia[0].trim(), grado[0].trim()];
+    return null;
+  }
+
+  function generaDivGrado(tituloCursoElement, padre) {
+    if (padre.querySelector('.grado')) return;
+    const tituloCurso = tituloCursoElement.innerText;
+    const datos = extraeMateriaCurso(tituloCurso);
+    if (datos) {
+      const materia = datos[0];
+      const grado = datos[1];
+      tituloCursoElement.innerText = materia;
+      const gradoElement = document.createElement("div");
+      gradoElement.innerText = grado;
+      gradoElement.classList.add("grado");
+      padre.prepend(gradoElement);
+    }
+  }
+</script>

@@ -1,0 +1,833 @@
+// ============================================================================
+// CONECTATECH — Raw SCSS (Post-SCSS)
+// ============================================================================
+// DESTINO: Boost Union → Apariencia → SCSS → "Raw SCSS"
+//
+// Este código se compila DESPUÉS del SCSS de Bootstrap y Moodle.
+// Aquí van las reglas CSS que sobreescriben componentes específicos.
+// Las variables $conecta-* ya están disponibles desde el pre-SCSS.
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// 1. CSS CUSTOM PROPERTIES
+// ----------------------------------------------------------------------------
+// Exponemos la paleta como CSS vars para uso en HTML inline y plugins
+// que no pasen por el compilador SCSS de Moodle.
+// ----------------------------------------------------------------------------
+
+:root {
+	--conecta-midnight: #{$conecta-midnight};
+	--conecta-tech-blue: #{$conecta-tech-blue};
+	--conecta-growth-green: #{$conecta-growth-green};
+	--conecta-coral: #{$conecta-coral};
+	--font-headings: #{$headings-font-family};
+	--font-body: #{$font-family-base};
+	--areas-cn: #{$area-cn};
+}
+
+// ----------------------------------------------------------------------------
+// 2. ESTILOS GLOBALES
+// ----------------------------------------------------------------------------
+
+body {
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+// Encabezados con la tipografía corporativa
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+	font-family: $headings-font-family;
+	color: $conecta-midnight;
+	letter-spacing: -0.01em;
+}
+
+// Enlaces: transición suave al hover
+a {
+	transition:
+		color 0.2s ease,
+		background-color 0.2s ease;
+}
+
+// ----------------------------------------------------------------------------
+// 3. NAVBAR / HEADER
+// ----------------------------------------------------------------------------
+// El manual pide: logo alineado a la izquierda, alto máximo 50px.
+// Boost Union permite configurar el navbar como "dark" o "colored" desde
+// el admin. Aquí reforzamos los estilos independientemente de esa config.
+// ----------------------------------------------------------------------------
+
+// Altura máxima del logo en navbar (evita ruido en mobile)
+.navbar-brand .logo img,
+.navbar .logo img {
+	max-height: 50px !important;
+	width: auto;
+}
+
+// Navbar con identidad ConectaTech
+.navbar {
+	border-bottom: 2px solid lighten($conecta-midnight, 75%);
+	box-shadow: 0 1px 4px rgba($conecta-midnight, 0.06);
+}
+
+// ----------------------------------------------------------------------------
+// 4. BOTONES Y CTA
+// ----------------------------------------------------------------------------
+// DECISIÓN: $primary = Azul Tech para la UI general, pero .btn-primary
+// se sobreescribe a Naranja Coral para que los CTA destaquen visualmente.
+// Esto cumple el manual: "el profesor sabe exactamente dónde interactuar".
+// ----------------------------------------------------------------------------
+
+// --- Botón primario: Naranja Coral ---
+.btn-primary {
+	background-color: $conecta-coral !important;
+	border-color: $conecta-coral !important;
+	color: #fff !important;
+	font-family: $headings-font-family;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	border-radius: $border-radius;
+	transition: all 0.25s ease;
+
+	&:hover,
+	&:focus {
+		background-color: $conecta-midnight !important;
+		border-color: $conecta-midnight !important;
+		color: #fff !important;
+		box-shadow: 0 4px 12px rgba($conecta-midnight, 0.25);
+		transform: translateY(-1px);
+	}
+
+	&:active {
+		background-color: darken($conecta-midnight, 5%) !important;
+		transform: translateY(0);
+	}
+
+	&:disabled,
+	&.disabled {
+		background-color: $conecta-midnight-soft !important;
+		border-color: $conecta-midnight-soft !important;
+		transform: none;
+		box-shadow: none;
+	}
+}
+
+// Formularios de Moodle: el botón de submit también es coral
+#id_submitbutton,
+.form-submit .btn-primary,
+.singlebutton .btn-primary {
+	@extend .btn-primary;
+}
+
+// --- Botón secundario: Azul Tech con borde ---
+.btn-secondary,
+.btn-outline-primary {
+	color: $conecta-tech-blue;
+	border-color: $conecta-tech-blue;
+	background-color: transparent;
+	font-family: $headings-font-family;
+	font-weight: 600;
+	border-radius: $border-radius;
+	transition: all 0.25s ease;
+
+	&:hover,
+	&:focus {
+		background-color: $conecta-tech-blue;
+		border-color: $conecta-tech-blue;
+		color: #fff;
+	}
+}
+
+// --- Botón de éxito / "Completado": Verde Crecimiento ---
+.btn-success {
+	background-color: $conecta-growth-green !important;
+	border-color: $conecta-growth-green !important;
+
+	&:hover,
+	&:focus {
+		background-color: darken($conecta-growth-green, 10%) !important;
+		border-color: darken($conecta-growth-green, 10%) !important;
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 5. DRAWERS / SIDEBAR / NAVEGACIÓN
+// ----------------------------------------------------------------------------
+// Moodle 5.x usa la clase .drawer para los paneles laterales.
+// El manual pide: fondo Azul Medianoche, iconos blancos o Azul Tech.
+// ----------------------------------------------------------------------------
+
+// Drawer principal (course index + block drawer)
+.drawer {
+	background-color: $conecta-midnight !important;
+	color: #fff;
+	border-right-color: $conecta-midnight !important;
+
+	// Links dentro del drawer
+	a {
+		color: rgba(255, 255, 255, 0.8) !important;
+		transition:
+			color 0.2s ease,
+			background-color 0.2s ease;
+
+		&:hover,
+		&:focus {
+			color: #fff;
+			background-color: rgba(255, 255, 255, 0.08);
+		}
+	}
+
+	// Item activo / seleccionado
+	.list-group-item.active,
+	.active > a,
+	[aria-current="true"],
+	[aria-selected="true"] {
+		background-color: $conecta-tech-blue !important;
+		color: #fff !important;
+		border-radius: $border-radius-sm;
+	}
+
+	// List group items dentro del drawer
+	.list-group-item {
+		background-color: transparent;
+		color: rgba(255, 255, 255, 0.85);
+		border: none;
+		border-radius: $border-radius-sm;
+		margin-bottom: 1px;
+
+		&:hover {
+			background-color: rgba(255, 255, 255, 0.08);
+			color: #fff;
+		}
+	}
+
+	// Iconos del drawer en blanco
+	.icon,
+	i.fa,
+	i[class^="icon"] {
+		color: rgba(255, 255, 255, 0.7) !important;
+	}
+
+	// Encabezados dentro del drawer
+	h3,
+	h4,
+	h5,
+	.h3,
+	.h4,
+	.h5,
+	.header-text {
+		color: rgba(255, 255, 255, 0.95);
+	}
+
+	// Líneas divisoras
+	hr,
+	.divider {
+		border-color: rgba(255, 255, 255, 0.12);
+	}
+}
+
+// Ajuste para el drawer content (scroll area)
+.drawercontent {
+	background-color: $conecta-midnight !important;
+}
+
+// Course index dentro del drawer
+.courseindex {
+	// Secciones del índice
+	.courseindex-section-title {
+		color: rgba(255, 255, 255, 0.95);
+		font-family: $headings-font-family;
+		font-weight: 600;
+	}
+
+	.courseindex-item {
+		color: rgba(255, 255, 255, 0.8);
+
+		&:hover {
+			color: #fff;
+			background-color: rgba(255, 255, 255, 0.06);
+		}
+
+		&.pageitem {
+			background-color: $conecta-tech-blue;
+			color: #fff;
+			border-radius: $border-radius-sm;
+		}
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 6. TARJETAS DE CURSO (DASHBOARD)
+// ----------------------------------------------------------------------------
+// "Conexión orgánica" con sombras suaves y bordes redondeados.
+// Efecto hover que comunica "crecimiento".
+// ----------------------------------------------------------------------------
+
+.card {
+	border: none;
+	box-shadow: 0 2px 8px rgba($conecta-midnight, 0.06);
+	border-radius: $card-border-radius;
+	transition:
+		transform 0.3s ease,
+		box-shadow 0.3s ease;
+	overflow: hidden;
+
+	&:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 8px 24px rgba($conecta-midnight, 0.1);
+	}
+}
+
+// Tarjetas de curso específicas
+.course-card,
+.card.coursebox,
+.coursebox {
+	border: none !important;
+	border-radius: $card-border-radius;
+	box-shadow: 0 4px 15px rgba($conecta-midnight, 0.08);
+	transition:
+		transform 0.3s ease,
+		box-shadow 0.3s ease,
+		border-left 0.3s ease;
+
+	&:hover {
+		transform: translateY(-5px);
+		box-shadow: 0 12px 32px rgba($conecta-midnight, 0.12);
+		border-left: 4px solid $conecta-growth-green !important; // Acento de crecimiento
+	}
+
+	// Título del curso
+	.coursename a,
+	.course-card-name a {
+		color: $conecta-midnight;
+		font-family: $headings-font-family;
+		font-weight: 600;
+		transition: color 0.2s ease;
+
+		&:hover {
+			color: $conecta-tech-blue;
+		}
+	}
+}
+
+// Imagen de la tarjeta de curso
+.course-card .card-img-top,
+.coursebox .courseimage img {
+	border-radius: $card-border-radius $card-border-radius 0 0;
+}
+
+// ----------------------------------------------------------------------------
+// 7. PÁGINA DE LOGIN
+// ----------------------------------------------------------------------------
+// Boost Union tiene settings propios para la página de login (backgrounds,
+// logo decorativo, etc.). Aquí reforzamos el estilo del formulario.
+// ----------------------------------------------------------------------------
+
+.login-container,
+#page-login-index {
+	.login-form,
+	.card {
+		border-radius: $border-radius-lg;
+		box-shadow: 0 8px 32px rgba($conecta-midnight, 0.12);
+		border: none;
+	}
+
+	.btn-primary {
+		width: 100%;
+		padding: 0.75rem 1.5rem;
+		font-size: 1rem;
+	}
+
+	// Label del formulario
+	.form-label,
+	label {
+		color: $conecta-midnight;
+		font-weight: 500;
+	}
+
+	// Input fields
+	.form-control {
+		border-radius: $border-radius;
+		border: 1.5px solid $border-color;
+		padding: 0.625rem 0.875rem;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
+
+		&:focus {
+			border-color: $conecta-tech-blue;
+			box-shadow: 0 0 0 3px rgba($conecta-tech-blue, 0.15);
+		}
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 8. INDICADORES DE PROGRESO Y COMPLETADO
+// ----------------------------------------------------------------------------
+// Verde Crecimiento para todo lo que indica éxito o avance.
+// Coherente con el concepto de la marca.
+// ----------------------------------------------------------------------------
+
+// Barra de progreso
+.progress-bar {
+	background-color: $conecta-growth-green;
+	border-radius: $border-radius;
+}
+
+.progress {
+	border-radius: $border-radius;
+	background-color: lighten($conecta-midnight, 72%);
+	height: 0.625rem; // Un poco más gruesa para visibilidad
+}
+
+// Checkmarks de actividades completadas
+.completioninfo .badge-success,
+.badge-success,
+.badge.bg-success {
+	background-color: $conecta-growth-green !important;
+}
+
+// Iconos de completado
+.completion-complete .icon,
+.autocompletion img[title*="Completed"],
+.autocompletion img[title*="completado"] {
+	filter: none;
+}
+
+// ----------------------------------------------------------------------------
+// 9. BREADCRUMBS Y NAVEGACIÓN SECUNDARIA
+// ----------------------------------------------------------------------------
+
+.breadcrumb {
+	background-color: transparent;
+	padding: 0.5rem 0;
+	font-size: 0.8125rem;
+
+	.breadcrumb-item {
+		a {
+			color: $conecta-tech-blue;
+		}
+
+		&.active {
+			color: $conecta-midnight-soft;
+		}
+
+		+ .breadcrumb-item::before {
+			color: $conecta-midnight-soft;
+		}
+	}
+}
+
+// Navegación secundaria (tabs de curso)
+.secondary-navigation .moremenu .nav-link {
+	color: $conecta-midnight;
+	font-weight: 500;
+
+	&.active,
+	&[aria-current="true"] {
+		color: $conecta-tech-blue;
+		border-bottom-color: $conecta-tech-blue;
+	}
+
+	&:hover {
+		color: $conecta-coral;
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 10. FORMULARIOS
+// ----------------------------------------------------------------------------
+// Inputs y selects coherentes con la identidad visual.
+// ----------------------------------------------------------------------------
+
+.form-control,
+.custom-select,
+.form-select {
+	border-radius: $border-radius;
+	border: 1.5px solid $border-color;
+	color: $conecta-midnight;
+	transition:
+		border-color 0.2s ease,
+		box-shadow 0.2s ease;
+
+	&:focus {
+		border-color: $conecta-tech-blue;
+		box-shadow: 0 0 0 3px rgba($conecta-tech-blue, 0.12);
+	}
+
+	&::placeholder {
+		color: $conecta-midnight-soft;
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 11. ALERTAS Y NOTIFICACIONES
+// ----------------------------------------------------------------------------
+
+.alert {
+	border-radius: $border-radius;
+	border-width: 0;
+	border-left: 4px solid;
+
+	&.alert-info {
+		background-color: rgba($conecta-tech-blue, 0.08);
+		border-left-color: $conecta-tech-blue;
+		color: darken($conecta-tech-blue, 20%);
+	}
+
+	&.alert-success {
+		background-color: rgba($conecta-growth-green, 0.08);
+		border-left-color: $conecta-growth-green;
+		color: darken($conecta-growth-green, 20%);
+	}
+
+	&.alert-warning {
+		border-left-color: $conecta-coral;
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 12. FOOTER
+// ----------------------------------------------------------------------------
+// Boost Union tiene settings propios para el footer. Aquí reforzamos
+// la consistencia visual.
+// ----------------------------------------------------------------------------
+
+#page-footer,
+.footer-content {
+	background-color: $conecta-midnight;
+	color: rgba(255, 255, 255, 0.75);
+
+	a {
+		color: $conecta-tech-blue;
+
+		&:hover {
+			color: lighten($conecta-tech-blue, 15%);
+		}
+	}
+
+	h5,
+	h6,
+	.h5,
+	.h6 {
+		color: rgba(255, 255, 255, 0.9);
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 13. ACTIVIDADES — REFINAMIENTOS
+// ----------------------------------------------------------------------------
+// Pequeños ajustes a la presentación de actividades dentro de un curso.
+// ----------------------------------------------------------------------------
+
+// Secciones del curso
+.course-content .section {
+	.activity-item {
+		border-radius: $border-radius;
+		transition: background-color 0.15s ease;
+
+		&:hover {
+			background-color: rgba($conecta-tech-blue, 0.04);
+		}
+	}
+
+	// Títulos de sección
+	.sectionname {
+		font-family: $headings-font-family;
+		color: $conecta-midnight;
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 14. SCROLL Y UTILIDADES GENERALES
+// ----------------------------------------------------------------------------
+
+// Scrollbar personalizado (Webkit)
+::-webkit-scrollbar {
+	width: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: lighten($conecta-midnight, 75%);
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: lighten($conecta-midnight, 55%);
+	border-radius: 4px;
+
+	&:hover {
+		background-color: lighten($conecta-midnight, 40%);
+	}
+}
+
+// Selection de texto con color de marca
+::selection {
+	background-color: rgba($conecta-tech-blue, 0.2);
+	color: $conecta-midnight;
+}
+
+// ----------------------------------------------------------------------------
+// 15. RESPONSIVE — AJUSTES MOBILE
+// ----------------------------------------------------------------------------
+
+@media (max-width: 767.98px) {
+	// Logo más pequeño en mobile
+	.navbar-brand .logo img,
+	.navbar .logo img {
+		max-height: 36px !important;
+	}
+
+	// Cards sin efecto hover en touch (evita sticky hover)
+	.card:hover,
+	.course-card:hover,
+	.card.coursebox:hover {
+		transform: none;
+	}
+
+	// Botones full-width en mobile
+	.login-container .btn-primary {
+		width: 100%;
+	}
+}
+
+@media (max-width: 575.98px) {
+	// Reducir padding general en pantallas muy pequeñas
+	h1,
+	.h1 {
+		font-size: 1.5rem;
+	}
+	h2,
+	.h2 {
+		font-size: 1.3rem;
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 16. ESTILOS DE CURSOS
+// ----------------------------------------------------------------------------
+
+/**************************
+** COSMOVISION CRISTIANA ** 
+***************************/
+
+@each $categoria-cc in $categorias-cosmovision-cristiana {
+	body {
+		&.#{$categoria-cc} {
+			#courseheaderimage {
+				background-size: contain !important;
+				background-repeat: no-repeat;
+				position: relative;
+				overflow: hidden;
+				.page-header-headings {
+					margin-left: 16rem;
+					h1,
+					h2,
+					h3,
+					h4,
+					h5,
+					h6 {
+						color: #fff !important;
+					}
+				}
+				.grado {
+					position: absolute;
+					font-size: 14rem;
+					font-weight: 700;
+					color: #fff;
+					top: -5rem;
+					left: 1rem;
+				}
+				@media (max-width: 619px) {
+					.page-header-headings {
+						margin-left: 10rem;
+					}
+					.grado {
+						font-size: 8rem;
+						top: -2rem;
+					}
+				}
+				@media (max-width: 469px) {
+					.page-header-headings {
+						margin-left: 7rem;
+						max-width: 10em;
+					}
+					.grado {
+						font-size: 6rem;
+						top: 0;
+					}
+				}
+				@media (max-width: 359px) {
+					.page-header-headings {
+						margin-left: 2rem;
+					}
+					.grado {
+						font-size: 1.3rem;
+						top: 1rem;
+					}
+				}
+			}
+			.section-item {
+				.sectionname {
+					font-size: 1.75rem;
+				}
+				.section-item {
+					.sectionname {
+						font-size: 1.5rem !important;
+					}
+				}
+				.activity-item {
+					font-size: 1.5rem;
+					.resaltado {
+						display: flex;
+						position: relative;
+						flex-direction: column;
+						color: #fff;
+						border-radius: $border-radius;
+						padding-top: 1rem;
+						padding-bottom: 1rem;
+						background-position: center center;
+						background-repeat: no-repeat;
+						background-size: cover;
+						overflow: hidden;
+						& > * {
+							z-index: 1;
+						}
+						&::before {
+							content: "";
+							display: block;
+							position: absolute;
+							top: 0;
+							left: 0;
+							z-index: 0;
+							width: 100%;
+							height: 100%;
+						}
+						&::after {
+							content: "";
+							display: block;
+							position: absolute;
+							top: 1rem;
+							background-position: left top;
+							background-repeat: no-repeat;
+							background-size: contain;
+							z-index: 1;
+							opacity: 0.75;
+							width: 6rem;
+							height: calc(100% - 2rem);
+						}
+						&.cita-biblica {
+							align-items: flex-end;
+							padding-right: 1rem;
+							padding-left: 10rem;
+							background-color: $resaltado-cita-biblica;
+							text-align: right;
+							background-image: url(https://assets.conectatech.co/conectatech/img/cita-biblica-fondo.jpg);
+							&::before {
+								background: linear-gradient(
+									to right,
+									rgba($resaltado-cita-biblica, 0.35),
+									rgba($resaltado-cita-biblica, 0.85) 66%
+								);
+							}
+							&::after {
+								left: 1rem;
+								background-image: url(https://assets.conectatech.co/conectatech/img/cita-biblica-icono.png);
+							}
+						}
+						&.cierre-espiritual {
+							align-items: flex-start;
+							padding-right: 10rem;
+							padding-left: 1rem;
+							background-color: $resaltado-cierre-espiritual;
+							background-image: url(https://assets.conectatech.co/conectatech/img/cierre-espiritual-fondo.jpg);
+							& > h3,
+							& > h4,
+							& > h5 {
+								color: #fff !important;
+							}
+							&::before {
+								background: linear-gradient(
+									to left,
+									rgba($resaltado-cita-biblica, 0.35),
+									rgba($resaltado-cita-biblica, 0.85) 66%
+								);
+							}
+							&::after {
+								right: 1rem;
+								background-image: url(https://assets.conectatech.co/conectatech/img/cierre-espiritual-icono.png);
+							}
+						}
+					}
+				}
+			}
+			&.#{$categoria-ciencias-naturales} {
+				#courseheaderimage {
+					background-color: $area-cn;
+				}
+				.section-item {
+					.sectionname > a {
+						color: $area-cn;
+					}
+				}
+			}
+			&.#{$categoria-matematicas} {
+				#courseheaderimage {
+					background-color: $area-ma;
+				}
+				.section-item {
+					.sectionname > a {
+						color: $area-ma;
+					}
+				}
+			}
+			&.#{$categoria-lenguaje} {
+				#courseheaderimage {
+					background-color: $area-le;
+				}
+				.section-item {
+					.sectionname > a {
+						color: $area-le;
+					}
+				}
+			}
+			&.#{$categoria-ciencias-sociales} {
+				#courseheaderimage {
+					background-color: $area-cs;
+				}
+				.section-item {
+					.sectionname > a {
+						color: $area-cs;
+					}
+				}
+			}
+		}
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 17. ESTILOS DE LISTA DE CURSOS
+// ----------------------------------------------------------------------------
+
+.card-img-top {
+	position: relative;
+	overflow: hidden;
+	.grado {
+		position: absolute;
+		font-size: 12rem;
+		font-weight: 700;
+		color: #fff;
+		left: 0.5rem;
+		top: -5rem;
+	}
+}

@@ -1,0 +1,229 @@
+// ============================================================================
+// CONECTATECH — Raw initial SCSS (Pre-SCSS)
+// ============================================================================
+// DESTINO: Boost Union → Apariencia → SCSS → "Raw initial SCSS"
+//
+// Este código se compila ANTES del SCSS de Bootstrap y Moodle.
+// Aquí van las variables que sobreescriben los valores por defecto.
+// NO usar reglas CSS aquí, solo variables y @font-face.
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// 1. TIPOGRAFÍAS — @font-face
+// ----------------------------------------------------------------------------
+// Los archivos .woff2 están en tu bucket público de S3.
+// URL base: https://assets.conectatech.co/conectatech/fonts/
+//
+// Se incluyen dos subsets por fuente:
+//   - latin:     caracteres básicos (A-Z, 0-9, puntuación común)
+//   - latin-ext: ñ, á, é, í, ó, ú, ü, ¿, ¡, etc. (esencial para español)
+//
+// unicode-range permite que el navegador solo descargue latin-ext si la
+// página contiene esos caracteres. Esto optimiza la carga.
+// ----------------------------------------------------------------------------
+
+// --- Montserrat SemiBold (600) ---
+
+@font-face {
+  font-family: "Montserrat";
+  src: url("https://assets.conectatech.co/conectatech/fonts/montserrat-latin-ext-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Montserrat";
+  src: url("https://assets.conectatech.co/conectatech/fonts/montserrat-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+// --- Montserrat Bold (700) ---
+
+@font-face {
+  font-family: "Montserrat";
+  src: url("https://assets.conectatech.co/conectatech/fonts/montserrat-latin-ext-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Montserrat";
+  src: url("https://assets.conectatech.co/conectatech/fonts/montserrat-latin-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+// --- Inter Regular (400) ---
+
+@font-face {
+  font-family: "Inter";
+  src: url("https://assets.conectatech.co/conectatech/fonts/inter-latin-ext-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("https://assets.conectatech.co/conectatech/fonts/inter-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+// --- Inter Medium (500) ---
+
+@font-face {
+  font-family: "Inter";
+  src: url("https://assets.conectatech.co/conectatech/fonts/inter-latin-ext-500-normal.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("https://assets.conectatech.co/conectatech/fonts/inter-latin-500-normal.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+// ----------------------------------------------------------------------------
+// 2. PALETA CROMÁTICA — Variables SCSS
+// ----------------------------------------------------------------------------
+
+$conecta-midnight: #1d2b36;
+$conecta-tech-blue: #4a90e2;
+$conecta-growth-green: #52a467;
+$conecta-coral: #ff7f50;
+
+// Variantes derivadas
+$conecta-coral-dark: darken($conecta-coral, 12%);
+$conecta-coral-light: lighten($conecta-coral, 30%);
+$conecta-blue-light: lighten($conecta-tech-blue, 35%);
+$conecta-midnight-soft: lighten($conecta-midnight, 55%);
+
+// ----------------------------------------------------------------------------
+// 2.1 PALETA CROMÁTICA — Colores de áreas y resaltados
+// ----------------------------------------------------------------------------
+
+// Áreas
+$area-cn: #2d936c;
+$area-ma: #e63946;
+$area-le: #ffb703;
+$area-cs: #d4a373;
+
+// Resaltados
+$resaltado-cita-biblica: #006d77;
+$resaltado-cierre-espiritual: lighten($resaltado-cita-biblica, 30%);
+
+// ----------------------------------------------------------------------------
+// 3. SOBRECARGAS DE BOOTSTRAP 5
+// ----------------------------------------------------------------------------
+// $primary = Azul Tech para la UI general.
+// .btn-primary se sobreescribe a Coral en el post-SCSS.
+// ----------------------------------------------------------------------------
+
+// Colores del sistema
+$primary: $conecta-tech-blue;
+$success: $conecta-growth-green;
+$info: $conecta-tech-blue;
+$warning: #f0ad4e;
+$danger: #d9534f;
+
+// Tipografía
+$font-family-base:
+  "Inter",
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  Roboto,
+  sans-serif;
+$headings-font-family:
+  "Montserrat",
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  Roboto,
+  sans-serif;
+$font-size-base: 0.9375rem; // 15px
+$line-height-base: 1.6;
+$headings-font-weight: 700;
+
+// Colores de texto y cuerpo
+$body-color: $conecta-midnight;
+$body-bg: #f8f9fa;
+$headings-color: $conecta-midnight;
+
+// Enlaces
+$link-color: $conecta-tech-blue;
+$link-hover-color: $conecta-coral;
+$link-decoration: none;
+$link-hover-decoration: none;
+
+// Bordes y esquinas (estética "orgánica")
+$border-radius: 0.5rem; // 8px
+$border-radius-sm: 0.375rem; // 6px
+$border-radius-lg: 0.75rem; // 12px
+$border-color: #e2e8f0;
+
+// Botones
+$btn-border-radius: 0.5rem;
+$btn-font-weight: 600;
+$btn-padding-y: 0.5rem;
+$btn-padding-x: 1.25rem;
+
+// Cards
+$card-border-radius: 0.75rem; // 12px
+$card-border-width: 0;
+$card-cap-bg: transparent;
+
+// Navbar
+$navbar-light-color: $conecta-midnight;
+
+// Categorías
+
+@function categorias($numeros...) {
+  $lista: (); // lista vacía
+  @each $num in $numeros {
+    $lista: append($lista, "category-" + $num);
+  }
+  @return $lista;
+}
+
+$categorias-cosmovision-cristiana: categorias("1", "3", "4", "5");
+
+$categoria-ciencias-naturales: nth($categorias-cosmovision-cristiana, 1); // ".category-1"
+$categoria-matematicas: nth($categorias-cosmovision-cristiana, 2); // ".category-3"
+$categoria-ciencias-sociales: nth($categorias-cosmovision-cristiana, 3); // ".category-4"
+$categoria-lenguaje: nth($categorias-cosmovision-cristiana, 4); // ".category-5"
