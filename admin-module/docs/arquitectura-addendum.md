@@ -1,4 +1,5 @@
 # Addendum — Arquitectura Técnica Definitiva
+
 ## Presaberes, retroalimentación y ajustes finales
 
 **Complementa:** `arquitectura-tecnica-definitiva.md`  
@@ -9,7 +10,7 @@
 ## Resumen de cambios
 
 | Elemento | Estado anterior | Estado actualizado |
-|---|---|---|
+| --- | --- | --- |
 | Retroalimentación en opción-múltiple | Sin definir | ✅ Vía GIFT con `#feedback` por opción |
 | Creación de categorías | Script automático | ✅ Manual en Moodle (una sola vez) |
 | Subsección `[presaberes]` | No existía | ✅ Nuevo tipo, mod_label con JS global |
@@ -24,7 +25,7 @@
 
 El formato GIFT soporta retroalimentación por respuesta de forma nativa, usando `#` después de cada opción:
 
-```
+```text
 // Formato GIFT con feedback por opción
 ::P1:: ¿Cuál es la función de la mitocondria? {
   =Producir energía (ATP) #¡Correcto! La mitocondria es la central energética de la célula.
@@ -54,6 +55,7 @@ El signo `=` indica la respuesta correcta; `~` indica incorrecta. El `#` activa 
 ```
 
 **Convenciones del parser:**
+
 - El ítem marcado `[correcta]` genera `=` en GIFT.
 - El ítem sin marcador genera `~`.
 - La sublista del ítem (sangría de 3 espacios) es el feedback `#`.
@@ -95,7 +97,7 @@ Moodle aplica HTMLPurifier al mostrar el contenido de labels via `format_text()`
 La plantilla de Oliver se divide en dos partes permanentes:
 
 | Parte | Dónde vive | Frecuencia de cambio |
-|---|---|---|
+| --- | --- | --- |
 | **JavaScript** (lógica de interactividad) | Boost Union → Apariencia → JavaScript personalizado | Una sola vez |
 | **CSS** (estilos de las opciones) | `conectatech-post.scss` | Una sola vez |
 | **HTML** (estructura con datos de cada pregunta) | `mod_label` generado por el script | Cada vez que hay contenido nuevo |
@@ -128,7 +130,7 @@ El texto antes del marcador es el nombre visible de la subsección en Moodle.
 
 ### Estructura jerárquica
 
-```
+```text
 H2 [presaberes]     → subsección (mod_subsection)
   H3                → nombre del bloque de pregunta (se convierte en aria-label del bloque)
     H4 "Contexto"   → párrafo de contexto de la pregunta (opcional)
@@ -185,7 +187,7 @@ Al observar una imagen ampliada de una célula, se notan varias partes con forma
 ### Convenciones del parser para `[presaberes]`
 
 | Elemento | Regla |
-|---|---|
+| --- | --- |
 | H4 `Contexto` | Es opcional. Si existe, se renderiza como `<p class="lead">` dentro del bloque |
 | H4 `Pregunta` | Obligatorio. Contiene los metadatos `{tipo: ...}` en la siguiente línea |
 | H5 | Texto del enunciado. Se renderiza como `<legend>` dentro del `<fieldset>` |
@@ -377,7 +379,7 @@ Añadir al final de `conectatech-post.scss`, en una nueva sección (nº 17):
 
 Dado que `[presaberes]` y cualquier otro marcador pueden aparecer en **cualquier posición** dentro de una sección, la clasificación del tipo de un H2 sigue este orden de prioridad:
 
-```
+```text
 1. ¿Tiene marcador explícito?
    ├── [evaluacion]   → subseccion-evaluacion  (en cualquier posición)
    ├── [presaberes]   → subseccion-presaberes  (en cualquier posición)
@@ -393,7 +395,7 @@ El estado `recurso-raiz-encontrado` se resetea por cada H1. La primera vez que e
 ### Casos cubiertos por esta lógica
 
 | Estructura del documento | Resultado |
-|---|---|
+| --- | --- |
 | `## Texto bíblico` (primero, sin marcador) | `recurso-raiz` |
 | `## Presaberes [presaberes]` (primero) | `subseccion-presaberes` — y el `recurso-raiz` queda vacío (válido) |
 | `## [presaberes]`, luego `## Introducción` | presaberes + `recurso-raiz` (primer H2 sin marcador) |
@@ -405,7 +407,7 @@ Una sección **puede no tener `recurso-raiz`** si todos sus H2 tienen marcador e
 ### Tabla resumen de tipos
 
 | Condición | Tipo | Acción en Moodle |
-|---|---|---|
+| --- | --- | --- |
 | H2 con `[evaluacion]` (cualquier posición) | `subseccion-evaluacion` | `mod_subsection` + `mod_quiz` |
 | H2 con `[presaberes]` (cualquier posición) | `subseccion-presaberes` | `mod_subsection` + `mod_label` interactivo |
 | Primer H2 sin marcador de la sección | `recurso-raiz` | `mod_label` directo en sección padre |
@@ -428,6 +430,7 @@ Añadir el campo global `presaberes_feedback_mode`:
 ```
 
 Valores posibles:
+
 - `"data-attribute"` (por defecto): usa `data-feedback="..."` en el div. Requiere que HTMLPurifier permita `data-*` en la instancia.
 - `"hidden-span"`: añade `<span class="option-feedback visually-hidden">...</span>` dentro del label. Funciona en cualquier configuración de Moodle. El JS debe leerlo con `querySelector('.option-feedback')` en lugar de `dataset.feedback`.
 
@@ -437,7 +440,7 @@ Si tras el primer despliegue se comprueba que los `data-*` son eliminados, se ca
 
 ## 9. Árbol de ficheros actualizado
 
-```
+```text
 /var/www/scripts/automation/
 ├── config/
 │   ├── courses.csv
@@ -462,7 +465,7 @@ Se añade `PresaberesHtmlBuilder.php` como módulo independiente para encapsular
 ## 10. Tabla de tipos de pregunta — estado final
 
 | Tipo | Sintaxis en markdown | Destino en Moodle | Feedback |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Ensayo (texto) | Sin `{tipo}` o `{tipo: ensayo, variante: texto}` | Quiz (`[evaluacion]`) | No (revisión manual) |
 | Opción múltiple | `{tipo: opcion-multiple}` + lista con `[correcta]` | Quiz (`[evaluacion]`) vía GIFT | Sí, por opción |
 | Presaberes opción múltiple | `{tipo: opcion-multiple}` en bloque `[presaberes]` | `mod_label` HTML interactivo | Sí, inmediato, no calificado |
