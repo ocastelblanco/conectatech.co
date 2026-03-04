@@ -6,10 +6,35 @@
       "Cosmovisión Cristiana": {
         "idnumber": "REP-CC",
         "children": {
-          "Ciencias Naturales": { "idnumber": "CC-CN" },
-          "Matemáticas":        { "idnumber": "CC-MA" },
-          "Ciencias Sociales":  { "idnumber": "CC-CS" },
-          "Lenguaje":           { "idnumber": "CC-LE" }
+          "Ciencias Naturales": {
+            "idnumber": "CC-CN"
+          },
+          "Matemáticas": {
+            "idnumber": "CC-MA"
+          },
+          "Ciencias Sociales": {
+            "idnumber": "CC-CS"
+          },
+          "Lenguaje": {
+            "idnumber": "CC-LE"
+          }
+        }
+      },
+      "Unidades Curriculares": {
+        "idnumber": "REP-UC",
+        "children": {
+          "Ciencias Naturales": {
+            "idnumber": "UC-CN"
+          },
+          "Matemáticas": {
+            "idnumber": "UC-MA"
+          },
+          "Ciencias Sociales": {
+            "idnumber": "UC-CS"
+          },
+          "Lenguaje": {
+            "idnumber": "UC-LE"
+          }
         }
       }
     }
