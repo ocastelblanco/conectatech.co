@@ -144,9 +144,12 @@ class MoodleContentBuilder
 
                 case 'referente-biblico-seccion':
                     // Label directamente en la sección padre (sin subsección contenedora)
-                    $html = $this->htmlConverter->convertBlocks($subsection['blocks']);
-                    if (!empty(trim($html))) {
-                        $this->createLabelModule($parentSectionNum, $html);
+                    // Un recurso independiente por bloque, con h3_title como título en índice
+                    foreach ($subsection['blocks'] as $block) {
+                        $html = $this->htmlConverter->convertBlock($block);
+                        if (!empty(trim($html))) {
+                            $this->createLabelModule($parentSectionNum, $html, $block['h3_title']);
+                        }
                     }
                     $result['action'] = 'label_en_seccion_padre';
                     break;
@@ -176,7 +179,7 @@ class MoodleContentBuilder
                         $subIdx
                     );
                     if (!empty(trim($html))) {
-                        $this->createLabelModule($delegatedNum, $html);
+                        $this->createLabelModule($delegatedNum, $html, $subsection['title']);
                     }
                     $result['action'] = 'subseccion_presaberes';
                     break;
@@ -218,7 +221,7 @@ class MoodleContentBuilder
         $info->visible        = 1;
         $info->intro          = $html;
         $info->introformat    = FORMAT_HTML;
-        $info->name           = $title ?? 'label';
+        $info->name           = $title ?: 'label';
 
         add_moduleinfo($info, $this->course);
     }
