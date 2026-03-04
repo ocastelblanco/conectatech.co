@@ -43,6 +43,9 @@ class MoodleSectionCloner
 
         $sectionId = (int)$sectionRecord->id;
 
+        // Guardar el máximo ID de mdl_files para identificar el archivo de backup
+        $beforeMaxId = (int)$DB->get_field_sql('SELECT COALESCE(MAX(id),0) FROM {files}');
+
         // ── 2. Backup de la sección ───────────────────────────────────────────
         $bc = new backup_controller(
             backup::TYPE_1SECTION,
@@ -67,7 +70,47 @@ class MoodleSectionCloner
         $backupid = $bc->get_backupid();
         $bc->destroy();
 
-        // ── 3. Restore al curso destino ───────────────────────────────────────
+        // ── 3. Localizar backup.mbz en filedir ───────────────────────────────
+        // El backup guarda el .mbz en mdl_files (component='backup', filename='backup.mbz').
+        // Identificamos el registro recién creado buscando por ID > beforeMaxId.
+        $backupFileRec = $DB->get_record_sql(
+            "SELECT contenthash
+             FROM {files}
+             WHERE id > ?
+               AND component = 'backup'
+               AND filename  = 'backup.mbz'
+             ORDER BY id DESC
+             LIMIT 1",
+            [$beforeMaxId]
+        );
+
+        if (!$backupFileRec) {
+            throw new RuntimeException(
+                "No se encontró backup.mbz en mdl_files para backupid={$backupid}"
+            );
+        }
+
+        $hash     = $backupFileRec->contenthash;
+        $filePath = $CFG->dataroot . '/filedir/'
+                  . substr($hash, 0, 2) . '/'
+                  . substr($hash, 2, 2) . '/'
+                  . $hash;
+
+        if (!file_exists($filePath)) {
+            throw new RuntimeException("backup.mbz no encontrado en filedir: {$filePath}");
+        }
+
+        // ── 4. Extraer .mbz al directorio temporal del restore ────────────────
+        // restore_controller espera un subdirectorio en $CFG->backuptempdir con
+        // el contenido descomprimido del .mbz (incluyendo moodle_backup.xml).
+        $tempdir = make_backup_temp_directory($backupid);
+        $packer  = get_file_packer('application/vnd.moodle.backup');
+
+        if (!$packer->extract_to_pathname($filePath, $tempdir)) {
+            throw new RuntimeException("Error al extraer backup.mbz a {$tempdir}");
+        }
+
+        // ── 5. Restore al curso destino ───────────────────────────────────────
         $rc = new restore_controller(
             $backupid,
             $targetCourseId,

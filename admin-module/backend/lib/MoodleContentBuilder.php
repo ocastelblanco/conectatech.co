@@ -580,7 +580,7 @@ class MoodleContentBuilder
                 $catData->parent   = $parentId;
                 $catData->visible  = 1;
                 $catData->sortorder = 0;
-                $newCat            = coursecat::create($catData);
+                $newCat            = core_course_category::create($catData);
                 $parentId          = (int)$newCat->id;
             }
 
