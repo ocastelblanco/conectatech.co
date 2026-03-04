@@ -158,10 +158,11 @@ class MoodleContentBuilder
                         $this->createQuizModule($delegatedNum, $h3ev['title'], $h3ev['questions'], $sectionIdx);
                     }
                     // Un recurso "Área de medios y texto" independiente por cada bloque H3
+                    // El h3_title se usa como "Título en índice del curso"
                     foreach ($subsection['blocks'] as $block) {
                         $html = $this->htmlConverter->convertBlock($block);
                         if (!empty(trim($html))) {
-                            $this->createLabelModule($delegatedNum, $html);
+                            $this->createLabelModule($delegatedNum, $html, $block['h3_title']);
                         }
                     }
                     $result['action'] = 'subseccion_con_label';
@@ -202,7 +203,7 @@ class MoodleContentBuilder
     /**
      * Crea un mod_label (Área de texto y medios) en la sección indicada.
      */
-    private function createLabelModule(int $sectionNum, string $html): void
+    private function createLabelModule(int $sectionNum, string $html, ?string $title = null): void
     {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/course/modlib.php');
@@ -217,7 +218,7 @@ class MoodleContentBuilder
         $info->visible        = 1;
         $info->intro          = $html;
         $info->introformat    = FORMAT_HTML;
-        $info->name           = 'label';
+        $info->name           = $title ?? 'label';
 
         add_moduleinfo($info, $this->course);
     }
