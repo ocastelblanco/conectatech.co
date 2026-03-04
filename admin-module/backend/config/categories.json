@@ -1,0 +1,17 @@
+{
+  "comment": "Jerarquía de categorías de cursos en Moodle con sus idnumbers (nombres cortos).",
+  "REPOSITORIOS": {
+    "idnumber": "REPOSITORIOS",
+    "children": {
+      "Cosmovisión Cristiana": {
+        "idnumber": "REP-CC",
+        "children": {
+          "Ciencias Naturales": { "idnumber": "CC-CN" },
+          "Matemáticas":        { "idnumber": "CC-MA" },
+          "Ciencias Sociales":  { "idnumber": "CC-CS" },
+          "Lenguaje":           { "idnumber": "CC-LE" }
+        }
+      }
+    }
+  }
+}

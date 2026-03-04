@@ -221,7 +221,7 @@ $navbar-light-color: $conecta-midnight;
   @return $lista;
 }
 
-$categorias-cosmovision-cristiana: categorias("1", "3", "4", "5");
+$categorias-cosmovision-cristiana: categorias("8", "3", "4", "5");
 
 $categoria-ciencias-naturales: nth($categorias-cosmovision-cristiana, 1); // ".category-1"
 $categoria-matematicas: nth($categorias-cosmovision-cristiana, 2); // ".category-3"

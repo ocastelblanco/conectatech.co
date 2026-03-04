@@ -831,3 +831,29 @@ a {
 		top: -5rem;
 	}
 }
+
+// ─────────────────────────────────────────────
+// 18. PRESABERES — Quiz interactivo diagnóstico
+// ─────────────────────────────────────────────
+.moodle-quiz-container {
+	.respuesta-option {
+		transition: all 0.25s ease;
+		cursor: pointer;
+		&:hover input:not(:disabled) ~ label {
+			color: $conecta-tech-blue;
+		}
+	}
+	.custom-control-label {
+		cursor: pointer;
+		padding-left: 5px;
+	}
+	.bg-success,
+	.bg-danger {
+		.custom-control-label::before {
+			filter: brightness(1.2);
+		}
+	}
+	.retroalimentacion .alert {
+		border-left-width: 4px;
+	}
+}

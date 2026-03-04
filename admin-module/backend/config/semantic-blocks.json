@@ -1,0 +1,60 @@
+{
+  "version": "1.1",
+  "presaberes_feedback_mode": "data-attribute",
+  "blocks": [
+    {
+      "h3_title": "Referente bíblico",
+      "css_primary": "cita-biblica",
+      "css_additional": ["resaltado"],
+      "show_h3": false
+    },
+    {
+      "h3_title": "Texto bíblico guía",
+      "css_primary": "cita-biblica",
+      "css_additional": ["resaltado"],
+      "show_h3": false
+    },
+    {
+      "h3_title": "Introducción motivadora",
+      "css_primary": "introduccion-motivadora",
+      "css_additional": [],
+      "show_h3": false
+    },
+    {
+      "h3_title": "¿Qué tiene que ver esto contigo?",
+      "css_primary": "que-tiene-que-ver-esto-contigo",
+      "css_additional": [],
+      "show_h3": true
+    },
+    {
+      "h3_title": "Objetivos de aprendizaje con sentido cristiano",
+      "css_primary": "objetivos-de-aprendizaje-con-sentido-cristiano",
+      "css_additional": [],
+      "show_h3": true
+    },
+    {
+      "h3_title": "Cierre espiritual",
+      "css_primary": "cierre-espiritual",
+      "css_additional": ["resaltado"],
+      "show_h3": true
+    },
+    {
+      "h3_title": "Reflexiona",
+      "css_primary": "reflexiona",
+      "css_additional": [],
+      "show_h3": true
+    },
+    {
+      "h3_title": "Ponte en acción",
+      "css_primary": "ponte-en-accion",
+      "css_additional": [],
+      "show_h3": true
+    }
+  ],
+  "fallback": {
+    "comment": "Si el H3 no está en el mapa, se renderiza como un bloque genérico con el H3 visible",
+    "css_primary": "bloque-generico",
+    "css_additional": [],
+    "show_h3": true
+  }
+}

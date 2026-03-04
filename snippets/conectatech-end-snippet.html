@@ -59,4 +59,39 @@
       padre.prepend(gradoElement);
     }
   }
+  // ************* ConectaTech — Presaberes Interactive Quiz v1.0 ****************************
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-quiz-block]').forEach(function (block) {
+      block.addEventListener('change', function (e) {
+        if (!e.target.matches('input[type="radio"]')) return;
+        var selected = e.target.closest('.respuesta-option');
+        var feedback = block.querySelector('.retroalimentacion');
+        var allOptions = block.querySelectorAll('.respuesta-option');
+        var type = selected.dataset.type;
+        var feedbackText = selected.dataset.feedback;
+        allOptions.forEach(function (opt) {
+          opt.classList.remove('bg-success', 'bg-danger', 'border-success', 'border-danger', 'text-white');
+          opt.classList.add('border-light');
+          opt.querySelector('input').disabled = true;
+          opt.querySelector('label').style.cursor = 'default';
+        });
+        selected.classList.remove('border-light');
+        if (type === 'correct') {
+          selected.classList.add('bg-success', 'border-success', 'text-white');
+        } else {
+          selected.classList.add('bg-danger', 'border-danger', 'text-white');
+        }
+        selected.querySelectorAll('label, span').forEach(function (el) { el.style.color = '#fff'; });
+        var emoji = type === 'correct' ? '✅' : '❌';
+        var alertType = type === 'correct' ? 'success' : 'warning';
+        var label = type === 'correct' ? '¡Excelente!' : 'Incorrecto';
+        feedback.innerHTML =
+          '<div class="alert alert-' + alertType + ' d-flex align-items-start shadow-sm" role="alert">' +
+          '<div class="mr-3 mt-1" style="font-size:1.5rem">' + emoji + '</div>' +
+          '<div><strong>' + label + '</strong>' +
+          '<p class="mb-0 mt-1">' + feedbackText + '</p></div></div>';
+        feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+  });
 </script>
