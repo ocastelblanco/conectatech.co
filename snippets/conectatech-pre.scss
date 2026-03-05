@@ -210,20 +210,3 @@ $card-cap-bg: transparent;
 
 // Navbar
 $navbar-light-color: $conecta-midnight;
-
-// Categorías
-
-@function categorias($numeros...) {
-  $lista: (); // lista vacía
-  @each $num in $numeros {
-    $lista: append($lista, "category-" + $num);
-  }
-  @return $lista;
-}
-
-$categorias-cosmovision-cristiana: categorias("8", "3", "4", "5");
-
-$categoria-ciencias-naturales: nth($categorias-cosmovision-cristiana, 1); // ".category-1"
-$categoria-matematicas: nth($categorias-cosmovision-cristiana, 2); // ".category-3"
-$categoria-ciencias-sociales: nth($categorias-cosmovision-cristiana, 3); // ".category-4"
-$categoria-lenguaje: nth($categorias-cosmovision-cristiana, 4); // ".category-5"

@@ -1,0 +1,3 @@
+username,password,firstname,lastname,email,institution,rol,grado
+jperez,Pass1234!,Juan,Pérez,jperez@sanmarino.edu.co,San Marino,student,6
+mdocente,Pass5678!,María,Docente,mdocente@sanmarino.edu.co,San Marino,teacher,

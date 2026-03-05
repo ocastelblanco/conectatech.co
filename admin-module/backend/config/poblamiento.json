@@ -1,12 +1,18 @@
 {
-    "comment": "shortname del curso final → secciones a clonar de repositorios. section_num es 1-based.",
-    "courses": [
-        {
-            "shortname": "san-marino-cn-6",
-            "sections": [
-                { "repo": "repo-cc-cn-6-7", "section_num": 1 },
-                { "repo": "repo-cc-cn-6-7", "section_num": 2 }
-            ]
-        }
-    ]
+	"comment": "shortname del curso final → secciones a clonar de repositorios. section_num es 1-based.",
+	"courses": [
+		{
+			"shortname": "san-marino-cn-6",
+			"sections": [
+				{
+					"repo": "repo-cc-cn-6-7",
+					"section_num": 1
+				},
+				{
+					"repo": "repo-cc-cn-6-7",
+					"section_num": 2
+				}
+			]
+		}
+	]
 }

@@ -622,194 +622,192 @@ a {
 ** COSMOVISION CRISTIANA ** 
 ***************************/
 
-@each $categoria-cc in $categorias-cosmovision-cristiana {
-	body {
-		&.#{$categoria-cc} {
-			#courseheaderimage {
-				background-size: contain !important;
-				background-repeat: no-repeat;
-				position: relative;
-				overflow: hidden;
+body {
+	&.cosmovision-cristiana {
+		#courseheaderimage {
+			background-size: contain !important;
+			background-repeat: no-repeat;
+			position: relative;
+			overflow: hidden;
+			.page-header-headings {
+				margin-left: 16rem;
+				h1,
+				h2,
+				h3,
+				h4,
+				h5,
+				h6 {
+					color: #fff !important;
+				}
+			}
+			.grado {
+				position: absolute;
+				font-size: 14rem;
+				font-weight: 700;
+				color: #fff;
+				top: -5rem;
+				left: 1rem;
+			}
+			@media (max-width: 619px) {
 				.page-header-headings {
-					margin-left: 16rem;
-					h1,
-					h2,
-					h3,
-					h4,
-					h5,
-					h6 {
-						color: #fff !important;
-					}
+					margin-left: 10rem;
 				}
 				.grado {
-					position: absolute;
-					font-size: 14rem;
-					font-weight: 700;
-					color: #fff;
-					top: -5rem;
-					left: 1rem;
+					font-size: 8rem;
+					top: -2rem;
 				}
-				@media (max-width: 619px) {
-					.page-header-headings {
-						margin-left: 10rem;
-					}
-					.grado {
-						font-size: 8rem;
-						top: -2rem;
-					}
+			}
+			@media (max-width: 469px) {
+				.page-header-headings {
+					margin-left: 7rem;
+					max-width: 10em;
 				}
-				@media (max-width: 469px) {
-					.page-header-headings {
-						margin-left: 7rem;
-						max-width: 10em;
-					}
-					.grado {
-						font-size: 6rem;
-						top: 0;
-					}
+				.grado {
+					font-size: 6rem;
+					top: 0;
 				}
-				@media (max-width: 359px) {
-					.page-header-headings {
-						margin-left: 2rem;
-					}
-					.grado {
-						font-size: 1.3rem;
-						top: 1rem;
-					}
+			}
+			@media (max-width: 359px) {
+				.page-header-headings {
+					margin-left: 2rem;
 				}
+				.grado {
+					font-size: 1.3rem;
+					top: 1rem;
+				}
+			}
+		}
+		.section-item {
+			.sectionname {
+				font-size: 1.75rem;
 			}
 			.section-item {
 				.sectionname {
-					font-size: 1.75rem;
+					font-size: 1.5rem !important;
 				}
-				.section-item {
-					.sectionname {
-						font-size: 1.5rem !important;
+			}
+			.activity-item {
+				font-size: 1.5rem;
+				.resaltado {
+					display: flex;
+					position: relative;
+					flex-direction: column;
+					color: #fff;
+					border-radius: $border-radius;
+					padding-top: 1rem;
+					padding-bottom: 1rem;
+					background-position: center center;
+					background-repeat: no-repeat;
+					background-size: cover;
+					overflow: hidden;
+					& > * {
+						z-index: 1;
 					}
-				}
-				.activity-item {
-					font-size: 1.5rem;
-					.resaltado {
-						display: flex;
-						position: relative;
-						flex-direction: column;
-						color: #fff;
-						border-radius: $border-radius;
-						padding-top: 1rem;
-						padding-bottom: 1rem;
-						background-position: center center;
+					&::before {
+						content: "";
+						display: block;
+						position: absolute;
+						top: 0;
+						left: 0;
+						z-index: 0;
+						width: 100%;
+						height: 100%;
+					}
+					&::after {
+						content: "";
+						display: block;
+						position: absolute;
+						top: 1rem;
+						background-position: left top;
 						background-repeat: no-repeat;
-						background-size: cover;
-						overflow: hidden;
-						& > * {
-							z-index: 1;
-						}
+						background-size: contain;
+						z-index: 1;
+						opacity: 0.75;
+						width: 6rem;
+						height: calc(100% - 2rem);
+					}
+					&.cita-biblica {
+						align-items: flex-end;
+						padding-right: 1rem;
+						padding-left: 10rem;
+						background-color: $resaltado-cita-biblica;
+						text-align: right;
+						background-image: url(https://assets.conectatech.co/conectatech/img/cita-biblica-fondo.jpg);
 						&::before {
-							content: "";
-							display: block;
-							position: absolute;
-							top: 0;
-							left: 0;
-							z-index: 0;
-							width: 100%;
-							height: 100%;
+							background: linear-gradient(
+								to right,
+								rgba($resaltado-cita-biblica, 0.35),
+								rgba($resaltado-cita-biblica, 0.85) 66%
+							);
 						}
 						&::after {
-							content: "";
-							display: block;
-							position: absolute;
-							top: 1rem;
-							background-position: left top;
-							background-repeat: no-repeat;
-							background-size: contain;
-							z-index: 1;
-							opacity: 0.75;
-							width: 6rem;
-							height: calc(100% - 2rem);
+							left: 1rem;
+							background-image: url(https://assets.conectatech.co/conectatech/img/cita-biblica-icono.png);
 						}
-						&.cita-biblica {
-							align-items: flex-end;
-							padding-right: 1rem;
-							padding-left: 10rem;
-							background-color: $resaltado-cita-biblica;
-							text-align: right;
-							background-image: url(https://assets.conectatech.co/conectatech/img/cita-biblica-fondo.jpg);
-							&::before {
-								background: linear-gradient(
-									to right,
-									rgba($resaltado-cita-biblica, 0.35),
-									rgba($resaltado-cita-biblica, 0.85) 66%
-								);
-							}
-							&::after {
-								left: 1rem;
-								background-image: url(https://assets.conectatech.co/conectatech/img/cita-biblica-icono.png);
-							}
+					}
+					&.cierre-espiritual {
+						align-items: flex-start;
+						padding-right: 10rem;
+						padding-left: 1rem;
+						background-color: $resaltado-cierre-espiritual;
+						background-image: url(https://assets.conectatech.co/conectatech/img/cierre-espiritual-fondo.jpg);
+						& > h3,
+						& > h4,
+						& > h5 {
+							color: #fff !important;
 						}
-						&.cierre-espiritual {
-							align-items: flex-start;
-							padding-right: 10rem;
-							padding-left: 1rem;
-							background-color: $resaltado-cierre-espiritual;
-							background-image: url(https://assets.conectatech.co/conectatech/img/cierre-espiritual-fondo.jpg);
-							& > h3,
-							& > h4,
-							& > h5 {
-								color: #fff !important;
-							}
-							&::before {
-								background: linear-gradient(
-									to left,
-									rgba($resaltado-cita-biblica, 0.35),
-									rgba($resaltado-cita-biblica, 0.85) 66%
-								);
-							}
-							&::after {
-								right: 1rem;
-								background-image: url(https://assets.conectatech.co/conectatech/img/cierre-espiritual-icono.png);
-							}
+						&::before {
+							background: linear-gradient(
+								to left,
+								rgba($resaltado-cita-biblica, 0.35),
+								rgba($resaltado-cita-biblica, 0.85) 66%
+							);
+						}
+						&::after {
+							right: 1rem;
+							background-image: url(https://assets.conectatech.co/conectatech/img/cierre-espiritual-icono.png);
 						}
 					}
 				}
 			}
-			&.#{$categoria-ciencias-naturales} {
-				#courseheaderimage {
-					background-color: $area-cn;
-				}
-				.section-item {
-					.sectionname > a {
-						color: $area-cn;
-					}
+		}
+		&.ciencias-naturales {
+			#courseheaderimage {
+				background-color: $area-cn;
+			}
+			.section-item {
+				.sectionname > a {
+					color: $area-cn;
 				}
 			}
-			&.#{$categoria-matematicas} {
-				#courseheaderimage {
-					background-color: $area-ma;
-				}
-				.section-item {
-					.sectionname > a {
-						color: $area-ma;
-					}
+		}
+		&.matematicas {
+			#courseheaderimage {
+				background-color: $area-ma;
+			}
+			.section-item {
+				.sectionname > a {
+					color: $area-ma;
 				}
 			}
-			&.#{$categoria-lenguaje} {
-				#courseheaderimage {
-					background-color: $area-le;
-				}
-				.section-item {
-					.sectionname > a {
-						color: $area-le;
-					}
+		}
+		&.lenguaje {
+			#courseheaderimage {
+				background-color: $area-le;
+			}
+			.section-item {
+				.sectionname > a {
+					color: $area-le;
 				}
 			}
-			&.#{$categoria-ciencias-sociales} {
-				#courseheaderimage {
-					background-color: $area-cs;
-				}
-				.section-item {
-					.sectionname > a {
-						color: $area-cs;
-					}
+		}
+		&.ciencias-sociales {
+			#courseheaderimage {
+				background-color: $area-cs;
+			}
+			.section-item {
+				.sectionname > a {
+					color: $area-cs;
 				}
 			}
 		}

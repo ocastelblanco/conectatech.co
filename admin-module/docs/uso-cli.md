@@ -7,6 +7,7 @@
 | `procesar-markdown.php` | Convierte un Markdown en contenido de un curso repositorio |
 | `crear-cursos.php` | Crea cursos finales (por colegio/grado) desde un CSV |
 | `poblar-cursos.php` | Clona secciones de repositorios a cursos finales |
+| `matricular.php` | Crea/actualiza usuarios y los matricula en sus cursos |
 
 ---
 
@@ -227,4 +228,88 @@ sudo -u apache php /var/www/html/admin/backend/poblar-cursos.php \
 # Verificar reportes
 cat /var/www/html/admin/backend/report-ultimo-creacion.json
 cat /var/www/html/admin/backend/report-ultimo-poblamiento.json
+```
+
+---
+
+## Matriculación masiva (`matricular.php`)
+
+Crea o actualiza cuentas de usuario en Moodle y las matricula en los cursos que correspondan según institución, rol y grado. La operación es **idempotente**: ejecutar dos veces no duplica usuarios ni matrículas.
+
+### Formato del CSV (`config/matriculas.csv`)
+
+```csv
+username,password,firstname,lastname,email,institution,rol,grado
+jperez,Pass1234!,Juan,Pérez,jperez@sanmarino.edu.co,San Marino,student,6
+mdocente,Pass5678!,María,Docente,mdocente@sanmarino.edu.co,San Marino,teacher,
+```
+
+| Columna | Descripción |
+|---------|-------------|
+| `username` | Nombre de usuario Moodle (se convierte a minúsculas) |
+| `password` | Contraseña inicial; **ignorada si el usuario ya existe** |
+| `firstname` | Nombre |
+| `lastname` | Apellido(s) |
+| `email` | Correo electrónico |
+| `institution` | Nombre exacto de la subcategoría bajo `COLEGIOS/` (e.g., `San Marino`) |
+| `rol` | `student` o `teacher` |
+| `grado` | Número 1–11 para `student`; **vacío** para `teacher` |
+
+### Uso
+
+```bash
+# Matricular todos los usuarios del CSV
+sudo -u apache php /var/www/html/admin/backend/matricular.php
+
+# Procesar solo un usuario específico
+sudo -u apache php /var/www/html/admin/backend/matricular.php \
+    --user jperez
+
+# Ver qué se haría sin ejecutar
+sudo -u apache php /var/www/html/admin/backend/matricular.php \
+    --dry-run
+
+# Usar un CSV diferente
+sudo -u apache php /var/www/html/admin/backend/matricular.php \
+    --file /tmp/otros-usuarios.csv
+```
+
+### Argumentos
+
+| Argumento | Descripción | Default |
+|-----------|-------------|---------|
+| `--file <ruta>` | Ruta al CSV de usuarios | `config/matriculas.csv` |
+| `--user <username>` | Procesar solo este usuario | (todos) |
+| `--dry-run` | Mostrar qué se haría sin ejecutar | — |
+
+### Comportamiento
+
+- Si el usuario **no existe** → se crea con `user_create_user()` usando los datos del CSV
+- Si el usuario **ya existe** → se actualiza firstname/lastname/email/institution; la contraseña no se toca
+- Para `student`: se matricula en los cursos cuyo shortname termina en `-{grado}` dentro de la jerarquía `COLEGIOS/{institution}/`
+- Para `teacher` (`editingteacher` en Moodle): se matricula en **todos** los cursos del colegio sin filtro de grado
+- La instancia de `enrol_manual` se crea automáticamente si el curso no la tiene
+- Si la categoría `COLEGIOS/{institution}` no existe, el script falla con mensaje claro (no crea categorías)
+- Genera reporte en `report-ultimo-matriculas.json`
+
+### Roles Moodle
+
+| Valor en CSV | Shortname en Moodle |
+|---|---|
+| `student` | `student` |
+| `teacher` | `editingteacher` |
+
+### Despliegue
+
+```bash
+scp -i ~/.ssh/ClaveIM.pem \
+    admin-module/backend/matricular.php \
+    admin-module/backend/config/matriculas.csv \
+    ec2-user@54.86.113.27:/tmp/
+
+ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 "
+    sudo cp /tmp/matricular.php /var/www/html/admin/backend/
+    sudo cp /tmp/matriculas.csv /var/www/html/admin/backend/config/
+    sudo chown -R apache:apache /var/www/html/admin/backend/
+"
 ```
