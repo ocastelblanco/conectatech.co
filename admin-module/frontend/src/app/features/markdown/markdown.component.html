@@ -1,0 +1,90 @@
+<p-toast />
+
+<div class="space-y-5">
+  <div>
+    <h2 class="text-lg font-heading font-bold mb-1" style="color: #1D2B36; margin: 0 0 4px;">Procesar Markdown</h2>
+    <p class="text-sm text-gray-500" style="margin: 0;">Convierte un archivo Markdown en secciones y contenido dentro de un curso repositorio.</p>
+  </div>
+
+  <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
+    <!-- Course select -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Curso repositorio destino</label>
+      <p-select
+        [options]="courses"
+        [ngModel]="shortname()"
+        (ngModelChange)="shortname.set($event)"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Selecciona el curso..."
+        styleClass="w-full"
+      />
+    </div>
+
+    <!-- File upload -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Archivo Markdown (.md)</label>
+      <input type="file" accept=".md,.txt" (change)="loadFile($event)"
+        class="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" />
+    </div>
+
+    <!-- Preview textarea -->
+    @if (content()) {
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Vista previa <span class="text-gray-400 font-normal">({{ content().split('\n').length }} lineas)</span>
+        </label>
+        <textarea
+          pTextarea
+          [value]="content()"
+          [rows]="8"
+          readonly
+          class="w-full font-mono text-xs resize-none"
+          style="background: #F9FAFB;"
+        ></textarea>
+      </div>
+    }
+
+    <div class="flex justify-end">
+      <p-button
+        label="Procesar en Moodle"
+        icon="pi pi-play"
+        [loading]="loading()"
+        [disabled]="!shortname() || !content()"
+        (onClick)="procesar()"
+        [style]="{ 'background-color': '#FF7F50', 'border-color': '#FF7F50' }"
+      />
+    </div>
+  </div>
+
+  <!-- Results -->
+  @if (summary()) {
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+      <h3 class="font-heading font-semibold text-sm mb-3" style="color: #1D2B36; margin: 0 0 12px;">Resultado del procesamiento</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        @for (stat of [
+          { label: 'Total secciones', value: summary().total_sections, color: '#4A90E2' },
+          { label: 'Creadas',         value: summary().sections_created, color: '#52A467' },
+          { label: 'Actualizadas',    value: summary().sections_updated, color: '#FF7F50' },
+          { label: 'Errores',         value: summary().total_errors, color: '#e74c3c' }
+        ]; track stat.label) {
+          <div class="bg-gray-50 rounded-lg p-3 text-center">
+            <p class="text-2xl font-bold" [style.color]="stat.color" style="margin: 0 0 4px;">{{ stat.value }}</p>
+            <p class="text-xs text-gray-500" style="margin: 0;">{{ stat.label }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (errors().length > 0) {
+    <div class="bg-red-50 rounded-xl p-4 border border-red-200">
+      <h3 class="font-semibold text-sm text-red-800 mb-2">Errores encontrados</h3>
+      <ul class="space-y-1">
+        @for (err of errors(); track $index) {
+          <li class="text-xs text-red-700">{{ err }}</li>
+        }
+      </ul>
+    </div>
+  }
+</div>

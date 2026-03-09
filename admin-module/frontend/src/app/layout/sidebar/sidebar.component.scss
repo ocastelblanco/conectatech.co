@@ -1,0 +1,10 @@
+.nav-link.active-link {
+  background-color: rgba(74, 144, 226, 0.25) !important;
+  color: #fff !important;
+  border-left: 3px solid #4A90E2;
+  padding-left: calc(1rem - 3px);
+
+  i {
+    color: #4A90E2;
+  }
+}
