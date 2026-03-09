@@ -31,6 +31,7 @@
             ],
             "styles": [
               "node_modules/primeicons/primeicons.css",
+              "node_modules/tailwindcss-primeui/v4/index.css",
               "src/styles.scss"
             ]
           },
