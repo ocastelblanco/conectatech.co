@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Pasar las peticiones OPTIONS (CORS pre-flight) directamente al router
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^ index.php [QSA,L]
+
+# Redirigir todo lo que no sea un archivo existente al router
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [QSA,L]
