@@ -28,4 +28,3 @@ admin-module/backend/logs/*.log
 admin-module/backend/report-ultimo.json
 admin-module/backend/config/courses.csv
 admin-module/backend/test/*.*
-admin-module/backend/procesar-markdown.php

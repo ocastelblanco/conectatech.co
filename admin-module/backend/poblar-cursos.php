@@ -24,6 +24,7 @@ define('LOGS_DIR',    BACKEND_DIR . '/logs');
 
 require_once(LIB_DIR . '/MoodleBootstrap.php');
 require_once(LIB_DIR . '/MoodleSectionCloner.php');
+require_once(LIB_DIR . '/PobladorService.php');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Argumentos CLI
@@ -77,11 +78,10 @@ if ($onlyCourse) {
 println("\nCursos a poblar: " . count($courses));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Preparar
+// Procesar cada curso
 // ─────────────────────────────────────────────────────────────────────────────
 
-$cloner    = new MoodleSectionCloner();
-$adminId   = MoodleSectionCloner::getAdminUserId();
+$service = new PobladorService();
 
 $report = [
     'timestamp'       => date('c'),
@@ -94,81 +94,52 @@ $report = [
 $totalOk  = 0;
 $totalErr = 0;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Procesar cada curso
-// ─────────────────────────────────────────────────────────────────────────────
-
 foreach ($courses as $courseConfig) {
-    $targetSn   = $courseConfig['shortname'];
-    $sections   = $courseConfig['sections'] ?? [];
+    $targetSn = $courseConfig['shortname'];
+    $sections = $courseConfig['sections'] ?? [];
 
     println("\n→ {$targetSn}  (" . count($sections) . " secciones)");
 
-    $courseResult = [
-        'shortname' => $targetSn,
-        'sections'  => [],
-        'errors'    => [],
-    ];
-
-    // Verificar que el curso final existe
     try {
-        $targetId = MoodleSectionCloner::resolveCourseId($targetSn);
-        println("   curso destino id={$targetId}");
-    } catch (Throwable $e) {
-        $msg = "Curso final no encontrado: {$e->getMessage()}";
-        println("   ERROR: {$msg}");
-        $courseResult['errors'][] = $msg;
-        $report['errors'][]       = "[{$targetSn}] {$msg}";
-        $report['courses'][]      = $courseResult;
-        $totalErr++;
-        continue;
-    }
+        $result = $service->poblarCurso($targetSn, $sections, $dryRun);
 
-    // Clonar cada sección
-    foreach ($sections as $secConfig) {
-        $repoSn     = $secConfig['repo'];
-        $sectionNum = (int)$secConfig['section_num'];
+        println("   curso destino id={$result['target_id']}");
 
-        $secResult = [
-            'repo'        => $repoSn,
-            'section_num' => $sectionNum,
-            'action'      => '',
-            'error'       => null,
-        ];
-
-        println("   [{$repoSn} §{$sectionNum}]");
-
-        try {
-            $repoId = MoodleSectionCloner::resolveCourseId($repoSn);
-
-            if ($dryRun) {
-                println("      [dry-run] clonaría sección {$sectionNum} de '{$repoSn}' (id={$repoId}) → '{$targetSn}' (id={$targetId})");
-                $secResult['action'] = 'dry-run';
-            } else {
-                $cloner->cloneSection($repoId, $sectionNum, $targetId, $adminId);
-                println("      ✓ clonado");
-                $secResult['action'] = 'cloned';
+        foreach ($result['sections'] as $sec) {
+            $label = "[{$sec['repo']} §{$sec['section_num']}]";
+            if ($sec['action'] === 'dry-run') {
+                println("   {$label} [dry-run] clonaría");
+            } elseif ($sec['action'] === 'cloned') {
+                println("   {$label} ✓ clonado");
                 $totalOk++;
+            } elseif ($sec['action'] === 'error') {
+                println("   {$label} ERROR: {$sec['error']}");
+                $totalErr++;
             }
-
-        } catch (Throwable $e) {
-            $msg = $e->getMessage();
-            println("      ERROR: {$msg}");
-            fwrite(STDERR, $e->getTraceAsString() . "\n");
-            $secResult['action'] = 'error';
-            $secResult['error']  = $msg;
-            $courseResult['errors'][] = "[{$repoSn} §{$sectionNum}] {$msg}";
-            $report['errors'][]       = "[{$targetSn}/{$repoSn} §{$sectionNum}] {$msg}";
-            $totalErr++;
         }
 
-        $courseResult['sections'][] = $secResult;
+        if (!empty($result['errors'])) {
+            foreach ($result['errors'] as $err) {
+                $report['errors'][] = "[{$targetSn}] {$err}";
+            }
+        }
 
-        // Liberar memoria entre clonaciones
-        gc_collect_cycles();
+    } catch (Throwable $e) {
+        $msg = $e->getMessage();
+        println("   ERROR: {$msg}");
+        fwrite(STDERR, $e->getTraceAsString() . "\n");
+        $result = [
+            'shortname' => $targetSn,
+            'target_id' => null,
+            'sections'  => [],
+            'errors'    => [$msg],
+            'cloned'    => 0,
+        ];
+        $report['errors'][] = "[{$targetSn}] {$msg}";
+        $totalErr++;
     }
 
-    $report['courses'][] = $courseResult;
+    $report['courses'][] = $result;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -190,7 +161,7 @@ println(str_repeat("─", 60));
 exit($totalErr > 0 ? 2 : 0);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Funciones auxiliares
+// Funciones auxiliares CLI
 // ─────────────────────────────────────────────────────────────────────────────
 
 function println(string $msg): void
