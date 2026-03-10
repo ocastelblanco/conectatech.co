@@ -84,6 +84,22 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  expandAll(): void {
+    this.treeNodes.set(this.setExpanded(this.treeNodes(), true));
+  }
+
+  collapseAll(): void {
+    this.treeNodes.set(this.setExpanded(this.treeNodes(), false));
+  }
+
+  private setExpanded(nodes: TreeNode[], expanded: boolean): TreeNode[] {
+    return nodes.map(n => ({
+      ...n,
+      expanded,
+      children: n.children ? this.setExpanded(n.children, expanded) : [],
+    }));
+  }
+
   private buildTreeNodes(cats: any[]): TreeNode[] {
     return cats.map(cat => ({
       label:    cat.name,

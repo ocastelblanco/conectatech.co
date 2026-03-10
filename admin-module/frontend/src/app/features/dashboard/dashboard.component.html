@@ -44,7 +44,8 @@
   </div>
 
   <!-- Courses tree -->
-  <p-card header="Cursos en Moodle" class="shadow-sm">
+  <p-card header="Cursos en Moodle"
+          class="shadow-sm p-6">
     <div class="px-6 pb-6">
       @if (treeLoading()) {
       <div class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
@@ -55,9 +56,14 @@
         No hay cursos disponibles.
       </div>
       } @else {
+      <div class="flex justify-end gap-2 mb-3">
+        <p-button label="Expandir todo" icon="pi pi-plus" size="small" severity="secondary" (onClick)="expandAll()" />
+        <p-button label="Contraer todo" icon="pi pi-minus" size="small" severity="secondary" (onClick)="collapseAll()" />
+      </div>
       <p-tree [value]="treeNodes()"
               class="w-full border-none text-sm">
-        <ng-template pTemplate="default" let-node>
+        <ng-template pTemplate="default"
+                     let-node>
           @if (node.data?.isCourse) {
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-sm text-gray-800">{{ node.label }}</span>
