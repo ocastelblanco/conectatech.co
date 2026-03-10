@@ -37,3 +37,15 @@ h1, h2, h3, h4, h5, h6 {
 .p-tree-node-children {
   padding-inline-start: 1.5rem;
 }
+
+/* PrimeNG Select — panel con borde y padding en opciones */
+.p-select-overlay {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.p-select-option {
+  padding: 0.5rem 0.875rem;
+}
