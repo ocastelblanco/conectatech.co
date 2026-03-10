@@ -28,12 +28,15 @@ Diseñar el esquema pensando en migración futura a **AWS DynamoDB / DocumentDB*
 (IDs tipo UUID, sin relaciones implícitas por carpeta, timestamps ISO 8601).
 
 ### 2.2 Shortname de cursos en Moodle
-Formato: `{shortname_árbol}-{año_inicio}-{año_fin}-{shortname_área}-{shortname_grado}`
-Ejemplo: `CCSM-2026-2027-CN-6`
+Formato: `{árbol.shortname}-{periodo}-{curso.shortname}-{grado.shortname}`
 
-> **Nota:** El documento `arbol-curricular.md` muestra `CCSM-2006-2007-CN-6` — parece
-> un error tipográfico (`2006` en lugar de `2026`). Se asume `CCSM-2026-2027-CN-6`.
-> Confirmar si es necesario.
+El campo `periodo` es exactamente el string que define el usuario al crear el árbol.
+Puede ser `2026`, `2026-1`, `2026-I`, `2026-2027`, etc.
+
+Ejemplos:
+- Periodo `2026-2027` → `CCSM-2026-2027-CN-6`
+- Periodo `2026-I` → `CCSM-2026-I-CN-6`
+- Periodo `2026` → `CCSM-2026-CN-6`
 
 ### 2.3 Granularidad del drag-and-drop
 Se arrastran **secciones completas** de Moodle. Una sección = un Tema (puede contener subsecciones, recursos y actividades).
@@ -232,7 +235,7 @@ Estados posibles: `nuevo`, `existe_sin_estudiantes` (se recreará), `existe_con_
 Para cada grado en árbol.grados:
   Para cada curso en grado.cursos:
 
-    shortname_moodle = "{árbol.shortname}-{año1}-{año2}-{curso.shortname}-{grado.shortname}"
+    shortname_moodle = "{árbol.shortname}-{árbol.periodo}-{curso.shortname}-{grado.shortname}"
     fullname_moodle  = "{curso.nombre} - {grado.shortname}"
     category_path    = "{árbol.categoria_raiz}/{árbol.institucion}/{curso.nombre}"
 
@@ -292,7 +295,7 @@ Para cada grado en árbol.grados:
 | `ArbolValidacion` | Modal: muestra conflictos y pide confirmación antes de ejecutar |
 | `ArbolEjecucion` | Modal: progreso en tiempo real + reporte de resultados |
 
-**Dependencia nueva:** `@angular/cdk/drag-drop`
+**Drag-and-drop:** Se usa el drag-and-drop nativo de PrimeNG (`p-tree` con `[draggableNodes]="true"`, `[droppableNodes]="true"` y `TreeDragDropService`). Tanto el panel de TEMAS ASIGNADOS como el panel de REPOSITORIOS usan `p-tree` con drag-and-drop nativo entre árboles. No se requiere `@angular/cdk`.
 
 ---
 
@@ -318,9 +321,9 @@ Para cada grado en árbol.grados:
 - Sin drag-and-drop aún; temas como lista simple editable
 
 ### Fase 3 — Drag-and-drop y asignación de temas
-- Instalar `@angular/cdk`
-- `RepositorioPanel` + drag-and-drop hacia `CursoEditor`
+- `RepositorioPanel` + drag-and-drop nativo de PrimeNG hacia `CursoEditor`
 - Reordenar temas asignados con drag interno
+- No se requiere `@angular/cdk`
 
 ### Fase 4 — Ejecución
 - `ArbolValidacion` + `ArbolEjecucion`
@@ -330,11 +333,3 @@ Para cada grado en árbol.grados:
 - Modal de duplicación
 - Integración con `/duplicar`
 
----
-
-## 11. Pendiente de confirmación
-
-> El shortname del curso en el documento `arbol-curricular.md` muestra `CCSM-2006-2007-CN-6`.
-> Se asume que `2006-2007` es un error tipográfico y el formato correcto es
-> `CCSM-{año1}-{año2}-{shortname_área}-{shortname_grado}`, por ejemplo `CCSM-2026-2027-CN-6`.
-> **Confirmar antes de implementar Fase 1.7.**

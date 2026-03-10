@@ -38,7 +38,7 @@ $origin         = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowedOrigins, true)) {
     header("Access-Control-Allow-Origin: {$origin}");
     header('Access-Control-Allow-Credentials: true');   // necesario para enviar cookies
-    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type');
 }
 
@@ -79,6 +79,7 @@ require_once API_DIR . '/auth.php';
 // ─────────────────────────────────────────────────────────────────────────────
 
 require_once LIB_DIR . '/CursosService.php';
+require_once LIB_DIR . '/ArbolCurricularService.php';
 require_once LIB_DIR . '/MatriculasService.php';
 require_once LIB_DIR . '/MoodleSectionCloner.php';
 require_once LIB_DIR . '/PobladorService.php';
@@ -97,6 +98,7 @@ $method   = $_SERVER['REQUEST_METHOD'];
 $segments = $rawPath !== '' ? explode('/', $rawPath) : [];
 $seg0     = $segments[0] ?? '';
 $seg1     = $segments[1] ?? '';
+$seg2     = $segments[2] ?? '';
 
 try {
     switch (true) {
@@ -141,6 +143,72 @@ try {
         case $method === 'GET' && $seg0 === 'reportes' && $seg1 !== '':
             require API_DIR . '/handlers/reportes.php';
             handleReportes($seg1);
+            break;
+
+        // GET /api/arboles/plantillas
+        case $method === 'GET' && $seg0 === 'arboles' && $seg1 === 'plantillas':
+            require API_DIR . '/handlers/arboles.php';
+            handleGetPlantillas();
+            break;
+
+        // GET /api/arboles/repositorios
+        case $method === 'GET' && $seg0 === 'arboles' && $seg1 === 'repositorios':
+            require API_DIR . '/handlers/arboles.php';
+            handleGetRepositorios();
+            break;
+
+        // GET /api/arboles/categorias-raiz
+        case $method === 'GET' && $seg0 === 'arboles' && $seg1 === 'categorias-raiz':
+            require API_DIR . '/handlers/arboles.php';
+            handleGetCategoriasRaiz();
+            break;
+
+        // GET /api/arboles/{id}/validar
+        case $method === 'GET' && $seg0 === 'arboles' && $seg2 === 'validar':
+            require API_DIR . '/handlers/arboles.php';
+            handleValidarArbol($seg1);
+            break;
+
+        // POST /api/arboles/{id}/ejecutar
+        case $method === 'POST' && $seg0 === 'arboles' && $seg2 === 'ejecutar':
+            require API_DIR . '/handlers/arboles.php';
+            handleEjecutarArbol($seg1);
+            break;
+
+        // POST /api/arboles/{id}/duplicar
+        case $method === 'POST' && $seg0 === 'arboles' && $seg2 === 'duplicar':
+            require API_DIR . '/handlers/arboles.php';
+            handleDuplicarArbol($seg1);
+            break;
+
+        // GET /api/arboles/{id}
+        case $method === 'GET' && $seg0 === 'arboles' && $seg1 !== '':
+            require API_DIR . '/handlers/arboles.php';
+            handleObtenerArbol($seg1);
+            break;
+
+        // POST /api/arboles
+        case $method === 'POST' && $seg0 === 'arboles' && $seg1 === '':
+            require API_DIR . '/handlers/arboles.php';
+            handleCrearArbol();
+            break;
+
+        // PUT /api/arboles/{id}
+        case $method === 'PUT' && $seg0 === 'arboles' && $seg1 !== '':
+            require API_DIR . '/handlers/arboles.php';
+            handleGuardarArbol($seg1);
+            break;
+
+        // DELETE /api/arboles/{id}
+        case $method === 'DELETE' && $seg0 === 'arboles' && $seg1 !== '':
+            require API_DIR . '/handlers/arboles.php';
+            handleEliminarArbol($seg1);
+            break;
+
+        // GET /api/arboles
+        case $method === 'GET' && $seg0 === 'arboles' && $seg1 === '':
+            require API_DIR . '/handlers/arboles.php';
+            handleListarArboles();
             break;
 
         default:

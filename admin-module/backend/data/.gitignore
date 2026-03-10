@@ -1,0 +1,2 @@
+# Ignorar datos de árboles curriculares (no versionar)
+arboles/*.json

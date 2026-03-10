@@ -96,6 +96,13 @@ class CursosService
             'numsections' => 0,
         ];
 
+        if (!empty($data['startdate'])) {
+            $courseData->startdate = strtotime($data['startdate']);
+        }
+        if (!empty($data['enddate'])) {
+            $courseData->enddate = strtotime($data['enddate']);
+        }
+
         $newCourse = create_course($courseData);
 
         // ── Copiar formato e imagen del curso plantilla ───────────────────────
