@@ -25,6 +25,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/contenido/contenido.component').then(m => m.ContenidoComponent)
       },
       {
+        path: 'arboles',
+        loadComponent: () => import('./features/arboles/arboles-list.component').then(m => m.ArbolesListComponent)
+      },
+      {
+        path: 'arboles/:id',
+        loadComponent: () => import('./features/arboles/arbol-editor.component').then(m => m.ArbolEditorComponent)
+      },
+      {
         path: 'reportes',
         loadComponent: () => import('./features/reportes/reportes.component').then(m => m.ReportesComponent)
       },

@@ -20,6 +20,7 @@ export class SidebarComponent {
     { label: 'Cursos',       icon: 'pi pi-book',         route: '/cursos'     },
     { label: 'Matriculas',   icon: 'pi pi-users',        route: '/matriculas' },
     { label: 'Crear Contenido', icon: 'pi pi-file-edit',  route: '/contenido'  },
+    { label: 'Árboles Curriculares', icon: 'pi pi-sitemap', route: '/arboles'    },
     { label: 'Reportes',     icon: 'pi pi-chart-bar',    route: '/reportes'   },
   ];
 }

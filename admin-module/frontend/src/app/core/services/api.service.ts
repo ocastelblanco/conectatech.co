@@ -48,4 +48,17 @@ export class ApiService {
   getReporte(nombre: 'matriculas' | 'creacion' | 'poblamiento' | 'markdown'): Observable<any> {
     return this.http.get(`${API_BASE}/reportes/${nombre}`);
   }
+
+  // Árboles curriculares
+  getArboles(): Observable<any> { return this.http.get(`${API_BASE}/arboles`); }
+  crearArbol(body: any): Observable<any> { return this.http.post(`${API_BASE}/arboles`, body); }
+  getArbol(id: string): Observable<any> { return this.http.get(`${API_BASE}/arboles/${id}`); }
+  guardarArbol(id: string, arbol: any): Observable<any> { return this.http.put(`${API_BASE}/arboles/${id}`, arbol); }
+  eliminarArbol(id: string): Observable<any> { return this.http.delete(`${API_BASE}/arboles/${id}`); }
+  duplicarArbol(id: string, meta: any): Observable<any> { return this.http.post(`${API_BASE}/arboles/${id}/duplicar`, meta); }
+  validarArbol(id: string): Observable<any> { return this.http.get(`${API_BASE}/arboles/${id}/validar`); }
+  ejecutarArbol(id: string, body: any): Observable<any> { return this.http.post(`${API_BASE}/arboles/${id}/ejecutar`, body); }
+  getArbolesPlantillas(): Observable<any> { return this.http.get(`${API_BASE}/arboles/plantillas`); }
+  getArbolesRepositorios(): Observable<any> { return this.http.get(`${API_BASE}/arboles/repositorios`); }
+  getArbolesCategoriasRaiz(): Observable<any> { return this.http.get(`${API_BASE}/arboles/categorias-raiz`); }
 }
