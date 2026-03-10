@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TreeModule } from 'primeng/tree';
-import { TreeNode } from 'primeng/api';
+import { TreeNode, SharedModule } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ApiService } from '../../core/services/api.service';
@@ -18,7 +18,7 @@ interface QuickAction {
 @Component({
   selector: 'cnt-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TreeModule, ButtonModule, CardModule],
+  imports: [RouterLink, TreeModule, SharedModule, ButtonModule, CardModule],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
@@ -89,14 +89,12 @@ export class DashboardComponent implements OnInit {
       label:    cat.name,
       icon:     'pi pi-folder',
       expanded: false,
-      type:     'category',
       children: [
         ...this.buildTreeNodes(cat.hijos ?? []),
         ...(cat.cursos ?? []).map((c: any): TreeNode => ({
           label: c.fullname,
           icon:  'pi pi-book',
-          type:  'course',
-          data:  { students: c.students, teachers: c.teachers },
+          data:  { isCourse: true, students: c.students, teachers: c.teachers },
           leaf:  true,
         })),
       ],

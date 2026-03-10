@@ -45,33 +45,35 @@
 
   <!-- Courses tree -->
   <p-card header="Cursos en Moodle" class="shadow-sm">
-    @if (treeLoading()) {
-    <div class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
-      <i class="pi pi-spin pi-spinner"></i> Cargando cursos...
+    <div class="px-6 pb-6">
+      @if (treeLoading()) {
+      <div class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
+        <i class="pi pi-spin pi-spinner"></i> Cargando cursos...
+      </div>
+      } @else if (treeNodes().length === 0) {
+      <div class="py-10 text-center text-gray-400 text-sm">
+        No hay cursos disponibles.
+      </div>
+      } @else {
+      <p-tree [value]="treeNodes()"
+              class="w-full border-none text-sm">
+        <ng-template pTemplate="default" let-node>
+          @if (node.data?.isCourse) {
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-sm text-gray-800">{{ node.label }}</span>
+            <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+              {{ node.data.teachers }} prof
+            </span>
+            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+              {{ node.data.students }} alum
+            </span>
+          </div>
+          } @else {
+          <span class="text-sm font-semibold text-gray-700">{{ node.label }}</span>
+          }
+        </ng-template>
+      </p-tree>
+      }
     </div>
-    } @else if (treeNodes().length === 0) {
-    <div class="py-10 text-center text-gray-400 text-sm">
-      No hay cursos disponibles.
-    </div>
-    } @else {
-    <p-tree [value]="treeNodes()"
-            class="w-full border-none text-sm">
-      <ng-template #default let-node>
-        @if (node.type === 'course') {
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-sm text-gray-800">{{ node.label }}</span>
-          <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-            {{ node.data.teachers }} prof
-          </span>
-          <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-            {{ node.data.students }} alum
-          </span>
-        </div>
-        } @else {
-        <span class="text-sm font-semibold text-gray-700">{{ node.label }}</span>
-        }
-      </ng-template>
-    </p-tree>
-    }
   </p-card>
 </div>
