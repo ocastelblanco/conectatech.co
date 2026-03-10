@@ -76,6 +76,15 @@ export class CursosComponent {
     });
   }
 
+  downloadCsvTemplate(): void {
+    const csv  = 'shortname,fullname,category,templatecourse\n';
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'cursos-modelo.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   getSeverity(action: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
     const map: Record<string, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
       created:  'success',

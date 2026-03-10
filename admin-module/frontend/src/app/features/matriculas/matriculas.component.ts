@@ -71,6 +71,15 @@ export class MatriculasComponent {
     });
   }
 
+  downloadCsvTemplate(): void {
+    const csv  = 'username,password,firstname,lastname,email,institution,rol,grado\n';
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'matriculas-modelo.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   getSeverity(action: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
     const map: Record<string, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
       created: 'success', updated: 'info', 'dry-run:create': 'secondary', 'dry-run:update': 'secondary', error: 'danger'
