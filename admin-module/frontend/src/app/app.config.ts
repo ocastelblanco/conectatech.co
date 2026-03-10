@@ -12,17 +12,17 @@ import { credentialsInterceptor } from './core/interceptors/credentials.intercep
 const ConectaTechPreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50:  '{blue.50}',
-      100: '{blue.100}',
-      200: '{blue.200}',
-      300: '{blue.300}',
-      400: '{blue.400}',
+      50:  '{sky.50}',
+      100: '{sky.100}',
+      200: '{sky.200}',
+      300: '{sky.300}',
+      400: '{sky.400}',
       500: '#4A90E2',
-      600: '#3A7BC8',
-      700: '#2C6AAF',
-      800: '#1D5899',
-      900: '#1D2B36',
-      950: '#111b22',
+      600: '#4283d5',
+      700: '#3973c4',
+      800: '#3063b3',
+      900: '#234994',
+      950: '#173170',
     },
     colorScheme: {
       light: {

@@ -3,8 +3,8 @@
 <div class="space-y-5">
   <div class="flex items-start justify-between">
     <div>
-      <h2 class="text-lg font-heading font-bold mb-1" style="color: #1D2B36; margin: 0 0 4px;">Matriculacion de Usuarios</h2>
-      <p class="text-sm text-gray-500" style="margin: 0;">Carga un CSV con los datos de usuarios para crearlos y matricularlos en Moodle.</p>
+      <h2 class="text-lg font-heading font-bold mb-1 text-cnt-midnight m-0">Matriculacion de Usuarios</h2>
+      <p class="text-sm text-gray-500 m-0">Carga un CSV con los datos de usuarios para crearlos y matricularlos en Moodle.</p>
     </div>
     <div class="flex items-center gap-2">
       <span class="text-sm text-gray-600">Dry-run:</span>
@@ -13,7 +13,7 @@
         (ngModelChange)="dryRun.set($event)"
         onLabel="Activado" offLabel="Desactivado"
         onIcon="pi pi-eye" offIcon="pi pi-bolt"
-        styleClass="text-sm"
+        class="text-sm"
       />
     </div>
   </div>
@@ -36,10 +36,9 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <span class="text-sm font-medium text-gray-700">{{ rows().length }} usuarios a procesar</span>
-        <p-button label="Matricular" icon="pi pi-users" [loading]="loading()" (onClick)="ejecutar()"
-          [style]="{ 'background-color': '#52A467', 'border-color': '#52A467' }" />
+        <p-button label="Matricular" icon="pi pi-users" [loading]="loading()" (onClick)="ejecutar()" />
       </div>
-      <p-table [value]="rows()" [scrollable]="true" scrollHeight="280px" styleClass="text-sm">
+      <p-table [value]="rows()" [scrollable]="true" scrollHeight="280px" class="text-sm">
         <ng-template #header>
           <tr><th>Username</th><th>Nombre</th><th>Institucion</th><th>Rol</th><th>Grado</th></tr>
         </ng-template>
@@ -61,7 +60,7 @@
       <div class="px-5 py-4 border-b border-gray-100">
         <span class="text-sm font-medium text-gray-700">Resultados</span>
       </div>
-      <p-table [value]="results()" styleClass="text-sm">
+      <p-table [value]="results()" class="text-sm">
         <ng-template #header>
           <tr><th>Username</th><th>Accion</th><th>Cursos</th><th>Error</th></tr>
         </ng-template>

@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { TreeModule } from 'primeng/tree';
 import { TreeNode } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
 import { ApiService } from '../../core/services/api.service';
 
 interface QuickAction {
@@ -10,13 +11,14 @@ interface QuickAction {
   description: string;
   icon:        string;
   route:       string;
-  color:       string;
+  iconBg:      string;
+  iconColor:   string;
 }
 
 @Component({
   selector: 'cnt-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TreeModule, ButtonModule],
+  imports: [RouterLink, TreeModule, ButtonModule, CardModule],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
@@ -33,28 +35,32 @@ export class DashboardComponent implements OnInit {
       description: 'Crea cursos finales desde un archivo Excel',
       icon:        'pi pi-book',
       route:       '/cursos',
-      color:       '#4A90E2',
+      iconBg:      'bg-cnt-blue/10',
+      iconColor:   'text-cnt-blue',
     },
     {
       label:       'Matricular Usuarios',
       description: 'Importa y matricula estudiantes y docentes',
       icon:        'pi pi-users',
       route:       '/matriculas',
-      color:       '#52A467',
+      iconBg:      'bg-cnt-green/10',
+      iconColor:   'text-cnt-green',
     },
     {
       label:       'Crear Contenido',
       description: 'Convierte archivos .md en contenido de Moodle',
       icon:        'pi pi-file-edit',
       route:       '/contenido',
-      color:       '#FF7F50',
+      iconBg:      'bg-cnt-coral/10',
+      iconColor:   'text-cnt-coral',
     },
     {
       label:       'Ver Reportes',
       description: 'Consulta el resultado de las ultimas operaciones',
       icon:        'pi pi-chart-bar',
       route:       '/reportes',
-      color:       '#1D2B36',
+      iconBg:      'bg-cnt-midnight/10',
+      iconColor:   'text-cnt-midnight',
     },
   ];
 

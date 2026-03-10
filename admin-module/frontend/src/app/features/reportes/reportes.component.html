@@ -2,8 +2,8 @@
 
 <div class="space-y-5">
   <div>
-    <h2 class="text-lg font-heading font-bold mb-1" style="color: #1D2B36; margin: 0 0 4px;">Reportes de Operaciones</h2>
-    <p class="text-sm text-gray-500" style="margin: 0;">Consulta el ultimo reporte JSON de cada operacion ejecutada.</p>
+    <h2 class="text-lg font-heading font-bold mb-1 text-cnt-midnight m-0">Reportes de Operaciones</h2>
+    <p class="text-sm text-gray-500 m-0">Consulta el ultimo reporte JSON de cada operacion ejecutada.</p>
   </div>
 
   <!-- Tab buttons -->
@@ -38,10 +38,10 @@
             <div class="flex gap-3 flex-wrap">
               @for (key of getKeys(reports()[activeTab()].summary); track key) {
                 <div class="bg-gray-50 rounded-lg px-3 py-2 text-center min-w-16">
-                  <p class="text-lg font-bold" style="color: #1D2B36; margin: 0;">
+                  <p class="text-lg font-bold text-cnt-midnight m-0">
                     {{ reports()[activeTab()].summary[key] }}
                   </p>
-                  <p class="text-xs text-gray-500" style="margin: 0;">{{ key }}</p>
+                  <p class="text-xs text-gray-500 m-0">{{ key }}</p>
                 </div>
               }
             </div>
@@ -83,8 +83,7 @@
         <p class="text-sm mb-3">No hay datos para este reporte.</p>
         <button
           (click)="cargar(activeTab())"
-          class="px-4 py-2 text-white text-sm rounded-lg hover:opacity-90 transition-opacity"
-          style="background-color: #1D2B36;"
+          class="px-4 py-2 text-white text-sm rounded-lg hover:opacity-90 transition-opacity bg-cnt-midnight"
         >
           Cargar reporte
         </button>
