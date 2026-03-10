@@ -1,41 +1,55 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
-import { SelectModule } from 'primeng/select';
+import { TreeModule } from 'primeng/tree';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
+import { MessageService, SharedModule, TreeNode } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
-
-const REPO_COURSES = [
-  'repo-cc-cn-4-5','repo-cc-cn-6-7','repo-cc-cn-8-9','repo-cc-fi-10-11','repo-cc-qu-10-11',
-  'repo-cc-ma-4-5','repo-cc-ma-6-7','repo-cc-ma-8-9','repo-cc-ma-10-11',
-  'repo-cc-le-4-5','repo-cc-le-6-7','repo-cc-le-8-9','repo-cc-le-10-11',
-  'repo-cc-cs-4-5','repo-cc-cs-6-7','repo-cc-cs-8-9','repo-cc-cs-10-11',
-  'repo-uc-cn-4-5','repo-uc-cn-6-7','repo-uc-cn-8-9','repo-uc-fi-10-11','repo-uc-qu-10-11',
-  'repo-uc-ma-4-5','repo-uc-ma-6-7','repo-uc-ma-8-9','repo-uc-ma-10-11',
-  'repo-uc-le-4-5','repo-uc-le-6-7','repo-uc-le-8-9','repo-uc-le-10-11',
-  'repo-uc-cs-4-5','repo-uc-cs-6-7','repo-uc-cs-8-9','repo-uc-cs-10-11',
-];
 
 @Component({
   selector: 'cnt-contenido',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonModule, TextareaModule, SelectModule, TagModule, ToastModule],
+  imports: [FormsModule, ButtonModule, TextareaModule, TreeModule, SharedModule, TagModule, ToastModule],
   providers: [MessageService],
   templateUrl: './contenido.component.html',
 })
-export class ContenidoComponent {
+export class ContenidoComponent implements OnInit {
   private readonly api   = inject(ApiService);
   private readonly toast = inject(MessageService);
 
-  readonly courses   = REPO_COURSES.map(v => ({ label: v, value: v }));
-  readonly shortname = signal('');
-  readonly content   = signal('');
-  readonly loading   = signal(false);
-  readonly summary   = signal<any>(null);
-  readonly errors    = signal<string[]>([]);
+  readonly repoTree     = signal<TreeNode[]>([]);
+  readonly treeLoading  = signal(true);
+  readonly selectedNode = signal<TreeNode | null>(null);
+  readonly shortname    = signal('');
+  readonly content      = signal('');
+  readonly loading      = signal(false);
+  readonly summary      = signal<any>(null);
+  readonly errors       = signal<string[]>([]);
+
+  ngOnInit(): void {
+    this.api.getCursosArbol().subscribe({
+      next: (r: any) => {
+        const arbol: any[]  = r.arbol ?? [];
+        const reposCat      = arbol.find((c: any) => c.name === 'REPOSITORIOS');
+        this.repoTree.set(reposCat ? this.buildTree(reposCat.hijos ?? []) : []);
+        this.treeLoading.set(false);
+      },
+      error: () => this.treeLoading.set(false),
+    });
+  }
+
+  onNodeSelect(event: { node: TreeNode }): void {
+    if (!event.node.leaf) { this.selectedNode.set(null); return; }
+    this.selectedNode.set(event.node);
+    this.shortname.set(event.node.data.shortname);
+  }
+
+  onNodeUnselect(): void {
+    this.selectedNode.set(null);
+    this.shortname.set('');
+  }
 
   loadFile(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -68,5 +82,24 @@ export class ContenidoComponent {
         this.toast.add({ severity: 'error', summary: 'Error', detail: err.error?.error ?? 'Error desconocido' });
       }
     });
+  }
+
+  private buildTree(cats: any[]): TreeNode[] {
+    return cats.map(cat => ({
+      label:    cat.name,
+      icon:     'pi pi-folder',
+      expanded: true,
+      selectable: false,
+      children: [
+        ...this.buildTree(cat.hijos ?? []),
+        ...(cat.cursos ?? []).map((c: any): TreeNode => ({
+          label:      c.fullname,
+          icon:       'pi pi-book',
+          data:       { shortname: c.shortname },
+          leaf:       true,
+          selectable: true,
+        })),
+      ],
+    }));
   }
 }

@@ -7,18 +7,42 @@
   </div>
 
   <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
-    <!-- Course select -->
+    <!-- Course tree -->
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-2">Curso repositorio destino</label>
-      <p-select
-        [options]="courses"
-        [ngModel]="shortname()"
-        (ngModelChange)="shortname.set($event)"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Selecciona el curso..."
-        class="w-full"
-      />
+      @if (treeLoading()) {
+        <div class="flex items-center gap-2 py-4 text-sm text-gray-400">
+          <i class="pi pi-spin pi-spinner"></i> Cargando cursos...
+        </div>
+      } @else {
+        <div class="border border-gray-200 rounded-lg overflow-y-auto max-h-56">
+          <p-tree
+            [value]="repoTree()"
+            selectionMode="single"
+            [selection]="selectedNode()"
+            (onNodeSelect)="onNodeSelect($event)"
+            (onNodeUnselect)="onNodeUnselect()"
+            class="w-full border-none text-sm"
+          >
+            <ng-template pTemplate="default" let-node>
+              @if (node.leaf) {
+                <span [class]="'text-sm ' + (node === selectedNode() ? 'font-semibold text-cnt-blue' : 'text-gray-800')">
+                  {{ node.label }}
+                </span>
+              } @else {
+                <span class="text-sm font-semibold text-gray-600">{{ node.label }}</span>
+              }
+            </ng-template>
+          </p-tree>
+        </div>
+        @if (shortname()) {
+          <div class="flex items-center gap-2 mt-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+            <i class="pi pi-check-circle"></i>
+            <span>{{ selectedNode()?.label }}</span>
+            <span class="font-mono text-blue-500">({{ shortname() }})</span>
+          </div>
+        }
+      }
     </div>
 
     <!-- File upload -->
