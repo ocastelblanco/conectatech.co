@@ -1,4 +1,13 @@
-@import "tailwindcss";
+/* Importamos theme y utilities de Tailwind, pero NO preflight.
+   Preflight resetea padding/margin de ul, button, input, etc.,
+   lo que rompe el espaciado interno de los componentes PrimeNG. */
+@import "tailwindcss/theme";
+@import "tailwindcss/utilities";
+
+/* Resets mínimos que sí queremos conservar */
+*, ::before, ::after { box-sizing: border-box; }
+html { line-height: 1.5; -webkit-text-size-adjust: 100%; tab-size: 4; }
+img, svg, video, canvas { display: block; max-width: 100%; }
 
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inter:wght@300;400;500&display=swap');
 
