@@ -148,6 +148,88 @@ class CursosService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Árbol de cursos con matrícula
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Devuelve el árbol completo de categorías con sus cursos y conteos de
+     * matrícula (students / teachers). Omite ramas vacías.
+     *
+     * @return array[]  Nodos raíz con: id, name, cursos[], hijos[].
+     *                  Cada curso: id, shortname, fullname, students, teachers.
+     */
+    public function listarArbol(): array
+    {
+        global $DB;
+
+        // 1. Cursos con conteos de matrícula por rol (una sola consulta SQL)
+        $sql = "
+            SELECT c.id, c.shortname, c.fullname, c.category,
+                   COALESCE(SUM(CASE WHEN r.shortname = 'student' THEN 1 ELSE 0 END), 0)                       AS students,
+                   COALESCE(SUM(CASE WHEN r.shortname IN ('teacher','editingteacher') THEN 1 ELSE 0 END), 0)   AS teachers
+            FROM {course} c
+            JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = :ctxlevel
+            LEFT JOIN {role_assignments} ra ON ra.contextid = ctx.id
+            LEFT JOIN {role} r ON r.id = ra.roleid
+            WHERE c.id <> 1
+            GROUP BY c.id, c.shortname, c.fullname, c.category
+            ORDER BY c.sortorder, c.shortname
+        ";
+        $courses = $DB->get_records_sql($sql, ['ctxlevel' => CONTEXT_COURSE]);
+
+        // 2. Todas las categorías
+        $cats = $DB->get_records('course_categories', null, 'sortorder', 'id,name,parent');
+
+        // 3. Índice de categorías con placeholder para cursos
+        $catMap = [];
+        foreach ($cats as $cat) {
+            $catMap[(int)$cat->id] = [
+                'id'     => (int)$cat->id,
+                'name'   => $cat->name,
+                'parent' => (int)$cat->parent,
+                'cursos' => [],
+            ];
+        }
+
+        // 4. Asignar cursos a su categoría
+        foreach ($courses as $c) {
+            $catId = (int)$c->category;
+            if (isset($catMap[$catId])) {
+                $catMap[$catId]['cursos'][] = [
+                    'id'        => (int)$c->id,
+                    'shortname' => $c->shortname,
+                    'fullname'  => $c->fullname,
+                    'students'  => (int)$c->students,
+                    'teachers'  => (int)$c->teachers,
+                ];
+            }
+        }
+
+        // 5. Árbol recursivo — omite ramas sin cursos
+        $buildBranch = function(int $parentId) use (&$buildBranch, &$catMap): array {
+            $nodes = [];
+            foreach ($catMap as $id => $cat) {
+                if ($cat['parent'] !== $parentId) {
+                    continue;
+                }
+                $hijos = $buildBranch($id);
+                if (empty($hijos) && empty($cat['cursos'])) {
+                    continue; // rama vacía
+                }
+                $nodes[] = [
+                    'id'     => $id,
+                    'name'   => $cat['name'],
+                    'cursos' => $cat['cursos'],
+                    'hijos'  => $hijos,
+                ];
+            }
+            return $nodes;
+        };
+
+        return $buildBranch(0);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Métodos privados — categorías
     // ─────────────────────────────────────────────────────────────────────────
 

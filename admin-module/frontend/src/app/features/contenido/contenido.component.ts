@@ -20,13 +20,13 @@ const REPO_COURSES = [
 ];
 
 @Component({
-  selector: 'cnt-markdown',
+  selector: 'cnt-contenido',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, ButtonModule, TextareaModule, SelectModule, TagModule, ToastModule],
   providers: [MessageService],
-  templateUrl: './markdown.component.html',
+  templateUrl: './contenido.component.html',
 })
-export class MarkdownComponent {
+export class ContenidoComponent {
   private readonly api   = inject(ApiService);
   private readonly toast = inject(MessageService);
 

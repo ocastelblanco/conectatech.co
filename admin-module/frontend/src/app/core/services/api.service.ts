@@ -37,6 +37,10 @@ export class ApiService {
     return this.http.post(`${API_BASE}/matriculas`, body);
   }
 
+  getCursosArbol(): Observable<any> {
+    return this.http.get(`${API_BASE}/cursos/arbol`);
+  }
+
   procesarMarkdown(body: { shortname: string; content: string }): Observable<any> {
     return this.http.post(`${API_BASE}/markdown`, body);
   }

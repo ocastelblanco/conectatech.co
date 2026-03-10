@@ -35,6 +35,25 @@ function handleGetCursos(): void
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /api/cursos/arbol
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Devuelve el árbol de categorías con cursos y conteos de matrícula.
+ *
+ * Response 200:
+ *   { ok: true, arbol: [{ id, name, cursos: [...], hijos: [...] }] }
+ *   Cada curso incluye: id, shortname, fullname, students, teachers.
+ */
+function handleGetArbolCursos(): void
+{
+    $service = new CursosService(CONFIG_DIR);
+    $arbol   = $service->listarArbol();
+
+    echo json_encode(['ok' => true, 'arbol' => $arbol]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/cursos/crear
 // ─────────────────────────────────────────────────────────────────────────────
 

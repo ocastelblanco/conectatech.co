@@ -21,8 +21,8 @@ export const routes: Routes = [
         loadComponent: () => import('./features/matriculas/matriculas.component').then(m => m.MatriculasComponent)
       },
       {
-        path: 'markdown',
-        loadComponent: () => import('./features/markdown/markdown.component').then(m => m.MarkdownComponent)
+        path: 'contenido',
+        loadComponent: () => import('./features/contenido/contenido.component').then(m => m.ContenidoComponent)
       },
       {
         path: 'reportes',

@@ -9,7 +9,7 @@ const routeTitles: Record<string, string> = {
   dashboard:  'Dashboard',
   cursos:     'Gestion de Cursos',
   matriculas: 'Matriculacion de Usuarios',
-  markdown:   'Procesar Markdown',
+  contenido:  'Crear Contenido',
   reportes:   'Reportes',
 };
 

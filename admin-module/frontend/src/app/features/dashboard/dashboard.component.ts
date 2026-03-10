@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CardModule } from 'primeng/card';
+import { TreeModule } from 'primeng/tree';
+import { TreeNode } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ApiService } from '../../core/services/api.service';
 
@@ -15,14 +16,16 @@ interface QuickAction {
 @Component({
   selector: 'cnt-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CardModule, ButtonModule],
+  imports: [RouterLink, TreeModule, ButtonModule],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
 
-  readonly totalCursos  = signal<number | null>(null);
-  readonly apiStatus    = signal<'ok' | 'error' | 'checking'>('checking');
+  readonly apiStatus   = signal<'ok' | 'error' | 'checking'>('checking');
+  readonly totalCursos = signal<number | null>(null);
+  readonly treeNodes   = signal<TreeNode[]>([]);
+  readonly treeLoading = signal(true);
 
   readonly quickActions: QuickAction[] = [
     {
@@ -40,10 +43,10 @@ export class DashboardComponent implements OnInit {
       color:       '#52A467',
     },
     {
-      label:       'Procesar Markdown',
+      label:       'Crear Contenido',
       description: 'Convierte archivos .md en contenido de Moodle',
       icon:        'pi pi-file-edit',
-      route:       '/markdown',
+      route:       '/contenido',
       color:       '#FF7F50',
     },
     {
@@ -62,8 +65,35 @@ export class DashboardComponent implements OnInit {
     });
 
     this.api.getCursos().subscribe({
-      next:  (r: any) => this.totalCursos.set(r.total ?? 0),
+      next:  (r: any) => this.totalCursos.set(Array.isArray(r) ? r.length : (r.total ?? 0)),
       error: () => this.totalCursos.set(null),
     });
+
+    this.api.getCursosArbol().subscribe({
+      next: (r: any) => {
+        this.treeNodes.set(this.buildTreeNodes(r.arbol ?? []));
+        this.treeLoading.set(false);
+      },
+      error: () => this.treeLoading.set(false),
+    });
+  }
+
+  private buildTreeNodes(cats: any[]): TreeNode[] {
+    return cats.map(cat => ({
+      label:    cat.name,
+      icon:     'pi pi-folder',
+      expanded: false,
+      type:     'category',
+      children: [
+        ...this.buildTreeNodes(cat.hijos ?? []),
+        ...(cat.cursos ?? []).map((c: any): TreeNode => ({
+          label: c.fullname,
+          icon:  'pi pi-book',
+          type:  'course',
+          data:  { students: c.students, teachers: c.teachers },
+          leaf:  true,
+        })),
+      ],
+    }));
   }
 }

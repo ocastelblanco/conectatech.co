@@ -19,7 +19,7 @@ export class SidebarComponent {
     { label: 'Dashboard',    icon: 'pi pi-home',         route: '/dashboard'  },
     { label: 'Cursos',       icon: 'pi pi-book',         route: '/cursos'     },
     { label: 'Matriculas',   icon: 'pi pi-users',        route: '/matriculas' },
-    { label: 'Markdown',     icon: 'pi pi-file-edit',    route: '/markdown'   },
+    { label: 'Crear Contenido', icon: 'pi pi-file-edit',  route: '/contenido'  },
     { label: 'Reportes',     icon: 'pi pi-chart-bar',    route: '/reportes'   },
   ];
 }

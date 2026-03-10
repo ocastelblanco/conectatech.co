@@ -101,6 +101,12 @@ $seg1     = $segments[1] ?? '';
 try {
     switch (true) {
 
+        // GET /api/cursos/arbol
+        case $method === 'GET' && $seg0 === 'cursos' && $seg1 === 'arbol':
+            require API_DIR . '/handlers/cursos.php';
+            handleGetArbolCursos();
+            break;
+
         // GET /api/cursos
         case $method === 'GET' && $seg0 === 'cursos' && $seg1 === '':
             require API_DIR . '/handlers/cursos.php';
