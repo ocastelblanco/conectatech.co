@@ -6,11 +6,12 @@ import { ButtonModule } from 'primeng/button';
 import { AuthService } from '../../core/services/auth.service';
 
 const routeTitles: Record<string, string> = {
-  dashboard:  'Dashboard',
-  cursos:     'Gestion de Cursos',
+  dashboard: 'Dashboard',
+  cursos: 'Gestion de Cursos',
   matriculas: 'Matriculacion de Usuarios',
-  contenido:  'Crear Contenido',
-  reportes:   'Reportes',
+  contenido: 'Crear Contenido',
+  reportes: 'Reportes',
+  arboles: 'Árboles Curriculares',
 };
 
 @Component({
@@ -40,7 +41,7 @@ const routeTitles: Record<string, string> = {
 })
 export class HeaderComponent {
   private readonly router = inject(Router);
-  private readonly auth   = inject(AuthService);
+  private readonly auth = inject(AuthService);
 
   readonly pageTitle = toSignal(
     this.router.events.pipe(

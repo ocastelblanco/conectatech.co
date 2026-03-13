@@ -279,6 +279,28 @@ function handleGetRepositorios(): void
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /api/arboles/opciones-css
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Retorna los valores únicos de proyecto_css y area_css de todos los árboles.
+ *
+ * Response 200: { ok: true, proyectos: string[], areas: string[] }
+ */
+function handleGetOpcionesCss(): void
+{
+    try {
+        $service  = new ArbolCurricularService();
+        $opciones = $service->getOpcionesCss();
+
+        echo json_encode(['ok' => true, ...$opciones]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /api/arboles/categorias-raiz
 // ─────────────────────────────────────────────────────────────────────────────
 

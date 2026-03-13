@@ -23,6 +23,7 @@ import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService, TreeNode } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
+import { CreatableSelectComponent } from '../../shared/components/creatable-select/creatable-select.component';
 
 @Component({
   selector: 'cnt-arbol-editor',
@@ -39,6 +40,7 @@ import { ApiService } from '../../core/services/api.service';
     ConfirmDialogModule,
     DialogModule,
     TooltipModule,
+    CreatableSelectComponent,
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './arbol-editor.component.html',
@@ -60,6 +62,7 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
   readonly categoriasRaiz = signal<any[]>([]);
   readonly repositorios = signal<any[]>([]);
   readonly dragOverIndex = signal(-1);
+  readonly opcionesCss = signal<{ proyectos: string[]; areas: string[] }>({ proyectos: [], areas: [] });
 
   readonly esNuevo = computed(() => this.route.snapshot.params['id'] === 'nuevo');
 
@@ -141,6 +144,10 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
     });
     this.api.getArbolesCategoriasRaiz().subscribe({
       next: (r: any) => this.categoriasRaiz.set(r.categorias ?? []),
+      error: () => { },
+    });
+    this.api.getArbolesOpcionesCss().subscribe({
+      next: (r: any) => this.opcionesCss.set({ proyectos: r.proyectos ?? [], areas: r.areas ?? [] }),
       error: () => { },
     });
     this.api.getArbolesRepositorios().subscribe({

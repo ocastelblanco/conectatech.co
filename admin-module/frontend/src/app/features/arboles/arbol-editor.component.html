@@ -101,6 +101,13 @@
               optionValue="value"
               [style]="{ width: '100%', fontSize: '0.875rem' }" />
   </div>
+  <div class="flex flex-col gap-1 w-48">
+    <label class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Proyecto CSS</label>
+    <cnt-creatable-select [options]="opcionesCss().proyectos"
+                          [value]="arbol()!.proyecto_css ?? ''"
+                          placeholder="ej: cosmovision-cristiana"
+                          (valueChange)="updateArbolField('proyecto_css', $event)" />
+  </div>
 </div>
 
 <div class="flex gap-4 h-[calc(100vh-240px)] min-h-0">
@@ -212,31 +219,43 @@
       </ng-template>
 
       <div class="space-y-4">
-        <!-- Nombre + shortname -->
+        <!-- Dos columnas: metadatos | plantilla -->
         <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium text-gray-700">Nombre del curso</label>
-            <input pInputText
-                   type="text"
-                   class="w-full"
-                   [ngModel]="cursoActivo()!.nombre"
-                   (ngModelChange)="updateCursoField('nombre', $event)"
-                   placeholder="Ciencias Naturales" />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium text-gray-700">Código</label>
-            <input pInputText
-                   type="text"
-                   class="w-full font-mono"
-                   [ngModel]="cursoActivo()!.shortname"
-                   (ngModelChange)="updateCursoField('shortname', $event)"
-                   placeholder="CN" />
-          </div>
-        </div>
 
-        <!-- Curso plantilla -->
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-700">Curso plantilla</label>
+          <!-- Col 1: nombre / código + área -->
+          <div class="space-y-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-gray-700">Nombre del curso</label>
+              <input pInputText
+                     type="text"
+                     class="w-full"
+                     [ngModel]="cursoActivo()!.nombre"
+                     (ngModelChange)="updateCursoField('nombre', $event)"
+                     placeholder="Ciencias Naturales" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-700">Código</label>
+                <input pInputText
+                       type="text"
+                       class="w-full font-mono"
+                       [ngModel]="cursoActivo()!.shortname"
+                       (ngModelChange)="updateCursoField('shortname', $event)"
+                       placeholder="CN" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-700">Área CSS</label>
+                <cnt-creatable-select [options]="opcionesCss().areas"
+                                      [value]="cursoActivo()!.area_css ?? ''"
+                                      placeholder="ej: matematicas"
+                                      (valueChange)="updateCursoField('area_css', $event)" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Col 2: plantilla -->
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Curso plantilla</label>
           @if (cursoActivo()!.templatecourse) {
           <div
                class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-cnt-blue mb-1">
@@ -269,7 +288,8 @@
             </p-tree>
             }
           </div>
-        </div>
+          </div><!-- /col 2 -->
+        </div><!-- /grid cols-2 -->
 
         <!-- Fechas -->
         <div class="grid grid-cols-2 gap-4">

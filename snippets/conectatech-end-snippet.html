@@ -1,26 +1,13 @@
 <script>
-  /********* AÑADE CLASES AL <BODY> DE UN CURSO SEGÚN LA CATEGORÍA A LA QUE PERTENEZCA - GENERAL ***********/
-  const mapaCategorias = [
-    {
-      "proyecto": "cosmovision-cristiana",
-      "categoria": "ciencias-naturales",
-      "clases": [1, 8, 15, 18],
-    },
-    {
-      "proyecto": "cosmovision-cristiana",
-      "categoria": "matematicas",
-      "clases": [3, 19],
-    },
-  ];
+  /********* AÑADE CLASES AL <BODY> DE UN CURSO SEGÚN EL ÁRBOL CURRICULAR - GENERAL ***********/
+  /* CT:MAP:START */
+  const CT_COURSES = {};
+  /* CT:MAP:END */
   const bodyElement = document.querySelector("body");
   if (bodyElement !== null) {
     bodyElement.classList.forEach(clase => {
-      const categoria = clase.startsWith('category') ? parseInt(clase.replace('category-', '')) : null;
-      if (categoria) {
-        mapaCategorias.forEach(mapa => {
-          if (mapa.clases.includes(categoria)) bodyElement.classList.add(mapa.categoria, mapa.proyecto);
-        });
-      }
+      const m = clase.match(/^course-(\d+)$/);
+      if (m && CT_COURSES[m[1]]) bodyElement.classList.add(...CT_COURSES[m[1]]);
     });
   }
 

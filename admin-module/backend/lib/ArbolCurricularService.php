@@ -170,6 +170,44 @@ class ArbolCurricularService
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
+     * Retorna los valores únicos de proyecto_css y area_css de todos los árboles.
+     *
+     * @return array{proyectos: string[], areas: string[]}
+     */
+    public function getOpcionesCss(): array
+    {
+        $files     = glob($this->dataDir . '/*.json') ?: [];
+        $proyectos = [];
+        $areas     = [];
+
+        foreach ($files as $file) {
+            $arbol = $this->decodeJson($file);
+            if ($arbol === null) {
+                continue;
+            }
+
+            $p = trim($arbol['proyecto_css'] ?? '');
+            if ($p !== '' && !in_array($p, $proyectos, true)) {
+                $proyectos[] = $p;
+            }
+
+            foreach ($arbol['grados'] ?? [] as $grado) {
+                foreach ($grado['cursos'] ?? [] as $curso) {
+                    $a = trim($curso['area_css'] ?? '');
+                    if ($a !== '' && !in_array($a, $areas, true)) {
+                        $areas[] = $a;
+                    }
+                }
+            }
+        }
+
+        sort($proyectos);
+        sort($areas);
+
+        return ['proyectos' => $proyectos, 'areas' => $areas];
+    }
+
+    /**
      * Retorna las categorías de primer nivel (parent=0) en Moodle.
      *
      * @return array[]  [{id, name}]
@@ -473,6 +511,10 @@ class ArbolCurricularService
             }
         }
 
+        if (!$dryRun) {
+            $this->regenerarHtmlAdicional();
+        }
+
         return [
             'ok'      => true,
             'dry_run' => $dryRun,
@@ -557,6 +599,64 @@ class ArbolCurricularService
     {
         $catName = $this->resolveCategoryName((int)$arbol['categoria_raiz']);
         return "{$catName}/{$arbol['institucion']}/{$curso['nombre']}";
+    }
+
+    /**
+     * Regenera el mapa CT_COURSES en el HTML Adicional de Moodle (additionalhtmlfooter).
+     *
+     * Lee todos los árboles, obtiene el ID de Moodle de cada curso final y construye
+     * CT_COURSES = { "courseId": ["proyecto_css", "area_css"] }.
+     * Reemplaza la sección delimitada por /* CT:MAP:START * / y /* CT:MAP:END * / en
+     * additionalhtmlfooter. Si los delimitadores no existen, no hace nada (seguro).
+     */
+    private function regenerarHtmlAdicional(): void
+    {
+        global $DB;
+
+        $files = glob($this->dataDir . '/*.json') ?: [];
+        $map   = [];
+
+        foreach ($files as $file) {
+            $arbol = $this->decodeJson($file);
+            if ($arbol === null) {
+                continue;
+            }
+
+            $proyectoCss = trim($arbol['proyecto_css'] ?? '');
+
+            foreach ($arbol['grados'] ?? [] as $grado) {
+                foreach ($grado['cursos'] ?? [] as $curso) {
+                    $areaCss  = trim($curso['area_css'] ?? '');
+                    $shortname = $this->buildShortname($arbol, $curso, $grado);
+
+                    $course = $DB->get_record('course', ['shortname' => $shortname], 'id');
+                    if (!$course) {
+                        continue;
+                    }
+
+                    $clases = array_values(array_filter([$proyectoCss, $areaCss]));
+                    if (!empty($clases)) {
+                        $map[(string)$course->id] = $clases;
+                    }
+                }
+            }
+        }
+
+        $json    = json_encode($map, JSON_UNESCAPED_UNICODE);
+        $newMap  = "/* CT:MAP:START */\n  const CT_COURSES = {$json};\n  /* CT:MAP:END */";
+
+        $current = get_config('core', 'additionalhtmlfooter') ?? '';
+
+        $updated = preg_replace(
+            '/\/\* CT:MAP:START \*\/.*?\/\* CT:MAP:END \*\//s',
+            $newMap,
+            $current
+        );
+
+        // Solo guardar si hubo un reemplazo real (los delimitadores existían)
+        if ($updated !== null && $updated !== $current) {
+            set_config('additionalhtmlfooter', $updated);
+        }
     }
 
     /**

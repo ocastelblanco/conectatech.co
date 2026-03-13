@@ -163,6 +163,12 @@ try {
             handleGetCategoriasRaiz();
             break;
 
+        // GET /api/arboles/opciones-css
+        case $method === 'GET' && $seg0 === 'arboles' && $seg1 === 'opciones-css':
+            require API_DIR . '/handlers/arboles.php';
+            handleGetOpcionesCss();
+            break;
+
         // GET /api/arboles/{id}/validar
         case $method === 'GET' && $seg0 === 'arboles' && $seg2 === 'validar':
             require API_DIR . '/handlers/arboles.php';

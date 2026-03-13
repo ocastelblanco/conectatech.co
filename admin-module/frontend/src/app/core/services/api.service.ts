@@ -61,4 +61,5 @@ export class ApiService {
   getArbolesPlantillas(): Observable<any> { return this.http.get(`${API_BASE}/arboles/plantillas`); }
   getArbolesRepositorios(): Observable<any> { return this.http.get(`${API_BASE}/arboles/repositorios`); }
   getArbolesCategoriasRaiz(): Observable<any> { return this.http.get(`${API_BASE}/arboles/categorias-raiz`); }
+  getArbolesOpcionesCss(): Observable<any>   { return this.http.get(`${API_BASE}/arboles/opciones-css`); }
 }
