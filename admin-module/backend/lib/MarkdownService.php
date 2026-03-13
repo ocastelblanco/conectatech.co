@@ -98,6 +98,7 @@ class MarkdownService
         );
 
         $builder->ensureCourse();
+        $builder->resetCourse();   // Reemplaza el curso completo (markdown = fuente de verdad)
 
         $result = [
             'sections' => [],

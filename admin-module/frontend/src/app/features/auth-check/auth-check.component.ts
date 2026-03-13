@@ -6,17 +6,24 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 @Component({
   selector: 'cnt-auth-check',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProgressSpinnerModule],
+  imports: [
+    ProgressSpinnerModule
+  ],
   template: `
-    <div class="flex flex-col items-center justify-center min-h-screen" style="background: #1D2B36;">
+    <div class="fondo flex flex-col items-center justify-center min-h-screen">
       <img src="logo-vertical-blanco.svg" alt="ConectaTech" class="h-20 mb-8" />
-      <p-progressSpinner strokeWidth="3" styleClass="w-12 h-12" />
+      <p-progressSpinner strokeWidth="3" class="w-12 h-12" />
       <p class="text-white/60 mt-4 text-sm">Verificando sesion...</p>
     </div>
-  `
+  `,
+  styles: [`
+    .fondo {
+      background-color: var(--color-cnt-midnight);
+    }
+  `]
 })
 export class AuthCheckComponent implements OnInit {
-  private readonly auth   = inject(AuthService);
+  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   ngOnInit(): void {

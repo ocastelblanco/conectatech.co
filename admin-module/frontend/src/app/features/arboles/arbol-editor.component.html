@@ -2,325 +2,518 @@
 <p-confirmdialog />
 
 @if (loading()) {
-  <div class="flex items-center justify-center py-16 text-gray-400">
-    <i class="pi pi-spin pi-spinner mr-2 text-xl"></i>
-    <span class="text-sm">Cargando árbol...</span>
-  </div>
+<div class="flex items-center justify-center py-16 text-gray-400">
+  <i class="pi pi-spin pi-spinner mr-2 text-xl"></i>
+  <span class="text-sm">Cargando árbol...</span>
+</div>
 }
 
 @if (!loading() && arbol()) {
-  <!-- Top bar -->
-  <div class="flex items-center justify-between mb-4">
-    <div class="flex items-center gap-2">
-      <p-button icon="pi pi-arrow-left" size="small" severity="secondary" [text]="true" (onClick)="volver()" />
-      <span class="text-sm text-gray-500">
-        @if (esNuevo()) { Nuevo árbol curricular } @else { Editando árbol }
-      </span>
+<!-- Top bar -->
+<div class="flex items-center justify-between mb-3">
+  <div class="flex items-center gap-2">
+    <p-button icon="pi pi-arrow-left"
+              size="small"
+              severity="secondary"
+              [text]="true"
+              (onClick)="volver()" />
+    <span class="text-sm text-gray-500">
+      @if (esNuevo()) { Nuevo árbol curricular } @else { Editando árbol }
+    </span>
+  </div>
+  <div class="flex items-center gap-3">
+    @if (saveStatus() === 'saving') {
+    <span class="text-xs text-gray-400 flex items-center gap-1">
+      <i class="pi pi-spin pi-spinner text-xs"></i> Guardando...
+    </span>
+    }
+    @if (saveStatus() === 'saved') {
+    <span class="text-xs text-cnt-green flex items-center gap-1">
+      <i class="pi pi-check text-xs"></i> Guardado
+    </span>
+    }
+    @if (saveStatus() === 'error') {
+    <span class="text-xs text-red-500 flex items-center gap-1">
+      <i class="pi pi-times text-xs"></i> Error al guardar
+    </span>
+    }
+    @if (esNuevo()) {
+    <p-button label="Crear árbol"
+              icon="pi pi-save"
+              [loading]="saving()"
+              (onClick)="guardarArbol()" />
+    } @else {
+    <p-button label="Ingestar en Moodle"
+              icon="pi pi-play"
+              severity="success"
+              [loading]="validating() || executing()"
+              [disabled]="saving()"
+              (onClick)="iniciarIngesta()" />
+    }
+  </div>
+</div>
+
+<!-- ===== PANEL PRINCIPAL (horizontal) ===== -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 px-5 py-3.5 mb-3 flex items-end gap-4">
+  <div class="flex flex-col gap-1 flex-1 min-w-0">
+    <label class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Nombre del árbol</label>
+    <input pInputText
+           type="text"
+           class="w-full text-sm"
+           [ngModel]="arbol()!.nombre"
+           (ngModelChange)="updateArbolField('nombre', $event)"
+           placeholder="Nombre completo del árbol curricular" />
+  </div>
+  <div class="flex flex-col gap-1 w-24">
+    <label class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Período</label>
+    <input pInputText
+           type="text"
+           class="w-full text-sm"
+           [ngModel]="arbol()!.periodo"
+           (ngModelChange)="updateArbolField('periodo', $event)"
+           placeholder="Período escolar" />
+  </div>
+  <div class="flex flex-col gap-1 w-52">
+    <label class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Institución educativa</label>
+    <input pInputText
+           type="text"
+           class="w-full text-sm"
+           [ngModel]="arbol()!.institucion"
+           (ngModelChange)="updateArbolField('institucion', $event)"
+           placeholder="Nombre de la institución" />
+  </div>
+  <div class="flex flex-col gap-1 w-20">
+    <label class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Sigla inst.</label>
+    <input pInputText
+           type="text"
+           class="w-full text-sm font-mono"
+           [ngModel]="arbol()!.shortname_inst"
+           (ngModelChange)="updateArbolField('shortname_inst', $event)"
+           placeholder="Sigla" />
+  </div>
+  <div class="flex flex-col gap-1 w-48">
+    <label class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Categoría raíz</label>
+    <p-select [options]="categoriasOpciones()"
+              [ngModel]="arbol()!.categoria_raiz"
+              (ngModelChange)="updateCategoriaRaiz($event)"
+              placeholder="Seleccionar..."
+              optionLabel="label"
+              optionValue="value"
+              [style]="{ width: '100%', fontSize: '0.875rem' }" />
+  </div>
+</div>
+
+<div class="flex gap-4 h-[calc(100vh-240px)] min-h-0">
+
+  <!-- ===== LEFT PANEL — GRADOS ===== -->
+  <div class="w-72 flex-shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col min-h-0">
+    <div class="px-4 py-2.5 border-b border-gray-100">
+      <span class="text-base font-bold text-gray-500 uppercase tracking-wide">Grados</span>
     </div>
-    <div class="flex items-center gap-3">
-      <!-- Save status indicator -->
-      @if (saveStatus() === 'saving') {
-        <span class="text-xs text-gray-400 flex items-center gap-1">
-          <i class="pi pi-spin pi-spinner text-xs"></i> Guardando...
-        </span>
+    <div class="flex-1 overflow-y-auto p-3">
+
+      @for (grado of arbol()!.grados; track grado.id; let last = $last) {
+      <div [class]="last ? 'mb-1' : 'mb-3 pb-3 border-b border-dashed border-gray-200'">
+
+        <!-- Nombre + Sigla + Trash en una fila compacta -->
+        <div class="grid grid-cols-[1fr_56px_22px] gap-1 items-end mb-1.5">
+          <div>
+            <p class="text-[9px] text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Nombre</p>
+            <input pInputText
+                   type="text"
+                   class="w-full text-xs"
+                   style="padding-top:3px;padding-bottom:3px"
+                   [ngModel]="grado.nombre"
+                   placeholder="Nombre del grado"
+                   (ngModelChange)="updateGradoField(grado, 'nombre', $event)" />
+          </div>
+          <div>
+            <p class="text-[9px] text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Sigla</p>
+            <input pInputText
+                   type="text"
+                   class="w-full text-xs font-mono"
+                   style="padding-top:3px;padding-bottom:3px"
+                   [ngModel]="grado.shortname"
+                   (ngModelChange)="updateGradoField(grado, 'shortname', $event)" />
+          </div>
+          <p-button class="self-end scale-50"
+                    icon="pi pi-trash"
+                    size="small"
+                    [rounded]="true"
+                    severity="danger"
+                    (click)="removeGrado(grado)" />
+        </div>
+
+        <!-- CURSOS header + botón añadir -->
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-sm font-bold text-gray-500 uppercase tracking-wide">Cursos</span>
+          <p-button class="self-end scale-50"
+                    icon="pi pi-plus"
+                    size="small"
+                    [rounded]="true"
+                    severity="success"
+                    (click)="addCurso(grado)" />
+        </div>
+
+        <!-- Lista de cursos -->
+        @for (curso of grado.cursos; track curso.id) {
+        <div class="flex items-center gap-1 pl-2 pr-0.5 py-0.5 border-l-2 rounded-r text-xs cursor-pointer group mb-0.5 transition-colors"
+             [class]="cursoActivo()?.id === curso.id
+               ? 'border-cnt-blue bg-blue-50 text-cnt-blue font-medium'
+               : 'border-gray-200 text-gray-500 hover:border-gray-400 hover:bg-gray-50'"
+             (click)="seleccionarCurso(grado, curso)">
+          <span class="truncate flex-1 leading-tight">{{ curso.nombre || 'Sin nombre' }}</span>
+
+          <p-button class="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all scale-50"
+                    icon="pi pi-times"
+                    size="small"
+                    [rounded]="true"
+                    severity="danger"
+                    (click)="$event.stopPropagation(); removeCurso(grado, curso)" />
+        </div>
+        }
+      </div>
       }
-      @if (saveStatus() === 'saved') {
-        <span class="text-xs text-cnt-green flex items-center gap-1">
-          <i class="pi pi-check text-xs"></i> Guardado
-        </span>
-      }
-      @if (saveStatus() === 'error') {
-        <span class="text-xs text-red-500 flex items-center gap-1">
-          <i class="pi pi-times text-xs"></i> Error al guardar
-        </span>
-      }
-      @if (esNuevo()) {
-        <p-button label="Crear árbol" icon="pi pi-save" [loading]="saving()" (onClick)="guardarArbol()" />
-      }
+
+      <!-- Botón nuevo grado -->
+      <button class="w-full mt-2 py-1.5 text-xs text-gray-400 hover:text-cnt-blue border border-dashed border-gray-200 hover:border-cnt-blue rounded-lg flex items-center justify-center gap-1 transition-colors"
+              (click)="addGrado()">
+        <i class="pi pi-plus text-xs"></i> Nuevo grado
+      </button>
     </div>
   </div>
 
-  <div class="flex gap-4 h-[calc(100vh-160px)] min-h-0">
+  <!-- ===== RIGHT PANEL — editor de curso ===== -->
+  <div class="flex-1 min-w-0 overflow-y-auto">
+    @if (!cursoActivo()) {
+    <div class="h-full flex flex-col items-center justify-center text-gray-300">
+      <i class="pi pi-arrow-left text-4xl mb-3"></i>
+      <p class="text-sm">Selecciona un curso del panel izquierdo</p>
+    </div>
+    }
 
-    <!-- ===== LEFT PANEL — metadata + grados ===== -->
-    <div class="w-64 flex-shrink-0 flex flex-col gap-3 overflow-y-auto">
+    @if (cursoActivo()) {
+    <p-card>
+      <ng-template #header>
+        <div class="flex items-center justify-between px-5 pt-4">
+          <div>
+            <p class="text-xs text-gray-400 m-0 mb-1">{{ gradoActivo()?.nombre }}</p>
+            <h3 class="text-base font-semibold text-cnt-midnight m-0">
+              {{ cursoActivo()!.nombre || 'Nuevo curso' }}
+            </h3>
+          </div>
+          <p-button icon="pi pi-trash"
+                    size="small"
+                    severity="danger"
+                    [text]="true"
+                    label="Eliminar curso"
+                    (onClick)="removeCurso(gradoActivo(), cursoActivo())" />
+        </div>
+      </ng-template>
 
-      <!-- Árbol metadata -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
+      <div class="space-y-4">
+        <!-- Nombre + shortname -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Nombre del curso</label>
+            <input pInputText
+                   type="text"
+                   class="w-full"
+                   [ngModel]="cursoActivo()!.nombre"
+                   (ngModelChange)="updateCursoField('nombre', $event)"
+                   placeholder="Ciencias Naturales" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Código</label>
+            <input pInputText
+                   type="text"
+                   class="w-full font-mono"
+                   [ngModel]="cursoActivo()!.shortname"
+                   (ngModelChange)="updateCursoField('shortname', $event)"
+                   placeholder="CN" />
+          </div>
+        </div>
+
+        <!-- Curso plantilla -->
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Nombre</label>
-          <input
-            pInputText
-            type="text"
-            class="w-full text-sm font-medium"
-            [ngModel]="arbol()!.nombre"
-            (ngModelChange)="updateArbolField('nombre', $event)"
-            placeholder="Nombre del árbol"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Shortname</label>
-          <input
-            pInputText
-            type="text"
-            class="w-full text-sm font-mono"
-            [ngModel]="arbol()!.shortname"
-            (ngModelChange)="updateArbolField('shortname', $event)"
-            placeholder="CCSM"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Período</label>
-          <input
-            pInputText
-            type="text"
-            class="w-full text-sm"
-            [ngModel]="arbol()!.periodo"
-            (ngModelChange)="updateArbolField('periodo', $event)"
-            placeholder="2026-2027"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Institución</label>
-          <input
-            pInputText
-            type="text"
-            class="w-full text-sm"
-            [ngModel]="arbol()!.institucion"
-            (ngModelChange)="updateArbolField('institucion', $event)"
-            placeholder="Nombre colegio"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Categoría raíz</label>
-          <p-select
-            [options]="categoriasOpciones()"
-            [ngModel]="arbol()!.categoria_raiz"
-            (ngModelChange)="updateArbolField('categoria_raiz', $event)"
-            placeholder="Seleccionar..."
-            optionLabel="label"
-            optionValue="value"
-            [style]="{ width: '100%', fontSize: '0.875rem' }"
-          />
-        </div>
-      </div>
-
-      <!-- Grados -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex-1 min-h-0 overflow-y-auto">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Grados</span>
-        </div>
-
-        @for (grado of arbol()!.grados; track grado.id) {
-          <div class="mb-3">
-            <!-- Grado header -->
-            <div class="flex items-center gap-1 mb-1">
-              <div class="flex-1 min-w-0 space-y-1">
-                <input
-                  pInputText
-                  type="text"
-                  class="w-full text-xs font-semibold"
-                  [ngModel]="grado.nombre"
-                  (ngModelChange)="updateGradoField(grado, 'nombre', $event)"
-                  placeholder="Nombre grado"
-                />
-                <input
-                  pInputText
-                  type="text"
-                  class="w-full text-xs font-mono text-gray-400"
-                  [ngModel]="grado.shortname"
-                  (ngModelChange)="updateGradoField(grado, 'shortname', $event)"
-                  placeholder="Shortname"
-                />
-              </div>
-              <p-button
-                icon="pi pi-trash"
-                size="small"
-                severity="danger"
-                [text]="true"
-                (onClick)="removeGrado(grado)"
-              />
-            </div>
-
-            <!-- Cursos del grado -->
-            @for (curso of grado.cursos; track curso.id) {
-              <div
-                class="ml-3 pl-2 border-l-2 py-1 cursor-pointer rounded-r text-xs flex items-center justify-between group"
-                [class]="cursoActivo()?.id === curso.id ? 'border-cnt-blue bg-blue-50 text-cnt-blue font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50'"
-                (click)="seleccionarCurso(grado, curso)"
-              >
-                <span class="truncate">{{ curso.nombre || 'Sin nombre' }}</span>
-                <p-button
-                  icon="pi pi-times"
-                  size="small"
-                  severity="danger"
-                  [text]="true"
-                  class="opacity-0 group-hover:opacity-100 flex-shrink-0"
-                  (click)="$event.stopPropagation(); removeCurso(grado, curso)"
-                />
-              </div>
-            }
-
-            <!-- Add curso button -->
-            <button
-              class="ml-3 mt-1 text-xs text-gray-400 hover:text-cnt-blue flex items-center gap-1"
-              (click)="addCurso(grado)"
-            >
-              <i class="pi pi-plus text-xs"></i> Agregar área
+          <label class="text-sm font-medium text-gray-700">Curso plantilla</label>
+          @if (cursoActivo()!.templatecourse) {
+          <div
+               class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-cnt-blue mb-1">
+            <i class="pi pi-check-circle text-xs"></i>
+            <span>{{ cursoActivo()!.templatecourse }}</span>
+            <button class="ml-auto text-gray-400 hover:text-red-400"
+                    (click)="updateCursoField('templatecourse', '')">
+              <i class="pi pi-times text-xs"></i>
             </button>
           </div>
-        }
-
-        <!-- Add grado button -->
-        <button
-          class="w-full mt-2 py-2 text-xs text-gray-400 hover:text-cnt-blue border border-dashed border-gray-200 hover:border-cnt-blue rounded-lg flex items-center justify-center gap-1 transition-colors"
-          (click)="addGrado()"
-        >
-          <i class="pi pi-plus text-xs"></i> Agregar grado
-        </button>
-      </div>
-    </div>
-
-    <!-- ===== CENTER PANEL — course editor ===== -->
-    <div class="flex-1 min-w-0">
-      @if (!cursoActivo()) {
-        <div class="h-full flex flex-col items-center justify-center text-gray-300">
-          <i class="pi pi-arrow-left text-4xl mb-3"></i>
-          <p class="text-sm">Selecciona un área curricular del panel izquierdo</p>
+          }
+          <div class="border border-gray-200 rounded-lg overflow-auto max-h-48">
+            @if (plantillasTree().length === 0) {
+            <p class="text-xs text-gray-400 text-center py-4">Cargando plantillas...</p>
+            } @else {
+            <p-tree [value]="plantillasTree()"
+                    selectionMode="single"
+                    (onNodeSelect)="onPlantillaSelect($event)"
+                    class="border-none text-sm p-1">
+              <ng-template pTemplate="default"
+                           let-node>
+                @if (node.leaf) {
+                <span class="text-gray-800 text-xs">
+                  {{ node.label }} <small class="text-gray-400 font-mono">({{ node.data.shortname }})</small>
+                </span>
+                } @else {
+                <span class="text-xs font-semibold text-gray-600">{{ node.label }}</span>
+                }
+              </ng-template>
+            </p-tree>
+            }
+          </div>
         </div>
-      }
 
-      @if (cursoActivo()) {
-        <p-card>
-          <!-- Card header -->
-          <ng-template #header>
-            <div class="flex items-center justify-between px-5 pt-4">
-              <div>
-                <p class="text-xs text-gray-400 m-0 mb-1">
-                  {{ gradoActivo()?.nombre }}
-                </p>
-                <h3 class="text-base font-semibold text-cnt-midnight m-0">
-                  {{ cursoActivo()!.nombre || 'Nueva área' }}
-                </h3>
-              </div>
-              <p-button
-                icon="pi pi-trash"
-                size="small"
-                severity="danger"
-                [text]="true"
-                label="Eliminar área"
-                (onClick)="removeCurso(gradoActivo(), cursoActivo())"
-              />
-            </div>
-          </ng-template>
+        <!-- Fechas -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Fecha inicio</label>
+            <input pInputText
+                   type="date"
+                   class="w-full"
+                   [ngModel]="cursoActivo()!.startdate"
+                   (ngModelChange)="updateCursoField('startdate', $event)" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Fecha fin</label>
+            <input pInputText
+                   type="date"
+                   class="w-full"
+                   [ngModel]="cursoActivo()!.enddate"
+                   (ngModelChange)="updateCursoField('enddate', $event)" />
+          </div>
+        </div>
 
-          <div class="space-y-4">
-            <!-- Row 1: nombre + shortname -->
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-700">Nombre del área</label>
-                <input
-                  pInputText
-                  type="text"
-                  class="w-full"
-                  [ngModel]="cursoActivo()!.nombre"
-                  (ngModelChange)="updateCursoField('nombre', $event)"
-                  placeholder="Ciencias Naturales"
-                />
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-700">Shortname</label>
-                <input
-                  pInputText
-                  type="text"
-                  class="w-full font-mono"
-                  [ngModel]="cursoActivo()!.shortname"
-                  (ngModelChange)="updateCursoField('shortname', $event)"
-                  placeholder="CN"
-                />
-              </div>
-            </div>
+        <!-- Repositorios + Temas asignados -->
+        <div class="grid grid-cols-2 gap-4">
 
-            <!-- Row 2: templatecourse -->
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-medium text-gray-700">Curso plantilla</label>
-              <p-select
-                [options]="plantillasOpciones()"
-                [ngModel]="cursoActivo()!.templatecourse"
-                (ngModelChange)="updateCursoField('templatecourse', $event)"
-                placeholder="Seleccionar plantilla..."
-                optionLabel="label"
-                optionValue="value"
-                [filter]="true"
-                filterPlaceholder="Buscar..."
-                [style]="{ width: '100%' }"
-              />
-            </div>
-
-            <!-- Row 3: dates -->
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-700">Fecha inicio</label>
-                <input
-                  pInputText
-                  type="date"
-                  class="w-full"
-                  [ngModel]="cursoActivo()!.startdate"
-                  (ngModelChange)="updateCursoField('startdate', $event)"
-                />
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-700">Fecha fin</label>
-                <input
-                  pInputText
-                  type="date"
-                  class="w-full"
-                  [ngModel]="cursoActivo()!.enddate"
-                  (ngModelChange)="updateCursoField('enddate', $event)"
-                />
-              </div>
-            </div>
-
-            <!-- Temas -->
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <label class="text-sm font-medium text-gray-700">Temas asignados</label>
-                <span class="text-xs text-gray-400">{{ cursoActivo()!.temas?.length ?? 0 }} temas</span>
-              </div>
-
-              @if (!cursoActivo()!.temas || cursoActivo()!.temas.length === 0) {
-                <div class="flex flex-col items-center py-6 text-gray-300 border border-dashed border-gray-200 rounded-lg">
-                  <i class="pi pi-list text-2xl mb-2"></i>
-                  <p class="text-xs">Sin temas asignados</p>
-                </div>
+          <!-- REPOSITORIOS (izquierda) — divs simples para DnD nativo -->
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Repositorios</label>
+            <div class="border border-gray-200 rounded-lg overflow-auto min-h-[160px] max-h-64 p-2">
+              @if (repositorios().length === 0) {
+              <p class="text-xs text-gray-400 text-center py-6">Cargando repositorios...</p>
               }
-
-              @if (cursoActivo()!.temas && cursoActivo()!.temas.length > 0) {
-                <div class="border border-gray-100 rounded-lg overflow-hidden">
-                  @for (tema of cursoActivo()!.temas; track $index) {
-                    <div class="flex items-center justify-between px-3 py-2 text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50">
-                      <span class="text-gray-700">{{ tema.titulo ?? tema }}</span>
-                      <p-button
-                        icon="pi pi-times"
-                        size="small"
-                        severity="danger"
-                        [text]="true"
-                        (onClick)="removeTema(tema)"
-                      />
+              @for (repo of repositorios(); track repo.nombre) {
+              <div class="mb-2">
+                <p class="text-xs font-bold text-gray-600 mb-1">{{ repo.nombre }}</p>
+                @for (area of repo.areas; track area.nombre) {
+                <div class="ml-2 mb-1">
+                  <p class="text-xs font-semibold text-gray-500 mb-1">{{ area.nombre }}</p>
+                  @for (curso of area.cursos; track curso.shortname) {
+                  <div class="ml-2 mb-1">
+                    <p class="text-xs text-gray-400 italic mb-0.5 truncate">{{ curso.fullname }}</p>
+                    @for (sec of curso.secciones; track sec.num) {
+                    <div draggable="true"
+                         class="ml-2 py-1 px-2 text-xs text-gray-700 hover:bg-blue-50 hover:text-cnt-blue cursor-grab rounded flex items-center gap-1 select-none"
+                         (dragstart)="onRepoDragStart($event, { repo_shortname: curso.shortname, section_num: sec.num, titulo: sec.titulo })">
+                      <i class="pi pi-minus text-gray-300 flex-shrink-0"
+                         style="font-size:0.55rem"></i>
+                      <span class="truncate">{{ sec.titulo }}</span>
                     </div>
+                    }
+                  </div>
                   }
                 </div>
-              }
-
-              <div class="mt-3 flex items-start gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-600">
-                <i class="pi pi-info-circle mt-0.5 flex-shrink-0"></i>
-                <span>En la Fase 3 se habilitará el drag-and-drop de temas desde los repositorios.</span>
+                }
               </div>
+              }
             </div>
           </div>
-        </p-card>
+
+          <!-- TEMAS ASIGNADOS (derecha) -->
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-medium text-gray-700">Temas asignados</label>
+              <span class="text-xs text-gray-400">{{ cursoActivo()!.temas?.length ?? 0 }} temas</span>
+            </div>
+            <div class="border border-dashed rounded-lg min-h-[160px] flex flex-col overflow-hidden transition-colors"
+                 [class]="dragOverIndex() === -2 ? 'border-cnt-blue bg-blue-50' : 'border-gray-200 bg-white'"
+                 (dragover)="onTemasDragOver($event, -2)"
+                 (drop)="onTemasDropAtIndex($event, -1)">
+              @if (!cursoActivo()!.temas || cursoActivo()!.temas.length === 0) {
+              <div class="flex flex-col items-center justify-center flex-1 text-gray-300 py-8">
+                <i class="pi pi-arrow-left text-xl mb-2"></i>
+                <p class="text-xs text-center">Arrastra temas desde<br>los repositorios</p>
+              </div>
+              }
+              @for (tema of cursoActivo()!.temas; track $index; let i = $index) {
+              <div draggable="true"
+                   class="flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 last:border-b-0 cursor-grab hover:bg-gray-50"
+                   [class.border-t-2]="dragOverIndex() === i"
+                   [class.border-t-cnt-blue]="dragOverIndex() === i"
+                   [class.bg-blue-50]="dragOverIndex() === i"
+                   (dragstart)="onTemasDragStart($event, i)"
+                   (dragover)="onTemasDragOver($event, i)"
+                   (drop)="onTemasDropAtIndex($event, i)">
+                <i class="pi pi-bars text-gray-300 flex-shrink-0"></i>
+                <span class="flex-1 truncate text-gray-700">{{ tema.titulo ?? tema }}</span>
+                <p-button icon="pi pi-times"
+                          size="small"
+                          severity="danger"
+                          [text]="true"
+                          (onClick)="removeTema(tema)" />
+              </div>
+              }
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </p-card>
+    }
+  </div>
+
+</div>
+
+<!-- ===== DIÁLOGO: Validación / confirmación ===== -->
+<p-dialog header="Validar ingesta"
+          [(visible)]="showValidar"
+          [modal]="true"
+          [style]="{ width: '600px' }"
+          [closable]="true">
+  <div class="mb-4 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
+    <p class="text-sm font-semibold text-gray-700">{{ arbol()!.nombre }}</p>
+    <p class="text-xs font-mono text-gray-400 mt-0.5">{{ arbol()!.shortname }}</p>
+  </div>
+
+  <div class="flex gap-3 mb-4">
+    @if (resumenConflictos().nuevos > 0) {
+    <span
+          class="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full border border-green-200">
+      <i class="pi pi-plus-circle text-xs"></i> {{ resumenConflictos().nuevos }} curso(s) nuevo(s)
+    </span>
+    }
+    @if (resumenConflictos().recrear > 0) {
+    <span
+          class="flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded-full border border-orange-200">
+      <i class="pi pi-refresh text-xs"></i> {{ resumenConflictos().recrear }} curso(s) a recrear
+    </span>
+    }
+    @if (resumenConflictos().actualizar > 0) {
+    <span
+          class="flex items-center gap-1 px-2 py-1 bg-blue-50 text-cnt-blue text-xs rounded-full border border-blue-200">
+      <i class="pi pi-pencil text-xs"></i> {{ resumenConflictos().actualizar }} curso(s) a actualizar
+    </span>
+    }
+  </div>
+
+  <div class="border border-gray-100 rounded-lg overflow-hidden text-xs">
+    <div
+         class="grid grid-cols-[1.4fr_1.6fr_1fr_1fr_auto] bg-gray-50 px-3 py-2 font-semibold text-gray-500 border-b border-gray-100 gap-3">
+      <span>Curso</span>
+      <span>Código</span>
+      <span>Área</span>
+      <span>Grado</span>
+      <span class="text-right">Crear / Borrar</span>
+    </div>
+    @for (c of conflictos(); track c.shortname) {
+    <div
+         class="grid grid-cols-[1.4fr_1.6fr_1fr_1fr_auto] px-3 py-2 border-b border-gray-50 last:border-b-0 items-center gap-3">
+      <div class="flex items-center gap-1.5 min-w-0">
+        @if (c.estado === 'nuevo') {
+        <span class="shrink-0 w-1.5 h-1.5 rounded-full bg-green-400"></span>
+        } @else if (c.estado === 'existe_sin_estudiantes') {
+        <span class="shrink-0 w-1.5 h-1.5 rounded-full bg-orange-400"></span>
+        } @else {
+        <span class="shrink-0 w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+        }
+        <span class="truncate text-gray-700">{{ c.fullname }}</span>
+      </div>
+      <span class="font-mono text-gray-400 truncate">{{ c.shortname }}</span>
+      <span class="truncate text-gray-600">{{ c.area_nombre }}</span>
+      <span class="truncate text-gray-600">{{ c.grado_nombre }}</span>
+      <span class="text-right whitespace-nowrap tabular-nums">
+        @if (c.temas_nuevos > 0) { <span class="text-green-600">+{{ c.temas_nuevos }}</span> }
+        @if (c.temas_nuevos > 0 && c.temas_borrar > 0) { <span class="text-gray-300 mx-0.5">/</span> }
+        @if (c.temas_borrar > 0) { <span class="text-red-500">−{{ c.temas_borrar }}</span> }
+        @if (c.temas_nuevos === 0 && c.temas_borrar === 0) { <span class="text-gray-300">—</span> }
+      </span>
+    </div>
+    }
+  </div>
+
+  @if (resumenConflictos().recrear > 0) {
+  <div
+       class="mt-3 flex items-start gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-700">
+    <i class="pi pi-exclamation-triangle mt-0.5 flex-shrink-0"></i>
+    <span>Los cursos marcados como <strong>«Se recreará»</strong> serán eliminados y creados de nuevo. Esta acción no se
+      puede deshacer.</span>
+  </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar"
+              severity="secondary"
+              [text]="true"
+              (onClick)="showValidar.set(false)" />
+    <p-button label="Ingestar"
+              icon="pi pi-play"
+              severity="success"
+              (onClick)="confirmarIngesta()" />
+  </ng-template>
+</p-dialog>
+
+<!-- ===== DIÁLOGO: Resultados de ingesta ===== -->
+<p-dialog header="Resultado de ingesta"
+          [(visible)]="showResults"
+          [modal]="true"
+          [style]="{ width: '600px' }"
+          [closable]="true">
+  @if (ejResultado()) {
+  <div class="flex gap-3 mb-4">
+    <span
+          class="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full border border-green-200">
+      <i class="pi pi-check-circle text-xs"></i> {{ ejResultado().summary.created }} creado(s)
+    </span>
+    <span
+          class="flex items-center gap-1 px-2 py-1 bg-blue-50 text-cnt-blue text-xs rounded-full border border-blue-200">
+      <i class="pi pi-pencil text-xs"></i> {{ ejResultado().summary.updated }} actualizado(s)
+    </span>
+    @if (ejResultado().summary.errors > 0) {
+    <span class="flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 text-xs rounded-full border border-red-200">
+      <i class="pi pi-times-circle text-xs"></i> {{ ejResultado().summary.errors }} error(es)
+    </span>
+    }
+  </div>
+
+  <div class="border border-gray-100 rounded-lg overflow-hidden text-xs">
+    <div class="grid grid-cols-[1fr_auto] bg-gray-50 px-3 py-2 font-semibold text-gray-500 border-b border-gray-100">
+      <span>Curso</span><span>Resultado</span>
+    </div>
+    @for (r of ejResultado().results; track r.shortname) {
+    <div class="px-3 py-2 border-b border-gray-50 last:border-b-0">
+      <div class="grid grid-cols-[1fr_auto] items-center gap-3">
+        <span class="font-mono text-gray-700 truncate">{{ r.shortname }}</span>
+        @if (r.action === 'created') {
+        <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Creado</span>
+        } @else if (r.action === 'recreated') {
+        <span class="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">Recreado</span>
+        } @else if (r.action === 'updated') {
+        <span class="px-2 py-0.5 bg-blue-100 text-cnt-blue rounded-full">Actualizado</span>
+        } @else {
+        <span class="px-2 py-0.5 bg-red-100 text-red-600 rounded-full">Error</span>
+        }
+      </div>
+      @if (r.error) {
+      <p class="mt-1 text-red-500 text-xs">{{ r.error }}</p>
       }
     </div>
-
+    }
   </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <p-button label="Cerrar"
+              (onClick)="showResults.set(false)" />
+  </ng-template>
+</p-dialog>
+
 }

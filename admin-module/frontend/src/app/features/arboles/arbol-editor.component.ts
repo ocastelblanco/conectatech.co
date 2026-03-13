@@ -13,12 +13,15 @@ import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { TreeModule } from 'primeng/tree';
+import { SharedModule } from 'primeng/api';
 import { SelectModule } from 'primeng/select';
 import { CardModule } from 'primeng/card';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService, ConfirmationService, TreeNode } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 
 @Component({
@@ -28,10 +31,13 @@ import { ApiService } from '../../core/services/api.service';
     FormsModule,
     ButtonModule,
     InputTextModule,
+    TreeModule,
+    SharedModule,
     SelectModule,
     CardModule,
     ToastModule,
     ConfirmDialogModule,
+    DialogModule,
     TooltipModule,
   ],
   providers: [MessageService, ConfirmationService],
@@ -52,18 +58,71 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
   readonly cursoActivo = signal<any>(null);
   readonly plantillas = signal<any[]>([]);
   readonly categoriasRaiz = signal<any[]>([]);
+  readonly repositorios = signal<any[]>([]);
+  readonly dragOverIndex = signal(-1);
 
   readonly esNuevo = computed(() => this.route.snapshot.params['id'] === 'nuevo');
 
-  readonly plantillasOpciones = computed(() =>
-    this.plantillas().flatMap((p: any) =>
-      (p.cursos ?? []).map((c: any) => ({ label: `${c.shortname} — ${c.fullname}`, value: c.shortname }))
-    )
+  readonly plantillasTree = computed<TreeNode[]>(() =>
+    this.plantillas().map((p: any) => ({
+      label: p.nombre,
+      selectable: false,
+      expanded: true,
+      children: (p.cursos ?? []).map((c: any) => ({
+        label: c.fullname,
+        selectable: true,
+        leaf: true,
+        data: { shortname: c.shortname },
+      })),
+    }))
   );
 
   readonly categoriasOpciones = computed(() =>
     this.categoriasRaiz().map((c: any) => ({ label: c.name, value: c.id }))
   );
+
+  readonly repositoriosTree = computed<TreeNode[]>(() =>
+    this.repositorios().map((repo: any) => ({
+      label: repo.nombre,
+      selectable: false,
+      expanded: true,
+      children: (repo.areas ?? []).map((area: any) => ({
+        label: area.nombre,
+        selectable: false,
+        expanded: true,
+        children: (area.cursos ?? []).map((curso: any) => ({
+          label: curso.fullname,
+          selectable: false,
+          expanded: true,
+          children: (curso.secciones ?? []).map((sec: any) => ({
+            label: sec.titulo,
+            selectable: false,
+            leaf: true,
+            data: { repo_shortname: curso.shortname, section_num: sec.num, titulo: sec.titulo },
+          })),
+        })),
+      })),
+    }))
+  );
+
+  readonly validating = signal(false);
+  readonly executing = signal(false);
+  readonly conflictos = signal<any[]>([]);
+  readonly ejResultado = signal<any>(null);
+  readonly showValidar = signal(false);
+  readonly showResults = signal(false);
+
+  readonly resumenConflictos = computed(() => {
+    const c = this.conflictos();
+    return {
+      nuevos: c.filter(x => x.estado === 'nuevo').length,
+      recrear: c.filter(x => x.estado === 'existe_sin_estudiantes').length,
+      actualizar: c.filter(x => x.estado === 'existe_con_estudiantes').length,
+    };
+  });
+
+  private _draggedSection: any = null;
+  private _draggedTemaIndex = -1;
 
   private readonly saveSubject = new Subject<void>();
   private readonly subs = new Subscription();
@@ -75,20 +134,25 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
 
     const id = this.route.snapshot.params['id'];
 
-    // Load plantillas and categorias in parallel
+    // Load plantillas, categorias and repositorios in parallel
     this.api.getArbolesPlantillas().subscribe({
       next: (r: any) => this.plantillas.set(r.plantillas ?? []),
-      error: () => {},
+      error: () => { },
     });
     this.api.getArbolesCategoriasRaiz().subscribe({
       next: (r: any) => this.categoriasRaiz.set(r.categorias ?? []),
-      error: () => {},
+      error: () => { },
+    });
+    this.api.getArbolesRepositorios().subscribe({
+      next: (r: any) => this.repositorios.set(r.repositorios ?? []),
+      error: () => { },
     });
 
     if (id === 'nuevo') {
       this.arbol.set({
         nombre: '',
         shortname: '',
+        shortname_inst: '',
         periodo: '',
         institucion: '',
         categoria_raiz: '',
@@ -197,7 +261,7 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
     if (!a) return;
     const nuevoCurso = {
       id: `c-${Date.now()}`,
-      nombre: 'Nueva área',
+      nombre: 'Nuevo curso',
       shortname: '',
       templatecourse: '',
       startdate: '',
@@ -237,8 +301,40 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
   }
 
   updateArbolField(field: string, value: any): void {
-    this.arbol.update(a => ({ ...a, [field]: value }));
+    this.arbol.update(a => {
+      const updated = { ...a, [field]: value };
+      if (['nombre', 'shortname_inst', 'periodo'].includes(field)) {
+        updated.shortname = this.computeArbolShortname(updated);
+      }
+      return updated;
+    });
     this.onArbolChange();
+  }
+
+  updateCategoriaRaiz(categoryId: any): void {
+    this.arbol.update(a => {
+      const updated = { ...a, categoria_raiz: categoryId };
+      updated.shortname = this.computeArbolShortname(updated);
+      return updated;
+    });
+    this.onArbolChange();
+  }
+
+  private computeArbolShortname(arbol: any): string {
+    const cat = this.categoriasRaiz().find((c: any) => c.id === arbol.categoria_raiz);
+    const catPrefix = cat ? cat.name.substring(0, 3).toUpperCase() : '';
+    const parts = [catPrefix, arbol.shortname_inst, arbol.periodo, this.slugify(arbol.nombre)]
+      .filter(Boolean);
+    return parts.join('-');
+  }
+
+  private slugify(text: string): string {
+    return (text ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '');
   }
 
   updateGradoField(grado: any, field: string, value: any): void {
@@ -263,11 +359,11 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
     const gradosActualizados = a.grados.map((g: any) =>
       g.id === grado.id
         ? {
-            ...g,
-            cursos: g.cursos.map((c: any) =>
-              c.id === curso.id ? { ...c, [field]: value } : c
-            ),
-          }
+          ...g,
+          cursos: g.cursos.map((c: any) =>
+            c.id === curso.id ? { ...c, [field]: value } : c
+          ),
+        }
         : g
     );
     this.arbol.set({ ...a, grados: gradosActualizados });
@@ -284,18 +380,111 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
     const gradosActualizados = a.grados.map((g: any) =>
       g.id === grado.id
         ? {
-            ...g,
-            cursos: g.cursos.map((c: any) =>
-              c.id === curso.id
-                ? { ...c, temas: c.temas.filter((t: any) => t !== tema) }
-                : c
-            ),
-          }
+          ...g,
+          cursos: g.cursos.map((c: any) =>
+            c.id === curso.id
+              ? { ...c, temas: c.temas.filter((t: any) => t !== tema) }
+              : c
+          ),
+        }
         : g
     );
     this.arbol.set({ ...a, grados: gradosActualizados });
     this.cursoActivo.update(c => ({ ...c, temas: c.temas.filter((t: any) => t !== tema) }));
     this.onArbolChange();
+  }
+
+  // ── Ejecución ──────────────────────────────────────────────────────────────
+
+  iniciarIngesta(): void {
+    const id = this.arbol()?.id;
+    if (!id) return;
+    this.validating.set(true);
+    this.api.validarArbol(id).subscribe({
+      next: (r: any) => {
+        this.conflictos.set(r.conflictos ?? []);
+        this.validating.set(false);
+        this.showValidar.set(true);
+      },
+      error: (err: any) => {
+        this.validating.set(false);
+        this.toast.add({ severity: 'error', summary: 'Error', detail: err.error?.error ?? 'No se pudo validar' });
+      },
+    });
+  }
+
+  confirmarIngesta(): void {
+    const id = this.arbol()?.id;
+    if (!id) return;
+    this.showValidar.set(false);
+    this.executing.set(true);
+    this.api.ejecutarArbol(id, { dry_run: false }).subscribe({
+      next: (r: any) => {
+        this.executing.set(false);
+        this.ejResultado.set(r);
+        this.showResults.set(true);
+      },
+      error: (err: any) => {
+        this.executing.set(false);
+        this.toast.add({ severity: 'error', summary: 'Error', detail: err.error?.error ?? 'Error en la ejecución' });
+      },
+    });
+  }
+
+  onPlantillaSelect(event: { node: TreeNode }): void {
+    if (!event.node.leaf) return;
+    this.updateCursoField('templatecourse', event.node.data?.shortname ?? '');
+  }
+
+  // ── Drag & drop from repositorios to temas ────────────────────────────────
+
+  onRepoDragStart(event: DragEvent, nodeData: any): void {
+    this._draggedSection = nodeData;
+    this._draggedTemaIndex = -1;
+    event.dataTransfer!.effectAllowed = 'copy';
+  }
+
+  onTemasDragStart(event: DragEvent, index: number): void {
+    this._draggedTemaIndex = index;
+    this._draggedSection = null;
+    event.dataTransfer!.effectAllowed = 'move';
+  }
+
+  onTemasDragOver(event: DragEvent, index: number): void {
+    event.preventDefault();
+    this.dragOverIndex.set(index);
+    event.dataTransfer!.dropEffect = this._draggedSection ? 'copy' : 'move';
+  }
+
+  onTemasDropAtIndex(event: DragEvent, targetIndex: number): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dragOverIndex.set(-1);
+
+    if (this._draggedSection) {
+      const curso = this.cursoActivo();
+      if (!curso) return;
+      const temas = [...(curso.temas ?? [])];
+      const already = temas.some(
+        t => t.repo_shortname === this._draggedSection.repo_shortname &&
+          t.section_num === this._draggedSection.section_num
+      );
+      if (!already) {
+        const idx = targetIndex < 0 ? temas.length : targetIndex;
+        temas.splice(idx, 0, { ...this._draggedSection });
+        this.updateCursoField('temas', temas);
+      }
+      this._draggedSection = null;
+    } else if (this._draggedTemaIndex >= 0) {
+      const curso = this.cursoActivo();
+      if (!curso) return;
+      const temas = [...(curso.temas ?? [])];
+      const [moved] = temas.splice(this._draggedTemaIndex, 1);
+      const dest = targetIndex > this._draggedTemaIndex ? targetIndex - 1 : targetIndex;
+      temas.splice(dest < 0 ? temas.length : dest, 0, moved);
+      this.updateCursoField('temas', temas);
+      this._draggedTemaIndex = -1;
+    }
   }
 
   volver(): void {

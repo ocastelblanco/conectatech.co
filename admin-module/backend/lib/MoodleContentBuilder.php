@@ -460,6 +460,38 @@ class MoodleContentBuilder
     }
 
     // =========================================================================
+    // Reset total del curso
+    // =========================================================================
+
+    /**
+     * Elimina todas las secciones del curso (salvo la sección 0) y su contenido.
+     * Garantiza que el markdown es la única fuente de verdad: lo que no está en
+     * el markdown no existe en el curso.
+     *
+     * Las secciones delegadas (mod_subsection) se omiten porque Moodle las elimina
+     * automáticamente al borrar el módulo subsection de la sección padre.
+     */
+    public function resetCourse(): void
+    {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $sections = $DB->get_records('course_sections', ['course' => $this->course->id], 'section ASC');
+
+        foreach ($sections as $s) {
+            if ((int)$s->section === 0) continue;          // Nunca tocar sección 0
+            if (!empty($s->component))  continue;          // Omitir secciones delegadas
+
+            $this->clearSectionContent((int)$s->section);
+
+            $fresh = $DB->get_record('course_sections', ['id' => $s->id]);
+            if ($fresh) {
+                course_delete_section($this->course, $fresh, true);
+            }
+        }
+    }
+
+    // =========================================================================
     // Buscar / limpiar secciones existentes
     // =========================================================================
 

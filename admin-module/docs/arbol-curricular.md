@@ -74,7 +74,7 @@ La estructura compuesta por los 32 cursos, su categorización en cada área y en
 1. Usuario selecciona un árbol curricular existente e inicia proceso de creación y poblamiento de cursos.
 2. Sistema crea los cursos del árbol en Moodle siguiendo las siguientes reglas:
    - El nombre largo del curso está compuesto por el nombre largo del área curricular, un guión simple y el nombre corto del grado; por ejemplo, `Ciencias Naturales - 6`.
-   - El nombre corto del curso está compuesto por el nombre corto del árbol, el periodo escolar, el nombre corto del área curricular y el nombre corto del grado, separados por un guión simple; por ejemplo, `CCSM-2006-2007-CN-6`.
+   - El nombre corto del curso está compuesto por el nombre corto del árbol, el periodo escolar, el nombre corto del área curricular y el nombre corto del grado, separados por un guión simple; por ejemplo, `CCSM-2026-2027-CN-6`.
    - Se usa el curso plantilla determinado como _templatecourse_ en el paso 6 de [Flujo de creación](#flujo-de-creación).
    - Se ubica en las categorías correspondientes en Moodle, de la siguiente forma:
       - Categoría raíz (primer nivel): la determinada en el paso 1 de [Flujo de creación](#flujo-de-creación), generalmente **COLEGIOS**.

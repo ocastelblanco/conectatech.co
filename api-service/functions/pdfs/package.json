@@ -1,0 +1,1 @@
+{"name":"conectatech-api","type":"module","dependencies":{"@aws-sdk/s3-request-presigner":"^3.0.0"}}

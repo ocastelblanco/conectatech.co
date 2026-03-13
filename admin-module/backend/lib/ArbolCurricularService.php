@@ -81,12 +81,13 @@ class ArbolCurricularService
             'id'            => uniqid('arbol-', true),
             'nombre'        => $data['nombre'],
             'shortname'     => $data['shortname'],
+            'shortname_inst'=> $data['shortname_inst'] ?? '',
             'periodo'       => $data['periodo'],
             'institucion'   => $data['institucion'],
             'categoria_raiz'=> $data['categoria_raiz'],
             'created_at'    => $now,
             'updated_at'    => $now,
-            'grados'        => [],
+            'grados'        => $data['grados'] ?? [],
         ];
 
         $this->saveArbol($arbol);
@@ -262,6 +263,7 @@ class ArbolCurricularService
                              WHERE cs.course = :courseid
                                AND cs.section > 0
                                AND cs.name != ''
+                               AND (cs.component IS NULL OR cs.component = '')
                              ORDER BY cs.section";
 
                     $secciones    = $DB->get_records_sql($sql, ['courseid' => (int)$c->id]);
@@ -321,34 +323,52 @@ class ArbolCurricularService
 
                 if (!$existing) {
                     $conflictos[] = [
-                        'shortname'   => $shortnameMoodle,
-                        'fullname'    => $fullnameMoodle,
-                        'estado'      => 'nuevo',
-                        'estudiantes' => 0,
-                        'temas_nuevos'=> count($curso['temas'] ?? []),
+                        'shortname'    => $shortnameMoodle,
+                        'fullname'     => $fullnameMoodle,
+                        'area_nombre'  => $curso['nombre'],
+                        'grado_nombre' => $grado['nombre'],
+                        'estado'       => 'nuevo',
+                        'estudiantes'  => 0,
+                        'temas_nuevos' => count($curso['temas'] ?? []),
+                        'temas_borrar' => 0,
                     ];
                     continue;
                 }
 
                 $numEstudiantes = $this->countStudents((int)$existing->id);
+                $existentes     = $this->getExistingSectionNames((int)$existing->id);
+                $temasArbol     = array_column($curso['temas'] ?? [], 'titulo');
                 $temasNuevos    = 0;
+                $temasBorrar    = 0;
 
                 if ($numEstudiantes > 0) {
-                    // Solo contar temas que no están ya en el curso
-                    $existentes = $this->getExistingSectionNames((int)$existing->id);
-                    foreach ($curso['temas'] ?? [] as $tema) {
-                        if (!in_array($tema['titulo'], $existentes, true)) {
+                    // Nuevos: en árbol pero no en Moodle
+                    foreach ($temasArbol as $titulo) {
+                        if (!in_array($titulo, $existentes, true)) {
                             $temasNuevos++;
                         }
                     }
+                    // A borrar: en Moodle pero no en árbol
+                    foreach ($existentes as $titulo) {
+                        if (!in_array($titulo, $temasArbol, true)) {
+                            $temasBorrar++;
+                        }
+                    }
+                } else {
+                    // El curso se recreará: todos los temas actuales se perderán
+                    $temasBorrar = count($existentes);
+                    $temasNuevos = count($temasArbol);
                 }
 
                 $conflictos[] = [
                     'shortname'    => $shortnameMoodle,
                     'fullname'     => $fullnameMoodle,
+                    'area_nombre'  => $curso['nombre'],
+                    'grado_nombre' => $grado['nombre'],
                     'estado'       => $numEstudiantes > 0 ? 'existe_con_estudiantes' : 'existe_sin_estudiantes',
                     'estudiantes'  => $numEstudiantes,
                     'temas_nuevos' => $temasNuevos,
+                    'temas_borrar' => $temasBorrar,
                 ];
             }
         }
@@ -523,7 +543,9 @@ class ArbolCurricularService
 
     private function buildShortname(array $arbol, array $curso, array $grado): string
     {
-        return "{$arbol['shortname']}-{$arbol['periodo']}-{$curso['shortname']}-{$grado['shortname']}";
+        $catPrefix = $this->resolveCategoryPrefix((int)$arbol['categoria_raiz']);
+        $parts     = [$catPrefix, $arbol['shortname_inst'], $arbol['periodo'], $curso['shortname'], $grado['shortname']];
+        return implode('-', array_filter($parts, fn($p) => $p !== '' && $p !== null));
     }
 
     private function buildFullname(array $curso, array $grado): string
@@ -533,7 +555,25 @@ class ArbolCurricularService
 
     private function buildCategoryPath(array $arbol, array $curso): string
     {
-        return "{$arbol['categoria_raiz']}/{$arbol['institucion']}/{$curso['nombre']}";
+        $catName = $this->resolveCategoryName((int)$arbol['categoria_raiz']);
+        return "{$catName}/{$arbol['institucion']}/{$curso['nombre']}";
+    }
+
+    /**
+     * Retorna el nombre completo de una categoría dado su ID.
+     */
+    private function resolveCategoryName(int $catId): string
+    {
+        global $DB;
+        return (string)($DB->get_field('course_categories', 'name', ['id' => $catId]) ?? $catId);
+    }
+
+    /**
+     * Retorna las 3 primeras letras en mayúsculas del nombre de la categoría raíz.
+     */
+    private function resolveCategoryPrefix(int $catId): string
+    {
+        return strtoupper(substr($this->resolveCategoryName($catId), 0, 3));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -17,7 +17,7 @@
  *
  * Request body:
  *   {
- *     "shortname": "repo-cc-cn-6-7",
+ *     "shortname": "REP-CC-MA-6-7",
  *     "content":   "# Sección 1\n\nContenido del Markdown..."
  *   }
  *
@@ -26,7 +26,7 @@
  *     summary: { total_sections, sections_created, sections_updated, total_errors },
  *     errors: string[] }
  *
- * Response 404: si el shortname no está en courses.csv.
+ * Response 404: si el shortname no existe en Moodle.
  */
 function handleMarkdown(): void
 {
@@ -41,20 +41,19 @@ function handleMarkdown(): void
     }
 
     $shortname  = trim($body['shortname']);
-    $coursesMap = loadCoursesMapForApi();
+    $courseData = lookupCourseFromMoodle($shortname);
 
-    if (!isset($coursesMap[$shortname])) {
+    if ($courseData === null) {
         http_response_code(404);
         echo json_encode([
-            'ok'        => false,
-            'error'     => "Shortname '{$shortname}' no encontrado en courses.csv.",
-            'available' => array_keys($coursesMap),
+            'ok'    => false,
+            'error' => "Curso con shortname '{$shortname}' no encontrado en Moodle.",
         ]);
         return;
     }
 
     $service = new MarkdownService(CONFIG_DIR);
-    $result  = $service->procesarContenido($shortname, $coursesMap[$shortname], $body['content']);
+    $result  = $service->procesarContenido($shortname, $courseData, $body['content']);
 
     echo json_encode([
         'ok'      => empty($result['errors']),
@@ -64,35 +63,54 @@ function handleMarkdown(): void
 }
 
 /**
- * Carga el mapa shortname → datos del curso desde courses.csv.
- * Función local del handler para no acoplar al MarkdownService con el CSV.
+ * Busca un curso en Moodle por shortname y construye el array courseData
+ * necesario para MarkdownService / MoodleContentBuilder.
  *
- * @return array<string, array{shortname: string, fullname: string, category_path: string}>
+ * category_path se reconstruye recorriendo la jerarquía de course_categories.
+ * Solo se usa si el curso no existe aún (ensureCourse lo crearía); si el curso
+ * ya existe ensureCourse hace early-return y no lo necesita.
+ *
+ * @return array{shortname: string, fullname: string, category_path: string}|null
  */
-function loadCoursesMapForApi(): array
+function lookupCourseFromMoodle(string $shortname): ?array
 {
-    $csvPath = CONFIG_DIR . '/courses.csv';
+    global $DB;
 
-    if (!file_exists($csvPath)) {
-        throw new RuntimeException("No se encontró courses.csv en: {$csvPath}");
+    $course = $DB->get_record('course', ['shortname' => $shortname]);
+
+    if (!$course) {
+        return null;
     }
 
-    $map = [];
-    $fh  = fopen($csvPath, 'r');
-    fgetcsv($fh); // saltar cabecera
+    // Reconstruir la ruta de categoría (p.ej. "Repositorios / Ciencias Naturales")
+    $categoryPath = buildCategoryPath((int) $course->category);
 
-    while ($row = fgetcsv($fh)) {
-        if (count($row) < 3) {
-            continue;
+    return [
+        'shortname'     => $course->shortname,
+        'fullname'      => $course->fullname,
+        'category_path' => $categoryPath,
+    ];
+}
+
+/**
+ * Recorre la jerarquía de course_categories hacia arriba y devuelve la ruta
+ * completa separada por " / " (sin incluir la categoría raíz "Miscellaneous").
+ */
+function buildCategoryPath(int $categoryId): string
+{
+    global $DB;
+
+    $parts = [];
+    $currentId = $categoryId;
+
+    while ($currentId > 0) {
+        $cat = $DB->get_record('course_categories', ['id' => $currentId], 'id, name, parent');
+        if (!$cat) {
+            break;
         }
-        $sn       = trim($row[0]);
-        $map[$sn] = [
-            'shortname'     => $sn,
-            'fullname'      => trim($row[1]),
-            'category_path' => trim($row[2]),
-        ];
+        array_unshift($parts, $cat->name);
+        $currentId = (int) $cat->parent;
     }
 
-    fclose($fh);
-    return $map;
+    return implode(' / ', $parts);
 }

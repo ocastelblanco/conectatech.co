@@ -8,147 +8,130 @@
       <h2 class="text-lg font-heading font-bold mb-1 text-cnt-midnight m-0">Árboles Curriculares</h2>
       <p class="text-sm text-gray-500 m-0">Gestiona la estructura curricular por institución y período.</p>
     </div>
-    <p-button
-      label="+ Nuevo árbol"
-      icon="pi pi-plus"
-      routerLink="/arboles/nuevo"
-    />
+    <p-button label="Nuevo árbol"
+              icon="pi pi-plus"
+              routerLink="/arboles/nuevo" />
   </div>
 
   <!-- Loading -->
   @if (loading()) {
-    <div class="flex items-center justify-center py-12 text-gray-400">
-      <i class="pi pi-spin pi-spinner mr-2 text-xl"></i>
-      <span class="text-sm">Cargando árboles...</span>
-    </div>
+  <div class="flex items-center justify-center py-12 text-gray-400">
+    <i class="pi pi-spin pi-spinner mr-2 text-xl"></i>
+    <span class="text-sm">Cargando árboles...</span>
+  </div>
   }
 
   <!-- Table -->
   @if (!loading()) {
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <p-table [value]="arboles()" [paginator]="arboles().length > 10" [rows]="10" class="text-sm">
-        <ng-template #header>
-          <tr>
-            <th>Nombre</th>
-            <th>Shortname</th>
-            <th>Período</th>
-            <th>Institución</th>
-            <th>Actualizado</th>
-            <th class="text-right">Acciones</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-arbol>
-          <tr>
-            <td class="font-medium text-cnt-midnight">{{ arbol.nombre }}</td>
-            <td class="font-mono text-xs text-gray-500">{{ arbol.shortname }}</td>
-            <td class="text-sm text-gray-600">{{ arbol.periodo }}</td>
-            <td class="text-sm text-gray-600">{{ arbol.institucion }}</td>
-            <td class="text-xs text-gray-400">{{ arbol.updated_at | date:'dd/MM/yyyy HH:mm' }}</td>
-            <td>
-              <div class="flex items-center justify-end gap-1">
-                <p-button
-                  icon="pi pi-pencil"
-                  size="small"
-                  severity="secondary"
-                  [text]="true"
-                  pTooltip="Editar"
-                  (onClick)="editar(arbol)"
-                />
-                <p-button
-                  icon="pi pi-copy"
-                  size="small"
-                  severity="secondary"
-                  [text]="true"
-                  pTooltip="Duplicar"
-                  (onClick)="abrirDuplicar(arbol)"
-                />
-                <p-button
-                  icon="pi pi-trash"
-                  size="small"
-                  severity="danger"
-                  [text]="true"
-                  pTooltip="Eliminar"
-                  (onClick)="eliminar(arbol)"
-                />
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="6" class="text-center text-gray-400 py-8">
-              <i class="pi pi-inbox text-3xl mb-2 block"></i>
-              No hay árboles curriculares. Crea el primero.
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </div>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <p-table [value]="arboles()"
+             [paginator]="arboles().length > 10"
+             [rows]="10"
+             class="text-sm">
+      <ng-template #header>
+        <tr>
+          <th>Nombre</th>
+          <th>Código</th>
+          <th>Período</th>
+          <th>Institución</th>
+          <th>Actualizado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body
+                   let-arbol>
+        <tr>
+          <td class="font-medium text-cnt-midnight">{{ arbol.nombre }}</td>
+          <td class="font-mono text-xs text-gray-500">{{ arbol.shortname }}</td>
+          <td class="text-sm text-gray-600">{{ arbol.periodo }}</td>
+          <td class="text-sm text-gray-600">{{ arbol.institucion }}</td>
+          <td class="text-xs text-gray-400">{{ arbol.updated_at | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+            <div class="flex items-center justify-end gap-1">
+              <p-button icon="pi pi-pencil"
+                        size="small"
+                        severity="secondary"
+                        [text]="true"
+                        pTooltip="Editar"
+                        (onClick)="editar(arbol)" />
+              <p-button icon="pi pi-copy"
+                        size="small"
+                        severity="secondary"
+                        [text]="true"
+                        pTooltip="Duplicar"
+                        (onClick)="abrirDuplicar(arbol)" />
+              <p-button icon="pi pi-trash"
+                        size="small"
+                        severity="danger"
+                        [text]="true"
+                        pTooltip="Eliminar"
+                        (onClick)="eliminar(arbol)" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="6"
+              class="text-center text-gray-400 py-8">
+            <i class="pi pi-inbox text-3xl mb-2 block"></i>
+            No hay árboles curriculares. Crea el primero.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
   }
 </div>
 
 <!-- Dialog duplicar -->
-<p-dialog
-  header="Duplicar árbol"
-  [visible]="duplicandoId() !== null"
-  (visibleChange)="$event ? null : duplicandoId.set(null)"
-  [modal]="true"
-  [style]="{ width: '420px' }"
-  [closable]="true"
->
+<p-dialog header="Duplicar árbol"
+          [visible]="duplicandoId() !== null"
+          (visibleChange)="$event ? null : duplicandoId.set(null)"
+          [modal]="true"
+          [style]="{ width: '420px' }"
+          [closable]="true">
   <div class="space-y-3 pt-1">
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium text-gray-700">Nombre</label>
-      <input
-        pInputText
-        type="text"
-        class="w-full"
-        [ngModel]="getDupMeta().nombre"
-        (ngModelChange)="updateDupNombre($event)"
-      />
+      <input pInputText
+             type="text"
+             class="w-full"
+             [ngModel]="getDupMeta().nombre"
+             (ngModelChange)="updateDupNombre($event)" />
     </div>
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium text-gray-700">Shortname</label>
-      <input
-        pInputText
-        type="text"
-        class="w-full font-mono"
-        [ngModel]="getDupMeta().shortname"
-        (ngModelChange)="updateDupShortname($event)"
-      />
+      <input pInputText
+             type="text"
+             class="w-full font-mono"
+             [ngModel]="getDupMeta().shortname"
+             (ngModelChange)="updateDupShortname($event)" />
     </div>
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium text-gray-700">Período</label>
-      <input
-        pInputText
-        type="text"
-        class="w-full"
-        [ngModel]="getDupMeta().periodo"
-        (ngModelChange)="updateDupPeriodo($event)"
-      />
+      <input pInputText
+             type="text"
+             class="w-full"
+             [ngModel]="getDupMeta().periodo"
+             (ngModelChange)="updateDupPeriodo($event)" />
     </div>
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium text-gray-700">Institución</label>
-      <input
-        pInputText
-        type="text"
-        class="w-full"
-        [ngModel]="getDupMeta().institucion"
-        (ngModelChange)="updateDupInstitucion($event)"
-      />
+      <input pInputText
+             type="text"
+             class="w-full"
+             [ngModel]="getDupMeta().institucion"
+             (ngModelChange)="updateDupInstitucion($event)" />
     </div>
   </div>
   <ng-template #footer>
-    <p-button
-      label="Cancelar"
-      severity="secondary"
-      [text]="true"
-      (onClick)="duplicandoId.set(null)"
-    />
-    <p-button
-      label="Duplicar"
-      icon="pi pi-copy"
-      (onClick)="confirmarDuplicar()"
-    />
+    <p-button label="Cancelar"
+              severity="secondary"
+              [text]="true"
+              (onClick)="duplicandoId.set(null)" />
+    <p-button label="Duplicar"
+              icon="pi pi-copy"
+              (onClick)="confirmarDuplicar()" />
   </ng-template>
 </p-dialog>

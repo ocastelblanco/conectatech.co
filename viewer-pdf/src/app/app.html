@@ -1,0 +1,44 @@
+<!-- Loading state -->
+@if (loading()) {
+  <div class="state-container">
+    <div class="spinner"></div>
+    <p class="state-message">Cargando...</p>
+  </div>
+}
+
+<!-- Error state -->
+@if (!loading() && error()) {
+  <div class="state-container state-error">
+    <svg class="error-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <p class="state-message">{{ error() }}</p>
+  </div>
+}
+
+<!-- PDF viewer -->
+@if (!loading() && !error() && pdfUrl()) {
+  <ngx-extended-pdf-viewer
+    [src]="pdfUrl()!"
+    [pageViewMode]="'book'"
+    [height]="'100vh'"
+    [showToolbar]="false"
+    [page]="currentPage()"
+    (pageChange)="onPageChange($event)"
+  />
+
+  <!-- Botones flotantes fuera del stacking context del viewer -->
+  <button class="nav-btn nav-prev" (click)="prevPage()" aria-label="Página anterior">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  </button>
+
+  <button class="nav-btn nav-next" (click)="nextPage()" aria-label="Página siguiente">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  </button>
+}
