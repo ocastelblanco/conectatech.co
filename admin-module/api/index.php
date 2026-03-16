@@ -13,7 +13,9 @@
  *   POST /api/cursos/poblar         → poblar cursos desde mapping JSON
  *   POST /api/matriculas            → crear/actualizar usuarios y matricular
  *   POST /api/markdown              → procesar Markdown en un curso repositorio
- *   GET  /api/reportes/{nombre}     → último reporte JSON de una operación
+ *   GET  /api/reportes/{nombre}                → último reporte JSON de una operación
+ *   GET  /api/activos/cursos-repositorio       → cursos repositorio con secciones
+ *   POST /api/activos/crear-visor              → crea visor PDF (mod_label) en Moodle
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -215,6 +217,18 @@ try {
         case $method === 'GET' && $seg0 === 'arboles' && $seg1 === '':
             require API_DIR . '/handlers/arboles.php';
             handleListarArboles();
+            break;
+
+        // GET /api/activos/cursos-repositorio
+        case $method === 'GET' && $seg0 === 'activos' && $seg1 === 'cursos-repositorio':
+            require API_DIR . '/handlers/activos.php';
+            handleGetCursosRepositorio();
+            break;
+
+        // POST /api/activos/crear-visor
+        case $method === 'POST' && $seg0 === 'activos' && $seg1 === 'crear-visor':
+            require API_DIR . '/handlers/activos.php';
+            handleCrearVisor();
             break;
 
         default:

@@ -12,6 +12,7 @@ const routeTitles: Record<string, string> = {
   contenido: 'Crear Contenido',
   reportes: 'Reportes',
   arboles: 'Árboles Curriculares',
+  activos: 'Activos CDN',
 };
 
 @Component({

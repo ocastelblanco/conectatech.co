@@ -33,6 +33,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/arboles/arbol-editor.component').then(m => m.ArbolEditorComponent)
       },
       {
+        path: 'activos',
+        loadComponent: () => import('./features/activos/activos.component').then(m => m.ActivosComponent)
+      },
+      {
         path: 'reportes',
         loadComponent: () => import('./features/reportes/reportes.component').then(m => m.ReportesComponent)
       },

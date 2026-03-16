@@ -62,4 +62,20 @@ export class ApiService {
   getArbolesRepositorios(): Observable<any> { return this.http.get(`${API_BASE}/arboles/repositorios`); }
   getArbolesCategoriasRaiz(): Observable<any> { return this.http.get(`${API_BASE}/arboles/categorias-raiz`); }
   getArbolesOpcionesCss(): Observable<any>   { return this.http.get(`${API_BASE}/arboles/opciones-css`); }
+
+  // Activos — integración Moodle
+  getActivosCursosRepositorio(): Observable<{ ok: boolean; cursos: any[] }> {
+    return this.http.get<any>(`${API_BASE}/activos/cursos-repositorio`);
+  }
+
+  crearVisor(body: {
+    pdfId: string;
+    pdfTitle: string;
+    courseId: number;
+    seccionNum: number;
+    pageStart?: number;
+    pageEnd?: number;
+  }): Observable<{ ok: boolean; cmId: number | null }> {
+    return this.http.post<any>(`${API_BASE}/activos/crear-visor`, body);
+  }
 }
