@@ -115,11 +115,8 @@ class MarkdownParser
 
         $this->finalizeSubsection();
 
-        // Limpiar: quitar bold (**) y desescapar corchetes (\[ → [)
+        // Limpiar bold, italic, corchetes y prefijo numérico ("1\. " o "1. ")
         $rawTitle = self::stripTitleFormatting($rawTitle);
-
-        // Quitar prefijo numérico: "1\. " o "1. "
-        $rawTitle = preg_replace('/^\d+\\\\?\.\\s*/', '', $rawTitle);
 
         // Extraer marcador [evaluacion] | [presaberes] | [otro]
         $marker = null;
@@ -554,9 +551,10 @@ class MarkdownParser
      */
     public static function stripTitleFormatting(string $title): string
     {
-        $title = str_replace('**', '', $title);   // quitar bold
-        $title = str_replace('*', '', $title);     // quitar italic (asterisco de Google Docs)
+        $title = str_replace('**', '', $title);   // quitar bold (**texto**)
+        $title = str_replace('*', '', $title);     // quitar italic (*texto*)
         $title = str_replace(['\\[', '\\]'], ['[', ']'], $title);  // desescapar corchetes
+        $title = preg_replace('/^\d+\\\\?\.\\s*/', '', $title);   // quitar prefijo numérico: "1\. " o "1. "
         return trim($title);
     }
 

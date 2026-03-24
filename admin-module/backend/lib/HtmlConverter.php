@@ -172,6 +172,9 @@ class HtmlConverter
      */
     private function inlineMarkdown(string $text): string
     {
+        // Desescapar puntos exportados por Google Docs: "1\. texto" → "1. texto"
+        $text = str_replace('\\.', '.', $text);
+
         // Negrita: **texto** o __texto__
         $text = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $text);
         $text = preg_replace('/__(.+?)__/', '<strong>$1</strong>', $text);
