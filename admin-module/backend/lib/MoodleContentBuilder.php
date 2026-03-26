@@ -449,7 +449,7 @@ class MoodleContentBuilder
                 return [];
             }
 
-            return $importer->importedquestionids() ?? [];
+            return $importer->questionids ?? [];
 
         } catch (Throwable $e) {
             error_log("ERROR importando GIFT: " . $e->getMessage());
