@@ -729,7 +729,8 @@ class ArbolCurricularService
         array           $curso,
         bool            $dryRun
     ): void {
-        global $DB;
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
 
         if (!$dryRun) {
             // Actualizar fullname
@@ -738,21 +739,40 @@ class ArbolCurricularService
             $updateData->fullname = $fullname;
             update_course($updateData);
 
-            // Eliminar todas las secciones > 0 (de mayor a menor para evitar
-            // renumeraciones de Moodle que podrían saltar secciones)
-            $sections = $DB->get_records(
+            // Eliminar módulos de secciones no-delegadas con section > 0.
+            // NO se usa course_delete_section() porque llama move_section_to()
+            // que renumera y genera entradas con section < 0 (duplicate key).
+            $sections = $DB->get_records_select(
                 'course_sections',
-                ['course' => $existing->id],
+                "course = ? AND section > 0 AND (component IS NULL OR component = '')",
+                [$existing->id],
                 'section DESC'
             );
 
-            $courseObj = get_course($existing->id);
-
             foreach ($sections as $section) {
-                if ((int)$section->section > 0) {
-                    course_delete_section($courseObj, $section, true, true);
+                try {
+                    $modinfo = get_fast_modinfo($existing->id, 0, true);
+                    $sinfo   = $modinfo->get_section_info((int)$section->section, IGNORE_MISSING);
+                    if ($sinfo && !empty($sinfo->sequence)) {
+                        foreach (array_filter(explode(',', $sinfo->sequence)) as $cmid) {
+                            if ((int)$cmid) {
+                                course_delete_module((int)$cmid);
+                            }
+                        }
+                    }
+                } catch (Throwable $e) {
+                    error_log("WARN vaciarYRepoblar: sección {$section->section}: " . $e->getMessage());
                 }
             }
+
+            // Borrar registros de secciones directamente (sin renumeración)
+            $DB->delete_records_select(
+                'course_sections',
+                'course = ? AND section > 0',
+                [$existing->id]
+            );
+
+            rebuild_course_cache($existing->id, true);
         }
 
         $sections = array_map(fn($t) => [

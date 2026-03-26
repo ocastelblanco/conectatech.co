@@ -483,12 +483,18 @@ class MoodleContentBuilder
             if (!empty($s->component))  continue;          // Omitir secciones delegadas
 
             $this->clearSectionContent((int)$s->section);
-
-            $fresh = $DB->get_record('course_sections', ['id' => $s->id]);
-            if ($fresh) {
-                course_delete_section($this->course, $fresh, true);
-            }
+            // NO llamar course_delete_section(): invoca move_section_to() que
+            // renumera secciones y genera duplicate key cuando hay gaps.
         }
+
+        // Borrar registros de secciones directamente (sin renumeración de Moodle)
+        $DB->delete_records_select(
+            'course_sections',
+            'course = ? AND section > 0',
+            [$this->course->id]
+        );
+
+        rebuild_course_cache($this->course->id, true);
     }
 
     // =========================================================================
