@@ -1,7 +1,7 @@
 <script>
   /********* AÑADE CLASES AL <BODY> DE UN CURSO SEGÚN EL ÁRBOL CURRICULAR - GENERAL ***********/
   /* CT:MAP:START */
-  const CT_COURSES = {};
+  const CT_COURSES = { "13": ["cosmovision-cristiana", "ciencias-naturales"], "14": ["cosmovision-cristiana", "matematicas"], "18": ["planeta-lector", "planeta-lector"] };
   /* CT:MAP:END */
   const bodyElement = document.querySelector("body");
   if (bodyElement !== null) {
@@ -11,14 +11,20 @@
     });
   }
 
-  /********* MODIFICA EL HEADER DE CADA CURSO - COSMOVISIÓN CRISTIANA ***********/
+  /********** DEFINE EL TIPO DE PROYECTO ********/
+  let proyecto = null;
+  if (bodyElement.classList.contains('planeta-lector')) proyecto = 'planeta-lector';
+  if (bodyElement.classList.contains('cosmovision-cristiana')) proyecto = 'cosmovision-cristiana';
+
+  /********* MODIFICA EL HEADER DE CADA CURSO ***********/
   const courseHeaderImageElement = document.querySelector("#courseheaderimage");
   if (courseHeaderImageElement !== null) {
     const tituloCursoElement = courseHeaderImageElement.querySelector(".page-header-headings > *");
-    generaDivGrado(tituloCursoElement, courseHeaderImageElement);
+    if (proyecto == 'cosmovision-cristiana') generaDivGrado(tituloCursoElement, courseHeaderImageElement);
+    if (proyecto == 'planeta-lector') generaDivGrado(tituloCursoElement, courseHeaderImageElement, false);
   }
 
-  /********* MODIFICA LA CARD DE CADA CURSO (MIS CURSOS) - COSMOVISIÓN CRISTIANA ***********/
+  /********* MODIFICA LA CARD DE CADA CURSO (MIS CURSOS) ***********/
   function procesarCards() {
     // Seleccionar todas las cards de curso dentro de .card-grid (para limitar)
     const cardGrids = document.querySelectorAll('.card-grid');
@@ -26,7 +32,7 @@
     cardGrids.forEach(grid => {
       const cards = grid.querySelectorAll('.card.course-card');
       cards.forEach(cardCurso => {
-        const tituloCursoElement = cardCurso.querySelector(".coursename span.multiline > span:last-of-type");
+        const tituloCursoElement = cardCurso.querySelector(".coursename span.multiline > span:last-of-type") ?? cardCurso.querySelector(".coursename");
         const cardCursoTop = cardCurso.querySelector(".card-img-top");
         if (tituloCursoElement) generaDivGrado(tituloCursoElement, cardCursoTop);
       });
@@ -51,24 +57,29 @@
 
   /********* FUNCIONES PARA COSMOVISIÓN CRISTIANA ***********/
   function extraeMateriaCurso(nombre) {
-    const materia = nombre.trim().match(/^(.+?)(?=\s?-\s?)/g);
-    const grado = nombre.trim().match(/(?<=\s?-\s?).*/g);
-    if (materia && grado) return [materia[0].trim(), grado[0].trim()];
+    [materia, grado] = nombre.split(' - ');
+    if (materia.match(/\n/g)) materia = materia.split('\n')[1];
+    if (materia && grado && grado.substr(0, 1).match(/\d/g)) {
+      const salida = [materia.trim(), grado.trim()];
+      return salida;
+    }
     return null;
   }
 
-  function generaDivGrado(tituloCursoElement, padre) {
+  function generaDivGrado(tituloCursoElement, padre, addGrado = true) {
     if (padre.querySelector('.grado')) return;
     const tituloCurso = tituloCursoElement.innerText;
+    if (!tituloCurso) return;
     const datos = extraeMateriaCurso(tituloCurso);
     if (datos) {
-      const materia = datos[0];
-      const grado = datos[1];
+      [materia, grado] = datos;
       tituloCursoElement.innerText = materia;
-      const gradoElement = document.createElement("div");
-      gradoElement.innerText = grado;
-      gradoElement.classList.add("grado");
-      padre.prepend(gradoElement);
+      if (addGrado) {
+        const gradoElement = document.createElement("div");
+        gradoElement.innerText = grado;
+        gradoElement.classList.add("grado");
+        padre.prepend(gradoElement);
+      }
     }
   }
   // ************* ConectaTech — Presaberes Interactive Quiz v1.0 ****************************

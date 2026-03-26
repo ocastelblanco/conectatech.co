@@ -51,6 +51,7 @@ export class ActivosComponent implements OnInit {
   readonly uploadFile    = signal<File | null>(null);
   readonly uploading     = signal(false);
   readonly uploadError   = signal('');
+  readonly dragOver      = signal(false);
 
   // ─── Rename inline ────────────────────────────────────────────────────────
   readonly editingId    = signal<string | null>(null);
@@ -108,6 +109,22 @@ export class ActivosComponent implements OnInit {
     const file  = input.files?.[0] ?? null;
     this.uploadFile.set(file);
     if (file && !this.uploadTitle()) {
+      this.uploadTitle.set(file.name.replace(/\.[^.]+$/, ''));
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.dragOver.set(true);
+  }
+
+  onFileDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.dragOver.set(false);
+    const file = event.dataTransfer?.files?.[0] ?? null;
+    if (!file) return;
+    this.uploadFile.set(file);
+    if (!this.uploadTitle()) {
       this.uploadTitle.set(file.name.replace(/\.[^.]+$/, ''));
     }
   }

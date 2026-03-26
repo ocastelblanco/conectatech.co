@@ -36,6 +36,14 @@
             "idnumber": "UC-LE"
           }
         }
+      },
+      "Planeta Lector": {
+        "idnumber": "REP-PL",
+        "children": {
+          "Cuaderno de Besos": {
+            "idnumber": "PL-CB"
+          }
+        }
       }
     }
   }

@@ -584,6 +584,27 @@ class MarkdownParser
         $content = str_replace(["\u{2018}", "\u{2019}"], "'", $content);
         // Em-dash
         $content = str_replace("\u{2014}", '--', $content);
+
+        // Eliminar definiciones de imagen base64 exportadas por Google Docs
+        // Formato: [image1]: <data:image/TYPE;base64,...>
+        $content = preg_replace('/^\[[^\]]+\]:\s*<data:[^>]*>\s*$/m', '', $content);
+
+        // Eliminar referencias estilo ![alt][ref] que apuntaban a esas definiciones
+        $content = preg_replace('/!\[[^\]]*\]\[[^\]]+\]/', '', $content);
+
+        // Desescapar imágenes escapadas por Google Docs al exportar a Markdown:
+        //   \!\[alt\](url)        → ![alt](url)
+        //   \!\[alt\](url){clase} → ![alt](url){clase}
+        // La forma nativa (Obsidian, etc.) ya es ![alt](url) y no necesita desescapado.
+        $content = preg_replace_callback(
+            '/\\\\!\\\\\[(.+?)\\\\\]\(([^)]+)\)(?:\{([^}]+)\})?/',
+            static function (array $m): string {
+                $suffix = (isset($m[3]) && $m[3] !== '') ? '{' . $m[3] . '}' : '';
+                return '![' . $m[1] . '](' . $m[2] . ')' . $suffix;
+            },
+            $content
+        );
+
         return $content;
     }
 }

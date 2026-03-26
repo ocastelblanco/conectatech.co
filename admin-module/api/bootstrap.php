@@ -25,3 +25,11 @@ if (!file_exists($moodleConfig)) {
 }
 
 require($moodleConfig);
+
+// Moodle inicializa la navegación en contexto web y el autoloader carga
+// theme_boost_union\boostnavbar antes de que lib.php haya sido incluido,
+// lo que causa "Undefined constant THEME_BOOST_UNION_SETTING_SELECT_YES".
+// Cargamos lib.php explícitamente para que las constantes estén disponibles.
+if (isset($CFG) && file_exists($CFG->dirroot . '/theme/boost_union/lib.php')) {
+    require_once($CFG->dirroot . '/theme/boost_union/lib.php');
+}

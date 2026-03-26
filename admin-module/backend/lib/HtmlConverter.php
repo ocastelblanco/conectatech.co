@@ -137,6 +137,18 @@ class HtmlConverter
                 $inBlockquote = false;
             }
 
+            // Imagen de bloque: línea completa que es sólo una imagen
+            // Soporta: ![alt](url)  y  ![alt](url){clase}
+            if (preg_match('/^!\[([^\]]*)\]\(([^)]+)\)(?:\{([^}]+)\})?$/', trim($line), $im)) {
+                if ($inList)       { $html .= "</ul>\n";         $inList       = false; }
+                if ($inBlockquote) { $html .= "</blockquote>\n"; $inBlockquote = false; }
+                $alt = htmlspecialchars($im[1], ENT_QUOTES, 'UTF-8');
+                $src = htmlspecialchars($im[2], ENT_QUOTES, 'UTF-8');
+                $cls = !empty($im[3]) ? ' class="' . htmlspecialchars($im[3], ENT_QUOTES, 'UTF-8') . '"' : '';
+                $html .= '<figure' . $cls . '><img src="' . $src . '" alt="' . $alt . '"></figure>' . "\n";
+                continue;
+            }
+
             // Párrafo vacío
             if (trim($line) === '') {
                 if ($inList) {
@@ -172,8 +184,21 @@ class HtmlConverter
      */
     private function inlineMarkdown(string $text): string
     {
-        // Desescapar puntos exportados por Google Docs: "1\. texto" → "1. texto"
-        $text = str_replace('\\.', '.', $text);
+        // Desescapar caracteres escapados por Google Docs al exportar a Markdown
+        $text = str_replace('\\.', '.', $text);   // "1\. texto"  → "1. texto"
+        $text = str_replace('\!', '!', $text);    // "texto\!"   → "texto!"
+
+        // Imagen inline: ![alt](url) o ![alt](url){clase}
+        $text = preg_replace_callback(
+            '/!\[([^\]]*)\]\(([^)]+)\)(?:\{([^}]+)\})?/',
+            static function (array $m): string {
+                $alt = htmlspecialchars($m[1], ENT_QUOTES, 'UTF-8');
+                $src = htmlspecialchars($m[2], ENT_QUOTES, 'UTF-8');
+                $cls = !empty($m[3]) ? ' class="' . htmlspecialchars($m[3], ENT_QUOTES, 'UTF-8') . '"' : '';
+                return '<img src="' . $src . '" alt="' . $alt . '"' . $cls . '>';
+            },
+            $text
+        );
 
         // Negrita: **texto** o __texto__
         $text = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $text);

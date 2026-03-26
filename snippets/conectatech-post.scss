@@ -732,7 +732,7 @@ body {
 						padding-left: 10rem;
 						background-color: $resaltado-cita-biblica;
 						text-align: right;
-						background-image: url(https://assets.conectatech.co/conectatech/img/cita-biblica-fondo.jpg);
+						background-image: url(https://assets.conectatech.co/recursos/img/cosmovision-cristiana/cita-biblica-fondo.jpg);
 						&::before {
 							background: linear-gradient(
 								to right,
@@ -742,7 +742,7 @@ body {
 						}
 						&::after {
 							left: 1rem;
-							background-image: url(https://assets.conectatech.co/conectatech/img/cita-biblica-icono.png);
+							background-image: url(https://assets.conectatech.co/recursos/img/cosmovision-cristiana/cita-biblica-icono.png);
 						}
 					}
 					&.cierre-espiritual {
@@ -750,7 +750,7 @@ body {
 						padding-right: 10rem;
 						padding-left: 1rem;
 						background-color: $resaltado-cierre-espiritual;
-						background-image: url(https://assets.conectatech.co/conectatech/img/cierre-espiritual-fondo.jpg);
+						background-image: url(https://assets.conectatech.co/recursos/img/cosmovision-cristiana/cierre-espiritual-fondo.jpg);
 						& > h3,
 						& > h4,
 						& > h5 {
@@ -765,7 +765,7 @@ body {
 						}
 						&::after {
 							right: 1rem;
-							background-image: url(https://assets.conectatech.co/conectatech/img/cierre-espiritual-icono.png);
+							background-image: url(https://assets.conectatech.co/recursos/img/cosmovision-cristiana/cierre-espiritual-icono.png);
 						}
 					}
 				}

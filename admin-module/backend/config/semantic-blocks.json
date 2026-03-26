@@ -5,49 +5,140 @@
     {
       "h3_title": "Referente bíblico",
       "css_primary": "cita-biblica",
-      "css_additional": ["resaltado"],
+      "css_additional": [
+        "resaltado"
+      ],
+      "proyecto": "cosmovision-cristiana",
       "show_h3": false
     },
     {
       "h3_title": "Texto bíblico guía",
       "css_primary": "cita-biblica",
-      "css_additional": ["resaltado"],
+      "css_additional": [
+        "resaltado"
+      ],
+      "proyecto": "cosmovision-cristiana",
       "show_h3": false
     },
     {
       "h3_title": "Introducción motivadora",
       "css_primary": "introduccion-motivadora",
       "css_additional": [],
+      "proyecto": "cosmovision-cristiana",
       "show_h3": false
     },
     {
       "h3_title": "¿Qué tiene que ver esto contigo?",
       "css_primary": "que-tiene-que-ver-esto-contigo",
       "css_additional": [],
+      "proyecto": "cosmovision-cristiana",
       "show_h3": true
     },
     {
       "h3_title": "Objetivos de aprendizaje con sentido cristiano",
       "css_primary": "objetivos-de-aprendizaje-con-sentido-cristiano",
       "css_additional": [],
+      "proyecto": "cosmovision-cristiana",
       "show_h3": true
     },
     {
       "h3_title": "Cierre espiritual",
       "css_primary": "cierre-espiritual",
-      "css_additional": ["resaltado"],
+      "css_additional": [
+        "resaltado"
+      ],
+      "proyecto": "cosmovision-cristiana",
       "show_h3": true
     },
     {
       "h3_title": "Reflexiona",
       "css_primary": "reflexiona",
       "css_additional": [],
+      "proyecto": "cosmovision-cristiana",
       "show_h3": true
     },
     {
       "h3_title": "Ponte en acción",
       "css_primary": "ponte-en-accion",
       "css_additional": [],
+      "proyecto": "cosmovision-cristiana",
+      "show_h3": true
+    },
+    {
+      "h3_title": "Contexto",
+      "css_primary": "contexto",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": true
+    },
+    {
+      "h3_title": "¿De qué trata la obra?",
+      "css_primary": "de-que-trata-la-obra",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": true
+    },
+    {
+      "h3_title": "¿Qué desarrolla en los estudiantes?",
+      "css_primary": "que-desarrolla-en-los-estudiantes",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": true
+    },
+    {
+      "h3_title": "La ruta didáctica",
+      "css_primary": "la-ruta-didactica",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": true
+    },
+    {
+      "h3_title": "Integración con estudio de la lengua",
+      "css_primary": "integracion-con-estudio-de-lengua",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": true
+    },
+    {
+      "h3_title": "Estrategias de lectura",
+      "css_primary": "estrategias-de-lectura",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": true
+    },
+    {
+      "h3_title": "Metacognición: Enseñar a leer… y a pensar cómo se lee",
+      "css_primary": "metacognicion-ensenar-a-leer-y-a-pensar-como-se-lee",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": true
+    },
+    {
+      "h3_title": "(Carátula)",
+      "css_primary": "caratula-libro",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": false
+    },
+    {
+      "h3_title": "¿Quién escribió este libro?",
+      "css_primary": "quien-escribio-este-libro",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": true
+    },
+    {
+      "h3_title": "¿Qué tipo de libro vas a leer?",
+      "css_primary": "que-tipo-de-libro-vas-a-leer",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
+      "show_h3": true
+    },
+    {
+      "h3_title": "¿Qué tienen estas historias?",
+      "css_primary": "que-tienen-estas-historias",
+      "css_additional": [],
+      "proyecto": "planeta-lector",
       "show_h3": true
     }
   ],
