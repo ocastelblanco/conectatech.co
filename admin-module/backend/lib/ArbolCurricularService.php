@@ -478,18 +478,14 @@ class ArbolCurricularService
                             $entry['action'] = 'updated';
                             $summary['updated']++;
                         } else {
-                            // Eliminar y recrear
-                            if (!$dryRun) {
-                                delete_course($existing->id, false);
-                            }
-
-                            $this->crearYPoblar(
-                                $cursosService, $pobladorService,
-                                $shortnameMoodle, $fullnameMoodle, $categoryPath, $curso, $dryRun
+                            // Sin estudiantes: vaciar secciones y repoblar (preserva el ID del curso)
+                            $this->vaciarYRepoblar(
+                                $pobladorService,
+                                $existing, $fullnameMoodle, $curso, $dryRun
                             );
 
-                            $entry['action'] = 'recreated';
-                            $summary['created']++;
+                            $entry['action'] = 'updated';
+                            $summary['updated']++;
                         }
                     } else {
                         // Curso nuevo
@@ -721,6 +717,53 @@ class ArbolCurricularService
     // ─────────────────────────────────────────────────────────────────────────
     // Métodos privados — helpers de ejecución
     // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Vacía todas las secciones > 0 del curso y repuebla desde el árbol.
+     * Preserva el ID del curso (no lo borra), evitando rotura de URLs y referencias.
+     */
+    private function vaciarYRepoblar(
+        PobladorService $pobladorService,
+        object          $existing,
+        string          $fullname,
+        array           $curso,
+        bool            $dryRun
+    ): void {
+        global $DB;
+
+        if (!$dryRun) {
+            // Actualizar fullname
+            $updateData           = new stdClass();
+            $updateData->id       = $existing->id;
+            $updateData->fullname = $fullname;
+            update_course($updateData);
+
+            // Eliminar todas las secciones > 0 (de mayor a menor para evitar
+            // renumeraciones de Moodle que podrían saltar secciones)
+            $sections = $DB->get_records(
+                'course_sections',
+                ['course' => $existing->id],
+                'section DESC'
+            );
+
+            $courseObj = get_course($existing->id);
+
+            foreach ($sections as $section) {
+                if ((int)$section->section > 0) {
+                    course_delete_section($courseObj, $section, true, true);
+                }
+            }
+        }
+
+        $sections = array_map(fn($t) => [
+            'repo'        => $t['repo_shortname'],
+            'section_num' => $t['section_num'],
+        ], $curso['temas'] ?? []);
+
+        if (!empty($sections)) {
+            $pobladorService->poblarCurso($existing->shortname, $sections, $dryRun);
+        }
+    }
 
     private function crearYPoblar(
         CursosService  $cursosService,

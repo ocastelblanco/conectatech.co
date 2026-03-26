@@ -235,7 +235,9 @@ class MarkdownParser
                 'tipo'     => 'ensayo',
                 'variante' => 'texto',
                 'enunciado'=> '',
+                'options'  => [],
             ];
+            $this->curOption = null;
             return;
         }
 
@@ -307,12 +309,40 @@ class MarkdownParser
                     if ($this->curH3EvalQ === null) {
                         break;
                     }
+
+                    // Metadatos {tipo: ...}
                     if (preg_match('/^\{tipo:\s*([^,}]+)(?:,\s*variante:\s*([^}]+))?\}/', trim($line), $m)) {
                         $this->curH3EvalQ['tipo'] = trim($m[1]);
                         if (!empty($m[2])) {
                             $this->curH3EvalQ['variante'] = trim($m[2]);
                         }
-                    } elseif (trim($line) !== '') {
+                        break;
+                    }
+
+                    // Sub-lista: feedback de la opción actual (sangría + "- texto" o "* texto")
+                    if (preg_match('/^\s+[*-] (.+)$/', $line, $m) && $this->curOption !== null) {
+                        $this->curOption['feedback'] = trim($m[1]);
+                        break;
+                    }
+
+                    // Lista: opción de respuesta "- texto" o "* texto" (Google Docs usa *)
+                    if (preg_match('/^[*-] (.+)$/', $line, $m)) {
+                        if ($this->curOption !== null) {
+                            $this->curH3EvalQ['options'][] = $this->curOption;
+                        }
+                        // Desescapar \[ y \] exportados por Google Docs antes de detectar [correcta]
+                        $optText = str_replace(['\\[', '\\]'], ['[', ']'], trim($m[1]));
+                        $correct = false;
+                        if (preg_match('/^(.+?)\s*\[correcta\]\s*$/', $optText, $om)) {
+                            $optText = trim($om[1]);
+                            $correct = true;
+                        }
+                        $this->curOption = ['text' => $optText, 'correct' => $correct, 'feedback' => ''];
+                        break;
+                    }
+
+                    // Texto del enunciado (solo si no hay opciones aún)
+                    if (trim($line) !== '' && empty($this->curH3EvalQ['options']) && $this->curOption === null) {
                         $this->curH3EvalQ['enunciado'] .= $line . "\n";
                     }
                 } else {
@@ -339,17 +369,17 @@ class MarkdownParser
                 }
 
                 // Sub-lista (feedback)
-                if (preg_match('/^\s+- (.+)$/', $line, $m) && $this->curOption !== null) {
+                if (preg_match('/^\s+[*-] (.+)$/', $line, $m) && $this->curOption !== null) {
                     $this->curOption['feedback'] = trim($m[1]);
                     break;
                 }
 
-                // Lista: opción de respuesta
-                if (preg_match('/^- (.+)$/', $line, $m)) {
+                // Lista: opción de respuesta ("- texto" o "* texto")
+                if (preg_match('/^[*-] (.+)$/', $line, $m)) {
                     if ($this->curOption !== null) {
                         $this->curQuestion['options'][] = $this->curOption;
                     }
-                    $optText = $m[1];
+                    $optText = str_replace(['\\[', '\\]'], ['[', ']'], trim($m[1]));
                     $correct = false;
                     if (preg_match('/^(.+?)\s*\[correcta\]\s*$/', $optText, $om)) {
                         $optText = trim($om[1]);
@@ -447,6 +477,11 @@ class MarkdownParser
     private function saveH3EvalQuestion(): void
     {
         if ($this->curH3EvalQ !== null && $this->curH3Eval !== null) {
+            // Guardar última opción pendiente (opcion-multiple)
+            if ($this->curOption !== null) {
+                $this->curH3EvalQ['options'][] = $this->curOption;
+                $this->curOption               = null;
+            }
             $this->curH3EvalQ['enunciado']  = rtrim($this->curH3EvalQ['enunciado']);
             $this->curH3Eval['questions'][] = $this->curH3EvalQ;
             $this->curH3EvalQ               = null;
