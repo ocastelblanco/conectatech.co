@@ -618,11 +618,8 @@ a {
 // 16. ESTILOS DE CURSOS
 // ----------------------------------------------------------------------------
 
-/**************************
-** COSMOVISION CRISTIANA ** 
-***************************/
-
 body {
+	/** COSMOVISION CRISTIANA **/
 	&.cosmovision-cristiana {
 		#courseheaderimage {
 			background-size: contain !important;
@@ -809,6 +806,130 @@ body {
 				.sectionname > a {
 					color: $area-cs;
 				}
+			}
+		}
+	}
+	/** PLANETA LECTOR **/
+	&.planeta-lector {
+		#courseheaderimage {
+			background-color: $planeta-lector-primario;
+			background-size: contain !important;
+			background-repeat: no-repeat;
+			background-position: left center !important;
+			position: relative;
+			overflow: hidden;
+			.page-header-headings {
+				margin-left: 16rem;
+				position: relative;
+				h1,
+				h2,
+				h3,
+				h4,
+				h5,
+				h6 {
+					color: #fff !important;
+				}
+			}
+			&::before {
+				content: "";
+				display: block;
+				position: absolute;
+				bottom: 16px;
+				right: 16px;
+				width: 155px;
+				aspect-ratio: 155/33;
+				background-image: url(https://assets.conectatech.co/conectatech/logos/logo-planeta-lector-blanco.svg);
+				background-size: contain;
+				background-repeat: no-repeat;
+				background-position: right bottom;
+			}
+			@media (min-width: 620px) {
+				h1 {
+					font-size: 2.5rem !important;
+				}
+			}
+			@media (max-width: 619px) {
+				.page-header-headings {
+					margin-left: 10rem;
+				}
+				h1 {
+					font-size: 1.75rem !important;
+				}
+			}
+			@media (max-width: 469px) {
+				.page-header-headings {
+					margin-left: 7rem;
+					max-width: 10em;
+				}
+				h1 {
+					font-size: 1.5rem !important;
+				}
+			}
+			@media (max-width: 359px) {
+				background-image: none !important;
+				.page-header-headings {
+					margin-left: 0;
+					max-width: fit-content;
+				}
+			}
+		}
+		.section-item {
+			.sectionname {
+				font-size: 1.75rem;
+			}
+			.section-item {
+				.sectionname {
+					font-size: 1.5rem !important;
+				}
+			}
+			.activity-item {
+				font-size: 1.5rem;
+				/* Para los bloques con imágenes */
+				.caratula-libro,
+				.quien-escribio-este-libro {
+					figure {
+						img {
+							width: 100%;
+							height: auto;
+							object-fit: contain;
+							display: block;
+						}
+					}
+				}
+				.caratula-libro {
+					display: flex;
+					gap: 1rem;
+					figure {
+						max-width: 30%;
+					}
+				}
+				.quien-escribio-este-libro {
+					display: grid;
+					grid-template-columns: 30% 1fr;
+					h3 {
+						grid-column: span 2;
+						grid-row: 1;
+						margin-bottom: 1rem;
+					}
+					figure {
+						max-width: 100%;
+						grid-column: 1;
+						grid-row: 2;
+					}
+					.textos {
+						grid-column: 2;
+						grid-row: 2;
+						margin-left: 1rem;
+					}
+				}
+				/* Para las listas */
+				ul,
+				ol {
+					margin-bottom: 1rem;
+				}
+			}
+			.sectionname > a {
+				color: $planeta-lector-primario;
 			}
 		}
 	}

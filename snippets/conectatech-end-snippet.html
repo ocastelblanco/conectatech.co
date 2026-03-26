@@ -24,6 +24,23 @@
     if (proyecto == 'planeta-lector') generaDivGrado(tituloCursoElement, courseHeaderImageElement, false);
   }
 
+  /********* MODIFICA CONTENIDOS ESPECÍFICOS DE CADA CURSO ***********/
+  if (proyecto == 'planeta-lector') {
+    // Procesa elementos con <figure>
+    const caratulaLibro = document.querySelector('.caratula-libro');
+    const quienEscribio = document.querySelector('.quien-escribio-este-libro');
+    modificaConFigure(caratulaLibro);
+    modificaConFigure(quienEscribio);
+  }
+  function modificaConFigure(elemento) {
+    if (!elemento) return;
+    const textosDiv = document.createElement('div');
+    textosDiv.classList.add('textos');
+    const parrafos = elemento.querySelectorAll(':scope > p');
+    parrafos.forEach(p => textosDiv.appendChild(p));
+    if (textosDiv.children.length > 0) elemento.appendChild(textosDiv);
+  }
+
   /********* MODIFICA LA CARD DE CADA CURSO (MIS CURSOS) ***********/
   function procesarCards() {
     // Seleccionar todas las cards de curso dentro de .card-grid (para limitar)
@@ -34,7 +51,12 @@
       cards.forEach(cardCurso => {
         const tituloCursoElement = cardCurso.querySelector(".coursename span.multiline > span:last-of-type") ?? cardCurso.querySelector(".coursename");
         const cardCursoTop = cardCurso.querySelector(".card-img-top");
-        if (tituloCursoElement) generaDivGrado(tituloCursoElement, cardCursoTop);
+        if (tituloCursoElement) {
+          const cursoID = tituloCursoElement.attributes.href.value.split('?')[1].replace(/id=/g, '');
+          const proyecto = CT_COURSES[cursoID] ? CT_COURSES[cursoID][0] : null;
+          if (proyecto == 'cosmovision-cristiana') generaDivGrado(tituloCursoElement, cardCursoTop);
+          if (proyecto == 'planeta-lector') generaDivGrado(tituloCursoElement, cardCursoTop, false);
+        }
       });
     });
   }
@@ -82,6 +104,7 @@
       }
     }
   }
+
   // ************* ConectaTech — Presaberes Interactive Quiz v1.0 ****************************
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-quiz-block]').forEach(function (block) {
