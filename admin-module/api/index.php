@@ -27,6 +27,11 @@ define('BACKEND_DIR', dirname(__DIR__) . '/backend');
 define('CONFIG_DIR',  BACKEND_DIR . '/config');
 define('LIB_DIR',     BACKEND_DIR . '/lib');
 
+// Capturar cualquier output HTML que Moodle pueda generar durante la inicialización
+// o procesamiento (p.ej. el importador GIFT imprime HTML). Se descarta antes de
+// enviar el JSON para que Angular reciba solo JSON válido.
+ob_start();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Headers globales
 // ─────────────────────────────────────────────────────────────────────────────
@@ -239,6 +244,7 @@ try {
             ]);
     }
 } catch (Throwable $e) {
+    while (ob_get_level() > 0) { ob_end_clean(); }
     http_response_code(500);
     echo json_encode([
         'ok'    => false,

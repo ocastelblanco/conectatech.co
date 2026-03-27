@@ -7,8 +7,9 @@
  * Tipos de subsección:
  *   - referente-biblico-seccion : primer H2 con título "Referente bíblico"
  *                                  → label directo en la sección padre
- *   - subseccion-regular        : H2 sin marcador (incluyendo el "recurso-raíz"
- *                                  y "Reflexiona y aplica…")
+ *   - subseccion-regular        : H2 sin marcador con al menos un H3
+ *   - h2-texto-directo          : H2 sin marcador y sin ningún H3
+ *                                  → label directo en la sección padre (Regla 1)
  *   - subseccion-evaluacion     : H2 con [evaluacion]
  *   - subseccion-presaberes     : H2 con [presaberes]
  *
@@ -156,6 +157,13 @@ class MarkdownParser
         if ($type === 'referente-biblico-seccion') {
             $this->curBlock = ['h3_title' => 'Referente bíblico', 'content' => ''];
         }
+
+        // Para subseccion-regular: auto-iniciar bloque con el título H2.
+        // Si no aparece ningún H3, se promoverá a 'h2-texto-directo' al finalizar.
+        if ($type === 'subseccion-regular') {
+            $this->curBlock = ['h3_title' => $title, 'content' => ''];
+            $this->curSub['has_h3'] = false;
+        }
     }
 
     private function handleH3(string $rawTitle): void
@@ -184,6 +192,7 @@ class MarkdownParser
                 break;
 
             case 'subseccion-regular':
+                $this->curSub['has_h3'] = true;
                 if ($marker === 'evaluacion') {
                     // H3 con [evaluacion] → cuestionario dentro de la subsección
                     $this->curH3Eval  = ['title' => $title, 'questions' => []];
@@ -238,6 +247,13 @@ class MarkdownParser
                 'options'  => [],
             ];
             $this->curOption = null;
+            return;
+        }
+
+        // H4 en bloque de contenido genérico → agregar como encabezado al bloque
+        if ($this->curBlock !== null) {
+            $title = self::stripTitleFormatting($rawTitle);
+            $this->curBlock['content'] .= "#### {$title}\n";
             return;
         }
 
@@ -330,8 +346,8 @@ class MarkdownParser
                         if ($this->curOption !== null) {
                             $this->curH3EvalQ['options'][] = $this->curOption;
                         }
-                        // Desescapar \[ y \] exportados por Google Docs antes de detectar [correcta]
-                        $optText = str_replace(['\\[', '\\]'], ['[', ']'], trim($m[1]));
+                        // Desescapar puntuación escapada por Google Docs (\[ \] \! \( \) etc.)
+                        $optText = preg_replace('/\\\\([^\w\s])/', '$1', trim($m[1]));
                         $correct = false;
                         if (preg_match('/^(.+?)\s*\[correcta\]\s*$/', $optText, $om)) {
                             $optText = trim($om[1]);
@@ -379,7 +395,7 @@ class MarkdownParser
                     if ($this->curOption !== null) {
                         $this->curQuestion['options'][] = $this->curOption;
                     }
-                    $optText = str_replace(['\\[', '\\]'], ['[', ']'], trim($m[1]));
+                    $optText = preg_replace('/\\\\([^\w\s])/', '$1', trim($m[1]));
                     $correct = false;
                     if (preg_match('/^(.+?)\s*\[correcta\]\s*$/', $optText, $om)) {
                         $optText = trim($om[1]);
@@ -419,7 +435,7 @@ class MarkdownParser
                 if (preg_match('/^- (.+)$/', $line, $m) &&
                     in_array($this->presCtx, ['enunciado', 'options'])) {
                     $this->savePreguntaOption();
-                    $optText = $m[1];
+                    $optText = preg_replace('/\\\\([^\w\s])/', '$1', trim($m[1]));
                     $correct = false;
                     if (preg_match('/^(.+?)\s*\[correcta\]\s*$/', $optText, $om)) {
                         $optText = trim($om[1]);
@@ -457,8 +473,14 @@ class MarkdownParser
             case 'subseccion-regular':
                 if ($this->curBlock !== null) {
                     $this->curBlock['content'] = rtrim($this->curBlock['content']);
-                    $this->curSub['blocks'][]  = $this->curBlock;
-                    $this->curBlock            = null;
+                    // Si el bloque fue auto-inicializado en handleH2 (has_h3 = false) y está
+                    // vacío (ningún contenido antes del primer H3), descartarlo silenciosamente.
+                    $isEmpty     = $this->curBlock['content'] === '';
+                    $isAutoBlock = !($this->curSub['has_h3'] ?? true);
+                    if (!($isEmpty && $isAutoBlock)) {
+                        $this->curSub['blocks'][] = $this->curBlock;
+                    }
+                    $this->curBlock = null;
                 }
                 break;
 
@@ -553,6 +575,13 @@ class MarkdownParser
         $this->finalizeCurrentBlock();
 
         if ($this->curSub !== null && $this->curSection !== null) {
+            // Regla 1: subseccion-regular sin H3 → label directo en sección padre
+            if (
+                $this->curSub['type'] === 'subseccion-regular'
+                && !($this->curSub['has_h3'] ?? true)
+            ) {
+                $this->curSub['type'] = 'h2-texto-directo';
+            }
             $this->curSection['subsections'][] = $this->curSub;
             $this->curSub = null;
         }
@@ -582,13 +611,14 @@ class MarkdownParser
     /**
      * Elimina marcadores de formato del título exportado desde Google Docs:
      *   - Bold:               **texto** → texto
-     *   - Corchetes escapados: \[ → [,  \] → ]
+     *   - Puntuación escapada por Google Docs: \! → !, \[ → [, \] → ], \( → (, etc.
      */
     public static function stripTitleFormatting(string $title): string
     {
         $title = str_replace('**', '', $title);   // quitar bold (**texto**)
         $title = str_replace('*', '', $title);     // quitar italic (*texto*)
-        $title = str_replace(['\\[', '\\]'], ['[', ']'], $title);  // desescapar corchetes
+        // Desescapar cualquier puntuación escapada por Google Docs Markdown: \! \[ \] \( \) \. \- \# etc.
+        $title = preg_replace('/\\\\([^\w\s])/', '$1', $title);
         $title = preg_replace('/^\d+\\\\?\.\\s*/', '', $title);   // quitar prefijo numérico: "1\. " o "1. "
         return trim($title);
     }

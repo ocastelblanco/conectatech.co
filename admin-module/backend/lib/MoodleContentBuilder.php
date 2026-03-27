@@ -144,11 +144,23 @@ class MoodleContentBuilder
 
                 case 'referente-biblico-seccion':
                     // Label directamente en la sección padre (sin subsección contenedora)
-                    // Un recurso independiente por bloque, con h3_title como título en índice
                     foreach ($subsection['blocks'] as $block) {
                         $html = $this->htmlConverter->convertBlock($block);
                         if (!empty(trim($html))) {
-                            $this->createLabelModule($parentSectionNum, $html, $block['h3_title']);
+                            $labelName = HtmlConverter::parseBlockTitle($block['h3_title'])['label'];
+                            $this->createLabelModule($parentSectionNum, $html, $labelName);
+                        }
+                    }
+                    $result['action'] = 'label_en_seccion_padre';
+                    break;
+
+                case 'h2-texto-directo':
+                    // Regla 1: H2 sin H3 → label directamente en la sección padre
+                    foreach ($subsection['blocks'] as $block) {
+                        $html = $this->htmlConverter->convertBlock($block);
+                        if (!empty(trim($html))) {
+                            $labelName = HtmlConverter::parseBlockTitle($block['h3_title'])['label'];
+                            $this->createLabelModule($parentSectionNum, $html, $labelName);
                         }
                     }
                     $result['action'] = 'label_en_seccion_padre';
@@ -161,11 +173,12 @@ class MoodleContentBuilder
                         $this->createQuizModule($delegatedNum, $h3ev['title'], $h3ev['questions'], $sectionIdx);
                     }
                     // Un recurso "Área de medios y texto" independiente por cada bloque H3
-                    // El h3_title se usa como "Título en índice del curso"
+                    // Regla 2: si h3_title es "(Título)", usar el texto interior como nombre del label
                     foreach ($subsection['blocks'] as $block) {
                         $html = $this->htmlConverter->convertBlock($block);
                         if (!empty(trim($html))) {
-                            $this->createLabelModule($delegatedNum, $html, $block['h3_title']);
+                            $labelName = HtmlConverter::parseBlockTitle($block['h3_title'])['label'];
+                            $this->createLabelModule($delegatedNum, $html, $labelName);
                         }
                     }
                     $result['action'] = 'subseccion_con_label';
@@ -301,6 +314,7 @@ class MoodleContentBuilder
         $info->subnet                 = '';
         $info->browsersecurity        = '-';
         $info->navmethod              = 'free';
+        $info->cmidnumber             = '';
 
         $result   = add_moduleinfo($info, $this->course);
         $quizId   = (int)$result->instance;
@@ -336,7 +350,8 @@ class MoodleContentBuilder
         }
 
         // Agregar preguntas al quiz
-        $quizObj = (object)['id' => $quizId];
+        // Usar registro completo de DB: quiz_add_quiz_question requiere course y questionsperpage
+        $quizObj = $DB->get_record('quiz', ['id' => $quizId], '*', MUST_EXIST);
         foreach ($questionIds as $qid) {
             quiz_add_quiz_question($qid, $quizObj, 0, 1);
         }

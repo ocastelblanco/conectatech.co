@@ -57,9 +57,10 @@ class HtmlConverter
      */
     public function convertBlock(array $block): string
     {
-        $h3Title = $block['h3_title'];
-        $content = $block['content'];
-        $normKey = MarkdownParser::normalizeTitle($h3Title);
+        $h3Title   = $block['h3_title'];
+        $content   = $block['content'];
+        $normKey   = MarkdownParser::normalizeTitle($h3Title);
+        $titleInfo = self::parseBlockTitle($h3Title);
 
         // Buscar en el mapa; si no existe, usar fallback
         if (isset($this->blockMap[$normKey])) {
@@ -74,18 +75,61 @@ class HtmlConverter
         foreach ($cfg['css_additional'] as $cls) {
             $classes[] = $cls;
         }
+        // Regla 2: título entre paréntesis → agregar slug como clase extra
+        if ($titleInfo['css_slug'] !== null) {
+            $classes[] = $titleInfo['css_slug'];
+        }
         $classStr = implode(' ', $classes);
 
         // Construir HTML interno
         $inner = '';
 
-        if ($cfg['show_h3']) {
+        // Mostrar H3 solo si el config lo permite Y el título no es parentético
+        if ($cfg['show_h3'] && $titleInfo['show_title']) {
             $inner .= '<h3>' . htmlspecialchars($h3Title, ENT_QUOTES, 'UTF-8') . '</h3>' . "\n";
         }
 
         $inner .= $this->markdownToHtml($content);
 
         return '<div class="' . $classStr . '">' . "\n" . $inner . '</div>' . "\n\n";
+    }
+
+    // -------------------------------------------------------------------------
+    // Utilidades de título
+    // -------------------------------------------------------------------------
+
+    /**
+     * Parsea el título de un bloque semántico.
+     * Si el título está entre paréntesis (Contexto), retorna show_title=false,
+     * el texto interior como label, y un slug CSS para usarlo como clase extra.
+     *
+     * @return array{show_title: bool, label: string, css_slug: string|null}
+     */
+    public static function parseBlockTitle(string $h3Title): array
+    {
+        if (preg_match('/^\((.+)\)$/', trim($h3Title), $m)) {
+            $inner = trim($m[1]);
+            return [
+                'show_title' => false,
+                'label'      => $inner,
+                'css_slug'   => self::slugifyTitle($inner),
+            ];
+        }
+        return ['show_title' => true, 'label' => $h3Title, 'css_slug' => null];
+    }
+
+    /**
+     * Convierte un texto a slug kebab-case ASCII (para clases CSS).
+     * Ej: "Puntos clave" → "puntos-clave"
+     */
+    public static function slugifyTitle(string $title): string
+    {
+        $slug = mb_strtolower(trim($title), 'UTF-8');
+        $from = ['á','é','í','ó','ú','ü','ñ','à','è','ì','ò','ù','â','ê','î','ô','û','ä','ë','ï','ö'];
+        $to   = ['a','e','i','o','u','u','n','a','e','i','o','u','a','e','i','o','u','a','e','i','o'];
+        $slug = str_replace($from, $to, $slug);
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+        return trim($slug, '-');
     }
 
     // -------------------------------------------------------------------------
@@ -149,6 +193,14 @@ class HtmlConverter
                 continue;
             }
 
+            // Encabezado H4 (#### título)
+            if (preg_match('/^#### (.+)$/', $line, $m)) {
+                if ($inList)       { $html .= "</ul>\n";         $inList       = false; }
+                if ($inBlockquote) { $html .= "</blockquote>\n"; $inBlockquote = false; }
+                $html .= '<h4>' . $this->inlineMarkdown($m[1]) . "</h4>\n";
+                continue;
+            }
+
             // Párrafo vacío
             if (trim($line) === '') {
                 if ($inList) {
@@ -184,9 +236,8 @@ class HtmlConverter
      */
     private function inlineMarkdown(string $text): string
     {
-        // Desescapar caracteres escapados por Google Docs al exportar a Markdown
-        $text = str_replace('\\.', '.', $text);   // "1\. texto"  → "1. texto"
-        $text = str_replace('\!', '!', $text);    // "texto\!"   → "texto!"
+        // Desescapar puntuación escapada por Google Docs (excluye * y _ para no romper bold/italic)
+        $text = preg_replace('/\\\\([^\w\s*_])/', '$1', $text);
 
         // Imagen inline: ![alt](url) o ![alt](url){clase}
         $text = preg_replace_callback(

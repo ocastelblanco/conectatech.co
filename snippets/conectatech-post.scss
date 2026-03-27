@@ -927,6 +927,17 @@ body {
 				ol {
 					margin-bottom: 1rem;
 				}
+				// El elemento subsección es una lista, así que no puede tener margin-bottom
+				.activity-altcontent > ul {
+					margin-bottom: 0;
+				}
+				/* Para los títulos H4 */
+				h4:not(.sectionname) {
+					color: $planeta-lector-primario;
+					font-size: 1.4rem;
+					margin: 2rem auto;
+					text-align: center;
+				}
 			}
 			.sectionname > a {
 				color: $planeta-lector-primario;

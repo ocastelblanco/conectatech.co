@@ -45,6 +45,7 @@ function handleMarkdown(): void
 
     if ($courseData === null) {
         http_response_code(404);
+        while (ob_get_level() > 0) { ob_end_clean(); }
         echo json_encode([
             'ok'    => false,
             'error' => "Curso con shortname '{$shortname}' no encontrado en Moodle.",
@@ -55,6 +56,7 @@ function handleMarkdown(): void
     $service = new MarkdownService(CONFIG_DIR);
     $result  = $service->procesarContenido($shortname, $courseData, $body['content']);
 
+    while (ob_get_level() > 0) { ob_end_clean(); }
     echo json_encode([
         'ok'      => empty($result['errors']),
         'summary' => $result['summary'],
