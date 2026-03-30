@@ -27,6 +27,10 @@
  *   POST /api/paquetes                         → crear paquete + generar pines
  *   POST /api/paquetes/{id}/asignar            → reasignar paquete a organización
  *   GET  /api/pines/reporte                    → reporte de uso [?org_id=X&package_id=Y]
+ *   POST /api/activar/resolver                 → identifica hash y retorna info del pin (público)
+ *   POST /api/activar/gestor                   → crea cuenta de gestor y activa pin-gestor (público)
+ *   POST /api/activar/login                    → verifica credenciales Moodle (público)
+ *   POST /api/activar/pin                      → activa pin de acceso a curso (público)
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
