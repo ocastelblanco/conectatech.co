@@ -16,6 +16,17 @@
  *   GET  /api/reportes/{nombre}                → último reporte JSON de una operación
  *   GET  /api/activos/cursos-repositorio       → cursos repositorio con secciones
  *   POST /api/activos/crear-visor              → crea visor PDF (mod_label) en Moodle
+ *   GET  /api/organizaciones                   → listar organizaciones
+ *   POST /api/organizaciones                   → crear organización
+ *   PUT  /api/organizaciones/{id}              → renombrar / reasignar categoría
+ *   DEL  /api/organizaciones/{id}              → eliminar organización (cascade)
+ *   GET  /api/organizaciones/{id}/gestor-pines → listar pines de gestor
+ *   POST /api/organizaciones/{id}/gestor-pines → crear pin de gestor
+ *   DEL  /api/gestor-pines/{hash}              → anular pin de gestor pendiente
+ *   GET  /api/paquetes                         → listar paquetes [?org_id=X]
+ *   POST /api/paquetes                         → crear paquete + generar pines
+ *   POST /api/paquetes/{id}/asignar            → reasignar paquete a organización
+ *   GET  /api/pines/reporte                    → reporte de uso [?org_id=X&package_id=Y]
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,6 +107,8 @@ require_once LIB_DIR . '/PresaberesHtmlBuilder.php';
 require_once LIB_DIR . '/GiftConverter.php';
 require_once LIB_DIR . '/MoodleContentBuilder.php';
 require_once LIB_DIR . '/MarkdownService.php';
+require_once LIB_DIR . '/OrganizacionService.php';
+require_once LIB_DIR . '/PinesService.php';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Routing
@@ -234,6 +247,76 @@ try {
         case $method === 'POST' && $seg0 === 'activos' && $seg1 === 'crear-visor':
             require API_DIR . '/handlers/activos.php';
             handleCrearVisor();
+            break;
+
+        // ── Organizaciones ──────────────────────────────────────────────────
+
+        // GET /api/organizaciones
+        case $method === 'GET' && $seg0 === 'organizaciones' && $seg1 === '':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleListarOrganizaciones();
+            break;
+
+        // POST /api/organizaciones
+        case $method === 'POST' && $seg0 === 'organizaciones' && $seg1 === '':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleCrearOrganizacion();
+            break;
+
+        // PUT /api/organizaciones/{id}
+        case $method === 'PUT' && $seg0 === 'organizaciones' && $seg1 !== '' && $seg2 === '':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleActualizarOrganizacion((int)$seg1);
+            break;
+
+        // DELETE /api/organizaciones/{id}
+        case $method === 'DELETE' && $seg0 === 'organizaciones' && $seg1 !== '' && $seg2 === '':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleEliminarOrganizacion((int)$seg1);
+            break;
+
+        // GET /api/organizaciones/{id}/gestor-pines
+        case $method === 'GET' && $seg0 === 'organizaciones' && $seg1 !== '' && $seg2 === 'gestor-pines':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleListarGestorPines((int)$seg1);
+            break;
+
+        // POST /api/organizaciones/{id}/gestor-pines
+        case $method === 'POST' && $seg0 === 'organizaciones' && $seg1 !== '' && $seg2 === 'gestor-pines':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleCrearGestorPin((int)$seg1);
+            break;
+
+        // DELETE /api/gestor-pines/{hash}
+        case $method === 'DELETE' && $seg0 === 'gestor-pines' && $seg1 !== '':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleAnularGestorPin($seg1);
+            break;
+
+        // ── Paquetes de pines ────────────────────────────────────────────────
+
+        // GET /api/paquetes
+        case $method === 'GET' && $seg0 === 'paquetes' && $seg1 === '':
+            require API_DIR . '/handlers/pines.php';
+            handleListarPaquetes();
+            break;
+
+        // POST /api/paquetes
+        case $method === 'POST' && $seg0 === 'paquetes' && $seg1 === '':
+            require API_DIR . '/handlers/pines.php';
+            handleCrearPaquete();
+            break;
+
+        // POST /api/paquetes/{id}/asignar
+        case $method === 'POST' && $seg0 === 'paquetes' && $seg1 !== '' && $seg2 === 'asignar':
+            require API_DIR . '/handlers/pines.php';
+            handleAsignarPaquete((int)$seg1);
+            break;
+
+        // GET /api/pines/reporte
+        case $method === 'GET' && $seg0 === 'pines' && $seg1 === 'reporte':
+            require API_DIR . '/handlers/pines.php';
+            handleReportePines();
             break;
 
         default:
