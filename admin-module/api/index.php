@@ -27,6 +27,10 @@
  *   POST /api/paquetes                         → crear paquete + generar pines
  *   POST /api/paquetes/{id}/asignar            → reasignar paquete a organización
  *   GET  /api/pines/reporte                    → reporte de uso [?org_id=X&package_id=Y]
+ *   POST /api/activar/resolver                 → resolver pin por hash (público)
+ *   POST /api/activar/gestor                   → crear cuenta de gestor (público)
+ *   POST /api/activar/login                    → verificar credenciales Moodle (público)
+ *   POST /api/activar/pin                      → matricular usuario en curso del pin (público)
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -50,7 +54,7 @@ ob_start();
 header('Content-Type: application/json; charset=utf-8');
 
 // CORS — permite únicamente el origen del panel de administración
-$allowedOrigins = ['https://admin.conectatech.co'];
+$allowedOrigins = ['https://admin.conectatech.co', 'https://conectatech.co'];
 $origin         = $_SERVER['HTTP_ORIGIN'] ?? '';
 
 if (in_array($origin, $allowedOrigins, true)) {
@@ -109,6 +113,7 @@ require_once LIB_DIR . '/MoodleContentBuilder.php';
 require_once LIB_DIR . '/MarkdownService.php';
 require_once LIB_DIR . '/OrganizacionService.php';
 require_once LIB_DIR . '/PinesService.php';
+require_once LIB_DIR . '/ActivacionService.php';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Routing
@@ -355,6 +360,32 @@ try {
         case $method === 'PUT' && $seg0 === 'gestor' && $seg1 === 'pines' && $seg2 === 'asignar':
             require API_DIR . '/handlers/gestor.php';
             handleAsignarPines();
+            break;
+
+        // ── Activación pública ───────────────────────────────────────────────────
+
+        // POST /api/activar/resolver
+        case $method === 'POST' && $seg0 === 'activar' && $seg1 === 'resolver':
+            require API_DIR . '/handlers/activacion.php';
+            handleResolverPin();
+            break;
+
+        // POST /api/activar/gestor
+        case $method === 'POST' && $seg0 === 'activar' && $seg1 === 'gestor':
+            require API_DIR . '/handlers/activacion.php';
+            handleActivarGestor();
+            break;
+
+        // POST /api/activar/login
+        case $method === 'POST' && $seg0 === 'activar' && $seg1 === 'login':
+            require API_DIR . '/handlers/activacion.php';
+            handleActivarLogin();
+            break;
+
+        // POST /api/activar/pin
+        case $method === 'POST' && $seg0 === 'activar' && $seg1 === 'pin':
+            require API_DIR . '/handlers/activacion.php';
+            handleActivarPin();
             break;
 
         default:

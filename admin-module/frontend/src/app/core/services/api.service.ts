@@ -63,6 +63,51 @@ export class ApiService {
   getArbolesCategoriasRaiz(): Observable<any> { return this.http.get(`${API_BASE}/arboles/categorias-raiz`); }
   getArbolesOpcionesCss(): Observable<any>   { return this.http.get(`${API_BASE}/arboles/opciones-css`); }
 
+  // ── Organizaciones ──────────────────────────────────────────────────────────
+  getOrganizaciones(): Observable<any> {
+    return this.http.get(`${API_BASE}/organizaciones`);
+  }
+  crearOrganizacion(body: { name: string; moodle_category_id: number }): Observable<any> {
+    return this.http.post(`${API_BASE}/organizaciones`, body);
+  }
+  actualizarOrganizacion(id: number, body: { name?: string; moodle_category_id?: number }): Observable<any> {
+    return this.http.put(`${API_BASE}/organizaciones/${id}`, body);
+  }
+  eliminarOrganizacion(id: number): Observable<any> {
+    return this.http.delete(`${API_BASE}/organizaciones/${id}`);
+  }
+  getGestorPines(orgId: number): Observable<any> {
+    return this.http.get(`${API_BASE}/organizaciones/${orgId}/gestor-pines`);
+  }
+  crearGestorPin(orgId: number): Observable<any> {
+    return this.http.post(`${API_BASE}/organizaciones/${orgId}/gestor-pines`, {});
+  }
+  anularGestorPin(hash: string): Observable<any> {
+    return this.http.delete(`${API_BASE}/gestor-pines/${hash}`);
+  }
+
+  // ── Paquetes y pines ─────────────────────────────────────────────────────────
+  getPaquetes(orgId?: number): Observable<any> {
+    let params = new HttpParams();
+    if (orgId) params = params.set('org_id', orgId);
+    return this.http.get(`${API_BASE}/paquetes`, { params });
+  }
+  crearPaquete(body: { organization_id: number; teacher_role: string; expires_at: number; cantidad: number }): Observable<any> {
+    return this.http.post(`${API_BASE}/paquetes`, body);
+  }
+  asignarPaquete(id: number, body: { organization_id: number }): Observable<any> {
+    return this.http.post(`${API_BASE}/paquetes/${id}/asignar`, body);
+  }
+  getReportePines(orgId?: number | null, packageId?: number | null): Observable<any> {
+    let params = new HttpParams();
+    if (orgId)     params = params.set('org_id', orgId);
+    if (packageId) params = params.set('package_id', packageId);
+    return this.http.get(`${API_BASE}/pines/reporte`, { params });
+  }
+  getMoodleCategorias(): Observable<any> {
+    return this.http.get(`${API_BASE}/arboles/categorias-raiz`);
+  }
+
   // Activos — integración Moodle
   getActivosCursosRepositorio(): Observable<{ ok: boolean; cursos: any[] }> {
     return this.http.get<any>(`${API_BASE}/activos/cursos-repositorio`);

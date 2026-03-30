@@ -1,0 +1,113 @@
+<p-toast />
+
+<div class="space-y-5">
+  <!-- Header -->
+  <div class="flex items-start justify-between">
+    <div>
+      <h2 class="text-lg font-heading font-bold mb-1 text-cnt-midnight m-0">Reporte de pines</h2>
+      <p class="text-sm text-gray-500 m-0">Consulta el estado de todos los pines por organización y paquete.</p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="flex items-center gap-3 flex-wrap">
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-500">Organización</label>
+      <p-select [options]="[{ name: 'Todas las organizaciones', id: null }, ...orgs()]"
+                optionLabel="name"
+                optionValue="id"
+                [ngModel]="filtroOrgId()"
+                (ngModelChange)="onOrgChange($event)"
+                [style]="{ minWidth: '220px' }" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-500">Paquete</label>
+      <p-select [options]="[{ label: 'Todos los paquetes', value: null }, ...paquetes().map(p => ({ label: 'Paquete #' + p.id, value: p.id }))]"
+                optionLabel="label"
+                optionValue="value"
+                [disabled]="!filtroOrgId()"
+                [ngModel]="filtroPkgId()"
+                (ngModelChange)="onPkgChange($event)"
+                [style]="{ minWidth: '200px' }" />
+    </div>
+    <div class="flex items-end pb-0.5">
+      <p-button icon="pi pi-refresh"
+                severity="secondary"
+                [text]="true"
+                size="small"
+                pTooltip="Recargar"
+                (onClick)="cargar()" />
+    </div>
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+  <div class="flex items-center justify-center py-12 text-gray-400">
+    <i class="pi pi-spin pi-spinner mr-2 text-xl"></i>
+    <span class="text-sm">Cargando reporte...</span>
+  </div>
+  }
+
+  <!-- Table -->
+  @if (!loading()) {
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <p-table [value]="rows()"
+             [paginator]="rows().length > 20"
+             [rows]="20"
+             class="text-sm">
+      <ng-template #header>
+        <tr>
+          <th>Hash</th>
+          <th>Organización</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Curso</th>
+          <th>Grupo</th>
+          <th>Vence</th>
+          <th>Activado por</th>
+          <th>Activado el</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-pin>
+        <tr>
+          <td class="font-mono text-xs text-gray-600"
+              [pTooltip]="pin.hash">
+            {{ pin.hash?.substring(0, 10) }}...
+          </td>
+          <td class="text-sm text-gray-700">{{ pin.organization_name ?? pin.organization_id }}</td>
+          <td class="text-sm text-gray-600">{{ pin.teacher_role }}</td>
+          <td>
+            <p-tag [value]="getEstadoLabel(pin.status)"
+                   [severity]="getEstadoSeverity(pin.status)" />
+          </td>
+          <td class="text-sm text-gray-600">{{ pin.course_shortname ?? '—' }}</td>
+          <td class="text-sm text-gray-600">{{ pin.group_name ?? '—' }}</td>
+          <td class="text-xs text-gray-500">
+            @if (pin.expires_at) {
+              {{ pin.expires_at * 1000 | date:'dd/MM/yyyy' }}
+            } @else {
+              —
+            }
+          </td>
+          <td class="text-sm text-gray-600">{{ pin.activated_by ?? '—' }}</td>
+          <td class="text-xs text-gray-400">
+            @if (pin.activated_at) {
+              {{ pin.activated_at * 1000 | date:'dd/MM/yyyy HH:mm' }}
+            } @else {
+              —
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="9" class="text-center text-gray-400 py-8">
+            <i class="pi pi-inbox text-3xl mb-2 block"></i>
+            No hay pines que mostrar con los filtros seleccionados.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+</div>

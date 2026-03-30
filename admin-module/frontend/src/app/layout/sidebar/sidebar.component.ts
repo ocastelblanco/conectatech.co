@@ -22,6 +22,8 @@ export class SidebarComponent {
     { label: 'Matriculas', icon: 'pi pi-users', route: '/matriculas' },
     { label: 'Crear Contenido', icon: 'pi pi-file-edit', route: '/contenido' },
     { label: 'Activos CDN', icon: 'pi pi-folder-open', route: '/activos' },
+    { label: 'Organizaciones', icon: 'pi pi-building', route: '/organizaciones' },
+    { label: 'Pines', icon: 'pi pi-ticket', route: '/pines' },
     { label: 'Reportes', icon: 'pi pi-chart-bar', route: '/reportes' },
   ];
 }

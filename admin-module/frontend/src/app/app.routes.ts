@@ -40,6 +40,18 @@ export const routes: Routes = [
         path: 'reportes',
         loadComponent: () => import('./features/reportes/reportes.component').then(m => m.ReportesComponent)
       },
+      {
+        path: 'organizaciones',
+        loadComponent: () => import('./features/organizaciones/organizaciones.component').then(m => m.OrganizacionesComponent)
+      },
+      {
+        path: 'pines',
+        loadComponent: () => import('./features/pines/pines.component').then(m => m.PinesComponent)
+      },
+      {
+        path: 'pines/reporte',
+        loadComponent: () => import('./features/pines/reporte/pines-reporte.component').then(m => m.PinesReporteComponent)
+      },
     ]
   },
   {
