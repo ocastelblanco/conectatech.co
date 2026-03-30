@@ -319,6 +319,44 @@ try {
             handleReportePines();
             break;
 
+        // ── Gestor ───────────────────────────────────────────────────────────
+
+        // GET /api/gestor/organizacion
+        case $method === 'GET' && $seg0 === 'gestor' && $seg1 === 'organizacion':
+            require API_DIR . '/handlers/gestor.php';
+            handleGetOrganizacion();
+            break;
+
+        // GET /api/gestor/grupos
+        case $method === 'GET' && $seg0 === 'gestor' && $seg1 === 'grupos':
+            require API_DIR . '/handlers/gestor.php';
+            handleListarGrupos();
+            break;
+
+        // POST /api/gestor/grupos
+        case $method === 'POST' && $seg0 === 'gestor' && $seg1 === 'grupos':
+            require API_DIR . '/handlers/gestor.php';
+            handleCrearGrupo();
+            break;
+
+        // GET /api/gestor/pines/descargar  (antes que el listado para evitar ambigüedad)
+        case $method === 'GET' && $seg0 === 'gestor' && $seg1 === 'pines' && $seg2 === 'descargar':
+            require API_DIR . '/handlers/gestor.php';
+            handleDescargarPines();
+            break;
+
+        // GET /api/gestor/pines
+        case $method === 'GET' && $seg0 === 'gestor' && $seg1 === 'pines' && $seg2 === '':
+            require API_DIR . '/handlers/gestor.php';
+            handleListarPinesGestor();
+            break;
+
+        // PUT /api/gestor/pines/asignar
+        case $method === 'PUT' && $seg0 === 'gestor' && $seg1 === 'pines' && $seg2 === 'asignar':
+            require API_DIR . '/handlers/gestor.php';
+            handleAsignarPines();
+            break;
+
         default:
             http_response_code(404);
             echo json_encode([
