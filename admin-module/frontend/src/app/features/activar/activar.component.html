@@ -1,0 +1,263 @@
+<p-toast />
+
+<div class="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+     style="background-color: #1D2B36;">
+
+  <!-- Logo -->
+  <img src="logo-vertical-blanco.svg" alt="ConectaTech" class="h-16 mb-8" />
+
+  <!-- Tarjeta principal -->
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+
+    <!-- ── PASO: inicio ───────────────────────────────────────────────────── -->
+    @if (paso() === 'inicio') {
+      <div class="space-y-5">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800 m-0">Activar pin de acceso</h2>
+          <p class="text-sm text-gray-500 mt-1 m-0">Ingresa el código que recibiste para activar tu acceso.</p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-700">Código PIN</label>
+          <input pInputText
+                 class="w-full font-mono"
+                 placeholder="Pega aquí tu código"
+                 [ngModel]="hashInput()"
+                 (ngModelChange)="hashInput.set($event)"
+                 (keyup.enter)="resolverPin()" />
+        </div>
+        <p-button label="Verificar código"
+                  icon="pi pi-arrow-right"
+                  iconPos="right"
+                  styleClass="w-full"
+                  [loading]="cargando()"
+                  [disabled]="hashInput().trim().length === 0"
+                  (onClick)="resolverPin()" />
+      </div>
+    }
+
+    <!-- ── PASO: pin-regular ──────────────────────────────────────────────── -->
+    @if (paso() === 'pin-regular') {
+      <div class="space-y-5">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800 m-0">Tu pin de acceso</h2>
+          <p class="text-sm text-gray-500 mt-1 m-0">Revisa los detalles y activa tu acceso.</p>
+        </div>
+
+        <!-- Info del pin -->
+        <div class="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Rol</span>
+            <p-tag [value]="getRolLabel(pinData()?.role)" severity="info" />
+          </div>
+          @if (pinData()?.course_name) {
+            <div class="flex justify-between">
+              <span class="text-gray-500">Curso</span>
+              <span class="font-medium text-gray-800 text-right max-w-48">{{ pinData()?.course_name }}</span>
+            </div>
+          }
+          @if (pinData()?.group_name) {
+            <div class="flex justify-between">
+              <span class="text-gray-500">Grupo</span>
+              <span class="font-medium text-gray-800">{{ pinData()?.group_name }}</span>
+            </div>
+          }
+          <div class="flex justify-between">
+            <span class="text-gray-500">Válido hasta</span>
+            <span class="font-medium text-gray-800">{{ formatDate(pinData()?.expires_at) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Organización</span>
+            <span class="font-medium text-gray-800">{{ pinData()?.org_name }}</span>
+          </div>
+        </div>
+
+        <div class="border-t pt-4 space-y-3">
+          <p class="text-sm font-medium text-gray-700 m-0">¿Ya tienes cuenta en ConectaTech?</p>
+          <p-button label="Sí, tengo cuenta — Ingresar"
+                    icon="pi pi-sign-in"
+                    styleClass="w-full"
+                    (onClick)="paso.set('login')" />
+          <p-button label="No tengo cuenta — Crear una"
+                    icon="pi pi-user-plus"
+                    severity="secondary"
+                    styleClass="w-full"
+                    (onClick)="paso.set('registro-nuevo')" />
+        </div>
+      </div>
+    }
+
+    <!-- ── PASO: login ────────────────────────────────────────────────────── -->
+    @if (paso() === 'login') {
+      <div class="space-y-5">
+        <div class="flex items-center gap-2">
+          <p-button icon="pi pi-arrow-left" severity="secondary" [text]="true" size="small"
+                    (onClick)="paso.set('pin-regular')" />
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 m-0">Ingresar a tu cuenta</h2>
+            <p class="text-sm text-gray-500 m-0">Usa tus credenciales de ConectaTech.</p>
+          </div>
+        </div>
+        <form [formGroup]="loginForm" class="space-y-3" (ngSubmit)="loginYActivar()">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Usuario</label>
+            <input pInputText class="w-full" formControlName="username" />
+            @if (fieldInvalid(loginForm, 'username')) {
+              <span class="text-xs text-red-500">El usuario es obligatorio</span>
+            }
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Contraseña</label>
+            <p-password formControlName="password" styleClass="w-full" [feedback]="false" [toggleMask]="true" />
+            @if (fieldInvalid(loginForm, 'password')) {
+              <span class="text-xs text-red-500">La contraseña es obligatoria</span>
+            }
+          </div>
+        </form>
+        <p-button label="Ingresar y activar pin"
+                  icon="pi pi-check"
+                  iconPos="right"
+                  styleClass="w-full"
+                  [loading]="cargando()"
+                  (onClick)="loginYActivar()" />
+      </div>
+    }
+
+    <!-- ── PASO: registro-nuevo ───────────────────────────────────────────── -->
+    @if (paso() === 'registro-nuevo') {
+      <div class="space-y-5">
+        <div class="flex items-center gap-2">
+          <p-button icon="pi pi-arrow-left" severity="secondary" [text]="true" size="small"
+                    (onClick)="paso.set('pin-regular')" />
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 m-0">Crear cuenta nueva</h2>
+            <p class="text-sm text-gray-500 m-0">Crea tu cuenta en ConectaTech y vuelve a activar tu pin.</p>
+          </div>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 space-y-2">
+          <p class="font-semibold m-0"><i class="pi pi-info-circle mr-1"></i>Pasos para activar tu pin:</p>
+          <ol class="list-decimal list-inside space-y-1 m-0 text-blue-700">
+            <li>Crea tu cuenta en ConectaTech (abre en nueva pestaña)</li>
+            <li>Vuelve a esta página</li>
+            <li>Selecciona "Sí, tengo cuenta" e ingresa</li>
+          </ol>
+        </div>
+
+        <p-button label="Crear cuenta en ConectaTech"
+                  icon="pi pi-external-link"
+                  iconPos="right"
+                  styleClass="w-full"
+                  (onClick)="irAMoodleSignup()" />
+
+        <p-button label="Ya creé mi cuenta — Ingresar"
+                  severity="secondary"
+                  styleClass="w-full"
+                  (onClick)="paso.set('login')" />
+      </div>
+    }
+
+    <!-- ── PASO: pin-gestor ───────────────────────────────────────────────── -->
+    @if (paso() === 'pin-gestor') {
+      <div class="space-y-5">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800 m-0">Crear cuenta de gestor</h2>
+          <p class="text-sm text-gray-500 mt-1 m-0">
+            Organización: <strong>{{ pinData()?.org_name }}</strong>
+          </p>
+        </div>
+        <form [formGroup]="gestorForm" class="space-y-3" (ngSubmit)="activarGestor()">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-gray-700">Nombre</label>
+              <input pInputText class="w-full" formControlName="firstname" />
+              @if (fieldInvalid(gestorForm, 'firstname')) {
+                <span class="text-xs text-red-500">Obligatorio</span>
+              }
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-gray-700">Apellido</label>
+              <input pInputText class="w-full" formControlName="lastname" />
+              @if (fieldInvalid(gestorForm, 'lastname')) {
+                <span class="text-xs text-red-500">Obligatorio</span>
+              }
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Correo electrónico</label>
+            <input pInputText class="w-full" type="email" formControlName="email" />
+            @if (fieldInvalid(gestorForm, 'email')) {
+              <span class="text-xs text-red-500">Correo válido requerido</span>
+            }
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Nombre de usuario</label>
+            <input pInputText class="w-full" formControlName="username" />
+            @if (fieldInvalid(gestorForm, 'username')) {
+              <span class="text-xs text-red-500">Obligatorio</span>
+            }
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-700">Contraseña</label>
+            <p-password formControlName="password" styleClass="w-full" [toggleMask]="true" />
+            @if (fieldInvalid(gestorForm, 'password')) {
+              <span class="text-xs text-red-500">Mínimo 8 caracteres</span>
+            }
+          </div>
+        </form>
+        <p-button label="Crear cuenta y activar"
+                  icon="pi pi-check"
+                  iconPos="right"
+                  styleClass="w-full"
+                  [loading]="cargando()"
+                  (onClick)="activarGestor()" />
+      </div>
+    }
+
+    <!-- ── PASO: confirmacion ─────────────────────────────────────────────── -->
+    @if (paso() === 'confirmacion') {
+      <div class="space-y-5 text-center">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+          <i class="pi pi-check text-green-600 text-3xl"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-gray-800 m-0">¡Activación exitosa!</h2>
+          @if (resultado()?.tipo === 'gestor') {
+            <p class="text-sm text-gray-600 mt-2 m-0">
+              Tu cuenta de gestor ha sido creada. Ya puedes ingresar con tu usuario
+              <strong>{{ resultado()?.username }}</strong> en ConectaTech.
+            </p>
+          } @else {
+            <p class="text-sm text-gray-600 mt-2 m-0">
+              Has sido matriculado en <strong>{{ resultado()?.course_url ? 'tu curso' : 'ConectaTech' }}</strong>.
+              Tu acceso es válido hasta el <strong>{{ formatDate(resultado()?.expires_at) }}</strong>.
+            </p>
+          }
+        </div>
+
+        @if (resultado()?.tipo !== 'gestor') {
+          <p-button label="Ir a mi curso"
+                    icon="pi pi-arrow-right"
+                    iconPos="right"
+                    styleClass="w-full"
+                    (onClick)="irAMoodle()" />
+        } @else {
+          <p-button label="Ir a ConectaTech"
+                    icon="pi pi-arrow-right"
+                    iconPos="right"
+                    styleClass="w-full"
+                    (onClick)="irAMoodle()" />
+        }
+
+        <p-button label="Activar otro pin"
+                  severity="secondary"
+                  [text]="true"
+                  styleClass="w-full"
+                  (onClick)="reiniciar()" />
+      </div>
+    }
+
+  </div>
+
+  <!-- Footer -->
+  <p class="text-white/30 text-xs mt-6">© {{ year }} ConectaTech.co</p>
+</div>

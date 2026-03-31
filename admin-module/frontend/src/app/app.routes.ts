@@ -79,5 +79,9 @@ export const routes: Routes = [
       },
     ]
   },
+  {
+    path: 'activar',
+    loadComponent: () => import('./features/activar/activar.component').then(m => m.ActivarComponent)
+  },
   { path: '**', redirectTo: '' }
 ];

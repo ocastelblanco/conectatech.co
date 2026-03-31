@@ -151,4 +151,18 @@ export class ApiService {
     if (params?.course_id) p = p.set('course_id', params.course_id);
     return this.http.get(`${API_BASE}/gestor/pines/descargar`, { params: p, responseType: 'blob' });
   }
+
+  // ── Activación pública ────────────────────────────────────────────────────────
+  resolverPin(hash: string): Observable<any> {
+    return this.http.post(`${API_BASE}/activar/resolver`, { hash });
+  }
+  activarGestor(body: { hash: string; firstname: string; lastname: string; email: string; username: string; password: string }): Observable<any> {
+    return this.http.post(`${API_BASE}/activar/gestor`, body);
+  }
+  activarLogin(body: { username: string; password: string }): Observable<any> {
+    return this.http.post(`${API_BASE}/activar/login`, body);
+  }
+  activarPin(body: { hash: string; user_id: number }): Observable<any> {
+    return this.http.post(`${API_BASE}/activar/pin`, body);
+  }
 }
