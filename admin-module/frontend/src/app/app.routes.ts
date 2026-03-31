@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { gestorGuard } from './core/guards/gestor.guard';
 
 export const routes: Routes = [
   {
@@ -57,6 +58,26 @@ export const routes: Routes = [
   {
     path: 'auth-check',
     loadComponent: () => import('./features/auth-check/auth-check.component').then(m => m.AuthCheckComponent)
+  },
+  {
+    path: 'gestor',
+    loadComponent: () => import('./layout/gestor-shell/gestor-shell.component').then(m => m.GestorShellComponent),
+    canActivate: [gestorGuard],
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/gestor/dashboard/gestor-dashboard.component').then(m => m.GestorDashboardComponent)
+      },
+      {
+        path: 'grupos',
+        loadComponent: () => import('./features/gestor/grupos/gestor-grupos.component').then(m => m.GestorGruposComponent)
+      },
+      {
+        path: 'pines',
+        loadComponent: () => import('./features/gestor/pines/gestor-pines.component').then(m => m.GestorPinesComponent)
+      },
+    ]
   },
   { path: '**', redirectTo: '' }
 ];

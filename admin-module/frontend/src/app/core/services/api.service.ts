@@ -123,4 +123,32 @@ export class ApiService {
   }): Observable<{ ok: boolean; cmId: number | null }> {
     return this.http.post<any>(`${API_BASE}/activos/crear-visor`, body);
   }
+
+  // ── Vista gestor ─────────────────────────────────────────────────────────────
+  getGestorOrganizacion(): Observable<any> {
+    return this.http.get(`${API_BASE}/gestor/organizacion`);
+  }
+  getGestorGrupos(): Observable<any> {
+    return this.http.get(`${API_BASE}/gestor/grupos`);
+  }
+  crearGestorGrupo(body: { name: string }): Observable<any> {
+    return this.http.post(`${API_BASE}/gestor/grupos`, body);
+  }
+  getGestorPinesLista(params?: { status?: string; group_id?: number; course_id?: number }): Observable<any> {
+    let p = new HttpParams();
+    if (params?.status)    p = p.set('status',    params.status);
+    if (params?.group_id)  p = p.set('group_id',  params.group_id);
+    if (params?.course_id) p = p.set('course_id', params.course_id);
+    return this.http.get(`${API_BASE}/gestor/pines`, { params: p });
+  }
+  asignarPinesGestor(body: { pin_ids: number[]; group_id: number; course_id: number; role: string }): Observable<any> {
+    return this.http.put(`${API_BASE}/gestor/pines/asignar`, body);
+  }
+  descargarPinesCsv(params?: { status?: string; group_id?: number; course_id?: number }): Observable<Blob> {
+    let p = new HttpParams();
+    if (params?.status)    p = p.set('status',    params.status);
+    if (params?.group_id)  p = p.set('group_id',  params.group_id);
+    if (params?.course_id) p = p.set('course_id', params.course_id);
+    return this.http.get(`${API_BASE}/gestor/pines/descargar`, { params: p, responseType: 'blob' });
+  }
 }
