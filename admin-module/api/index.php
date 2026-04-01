@@ -304,6 +304,18 @@ try {
             handleAnularGestorPin($seg1);
             break;
 
+        // GET /api/organizaciones/{id}/gestores
+        case $method === 'GET' && $seg0 === 'organizaciones' && $seg1 !== '' && $seg2 === 'gestores':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleListarGestores((int)$seg1);
+            break;
+
+        // DELETE /api/gestores/{id}
+        case $method === 'DELETE' && $seg0 === 'gestores' && $seg1 !== '':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleEliminarGestor((int)$seg1);
+            break;
+
         // ── Paquetes de pines ────────────────────────────────────────────────
 
         // GET /api/paquetes

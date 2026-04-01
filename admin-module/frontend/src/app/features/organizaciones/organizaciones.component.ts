@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@ang
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { TreeTableModule } from 'primeng/treetable';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -10,7 +11,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService, ConfirmationService, TreeNode } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 
 @Component({
@@ -19,7 +20,7 @@ import { ApiService } from '../../core/services/api.service';
   providers: [MessageService, ConfirmationService],
   imports: [
     DatePipe, FormsModule,
-    ButtonModule, TableModule, DialogModule, InputTextModule,
+    ButtonModule, TreeTableModule, TableModule, DialogModule, InputTextModule,
     SelectModule, ToastModule, ConfirmDialogModule, TagModule, TooltipModule,
   ],
   templateUrl: './organizaciones.component.html',
@@ -29,7 +30,7 @@ export class OrganizacionesComponent implements OnInit {
   private readonly toast   = inject(MessageService);
   private readonly confirm = inject(ConfirmationService);
 
-  readonly orgs                = signal<any[]>([]);
+  readonly nodes               = signal<TreeNode[]>([]);
   readonly loading             = signal(true);
   readonly saving              = signal(false);
   readonly editandoOrg         = signal<any | null>(null);
@@ -41,7 +42,8 @@ export class OrganizacionesComponent implements OnInit {
   ngOnInit(): void {
     this.api.getOrganizaciones().subscribe({
       next: (r: any) => {
-        this.orgs.set(r.data ?? r.organizaciones ?? []);
+        const orgs: any[] = r.data ?? r.organizaciones ?? [];
+        this.nodes.set(orgs.map(o => this.orgToNode(o)));
         this.loading.set(false);
       },
       error: () => {
@@ -58,6 +60,49 @@ export class OrganizacionesComponent implements OnInit {
       error: () => {}
     });
   }
+
+  // ── TreeTable ──────────────────────────────────────────────────────────────
+
+  onNodeExpand(event: any): void {
+    const node: TreeNode = event.node;
+    if (node.data?.type !== 'org') return;
+
+    const orgId: number = node.data.id;
+
+    // Mostrar loading mientras se cargan los gestores
+    this.setNodeChildren(orgId, [{ data: { type: 'loading' }, leaf: true }]);
+
+    this.api.getGestores(orgId).subscribe({
+      next: (r: any) => {
+        const gestores: any[] = r.data ?? [];
+        const children: TreeNode[] = gestores.map(g => ({
+          data: { type: 'gestor', ...g, org_id: orgId },
+          leaf: true,
+        }));
+        this.setNodeChildren(orgId, children);
+      },
+      error: () => {
+        this.setNodeChildren(orgId, []);
+        this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los gestores' });
+      }
+    });
+  }
+
+  private setNodeChildren(orgId: number, children: TreeNode[]): void {
+    this.nodes.update(nodes =>
+      nodes.map(n => n.data?.id === orgId ? { ...n, children } : n)
+    );
+  }
+
+  private orgToNode(org: any): TreeNode {
+    return {
+      data: { type: 'org', ...org },
+      children: [],
+      leaf: false,
+    };
+  }
+
+  // ── Organizaciones ─────────────────────────────────────────────────────────
 
   abrirCrear(): void {
     this.editandoOrg.set({ name: '', moodle_category_id: null });
@@ -93,9 +138,9 @@ export class OrganizacionesComponent implements OnInit {
     });
   }
 
-  eliminar(org: any): void {
+  eliminarOrg(org: any): void {
     this.confirm.confirm({
-      message: `¿Eliminar la organización "${org.name}"? Esta acción no se puede deshacer.`,
+      message: `¿Eliminar "${org.name}"? Se eliminarán también todos sus gestores y pines. Esta acción no se puede deshacer.`,
       header: 'Confirmar eliminación',
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Eliminar',
@@ -115,6 +160,52 @@ export class OrganizacionesComponent implements OnInit {
     });
   }
 
+  // ── Gestores ───────────────────────────────────────────────────────────────
+
+  eliminarGestor(gestor: any): void {
+    const nombre = `${gestor.firstname} ${gestor.lastname}`.trim() || gestor.username;
+    this.confirm.confirm({
+      message: `¿Eliminar al gestor "${nombre}"? Se eliminará su cuenta Moodle y se liberará su pin de acceso.`,
+      header: 'Confirmar eliminación de gestor',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.api.eliminarGestor(gestor.id).subscribe({
+          next: () => {
+            this.toast.add({ severity: 'success', summary: 'Eliminado', detail: `Gestor "${nombre}" eliminado` });
+            // Recargar gestores del nodo padre
+            this.setNodeChildren(gestor.org_id, [{ data: { type: 'loading' }, leaf: true }]);
+            this.api.getGestores(gestor.org_id).subscribe({
+              next: (r: any) => {
+                const gestores: any[] = r.data ?? [];
+                const children = gestores.map(g => ({
+                  data: { type: 'gestor', ...g, org_id: gestor.org_id },
+                  leaf: true,
+                }));
+                this.setNodeChildren(gestor.org_id, children);
+              },
+              error: () => this.setNodeChildren(gestor.org_id, [])
+            });
+            // Actualizar el gestor_count en el nodo de la org
+            this.nodes.update(nodes =>
+              nodes.map(n => {
+                if (n.data?.id !== gestor.org_id) return n;
+                return { ...n, data: { ...n.data, gestor_count: Math.max(0, (n.data.gestor_count ?? 1) - 1) } };
+              })
+            );
+          },
+          error: (err: any) => {
+            this.toast.add({ severity: 'error', summary: 'Error', detail: err.error?.error ?? 'Error al eliminar gestor' });
+          }
+        });
+      }
+    });
+  }
+
+  // ── Invitaciones (pines de gestor) ─────────────────────────────────────────
+
   verGestorPines(org: any): void {
     this.verGestorPinesOrgId.set(org.id);
     this.cargarGestorPines(org.id);
@@ -129,7 +220,7 @@ export class OrganizacionesComponent implements OnInit {
       },
       error: () => {
         this.loadingGestorPines.set(false);
-        this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los gestores' });
+        this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las invitaciones' });
       }
     });
   }
@@ -137,11 +228,11 @@ export class OrganizacionesComponent implements OnInit {
   crearGestorPin(orgId: number): void {
     this.api.crearGestorPin(orgId).subscribe({
       next: () => {
-        this.toast.add({ severity: 'success', summary: 'Creado', detail: 'Nuevo gestor generado' });
+        this.toast.add({ severity: 'success', summary: 'Creado', detail: 'Nuevo pin de invitación generado' });
         this.cargarGestorPines(orgId);
       },
       error: (err: any) => {
-        this.toast.add({ severity: 'error', summary: 'Error', detail: err.error?.error ?? 'Error al crear gestor' });
+        this.toast.add({ severity: 'error', summary: 'Error', detail: err.error?.error ?? 'Error al crear pin' });
       }
     });
   }
@@ -149,7 +240,7 @@ export class OrganizacionesComponent implements OnInit {
   anularGestorPin(hash: string): void {
     const orgId = this.verGestorPinesOrgId();
     this.confirm.confirm({
-      message: 'Anular este gestor de pines revocará su acceso permanentemente.',
+      message: 'Anular este pin de invitación lo eliminará permanentemente.',
       header: 'Confirmar anulación',
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Anular',
@@ -158,7 +249,7 @@ export class OrganizacionesComponent implements OnInit {
       accept: () => {
         this.api.anularGestorPin(hash).subscribe({
           next: () => {
-            this.toast.add({ severity: 'success', summary: 'Anulado', detail: 'Gestor anulado' });
+            this.toast.add({ severity: 'success', summary: 'Anulado', detail: 'Pin anulado' });
             if (orgId) this.cargarGestorPines(orgId);
           },
           error: (err: any) => {
@@ -177,12 +268,15 @@ export class OrganizacionesComponent implements OnInit {
 
   nombreOrg(orgId: number | null): string {
     if (!orgId) return '';
-    return this.orgs().find(o => o.id === orgId)?.name ?? '';
+    return this.nodes().find(n => n.data?.id === orgId)?.data?.name ?? '';
   }
 
   private recargarOrgs(): void {
     this.api.getOrganizaciones().subscribe({
-      next: (r: any) => this.orgs.set(r.data ?? r.organizaciones ?? []),
+      next: (r: any) => {
+        const orgs: any[] = r.data ?? r.organizaciones ?? [];
+        this.nodes.set(orgs.map(o => this.orgToNode(o)));
+      },
       error: () => {}
     });
   }

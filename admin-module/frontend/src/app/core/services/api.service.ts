@@ -79,6 +79,12 @@ export class ApiService {
   getGestorPines(orgId: number): Observable<any> {
     return this.http.get(`${API_BASE}/organizaciones/${orgId}/gestor-pines`);
   }
+  getGestores(orgId: number): Observable<any> {
+    return this.http.get(`${API_BASE}/organizaciones/${orgId}/gestores`);
+  }
+  eliminarGestor(gestorId: number): Observable<any> {
+    return this.http.delete(`${API_BASE}/gestores/${gestorId}`);
+  }
   crearGestorPin(orgId: number): Observable<any> {
     return this.http.post(`${API_BASE}/organizaciones/${orgId}/gestor-pines`, {});
   }

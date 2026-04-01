@@ -160,17 +160,18 @@ class ActivacionService
         }
 
         // Insertar en ct_gestor
-        $DB->insert_record('ct_gestor', (object)[
+        $gestorId = $DB->insert_record('ct_gestor', (object)[
             'organization_id' => (int)$pin->organization_id,
             'moodle_userid'   => $userId,
             'created_at'      => time(),
         ]);
 
-        // Marcar el pin como usado
+        // Marcar el pin como usado y vincularlo al gestor creado
         $DB->update_record('ct_gestor_pin', (object)[
-            'id'      => $pin->id,
-            'status'  => 'used',
-            'used_at' => time(),
+            'id'        => $pin->id,
+            'status'    => 'used',
+            'used_at'   => time(),
+            'gestor_id' => $gestorId,
         ]);
 
         return [

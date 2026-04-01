@@ -88,6 +88,24 @@ function handleAnularGestorPin(string $hash): void
     echo json_encode(['ok' => true]);
 }
 
+// ─── Gestores activos ────────────────────────────────────────────────────────
+
+function handleListarGestores(int $orgId): void
+{
+    $svc  = new OrganizacionService();
+    $data = $svc->listarGestores($orgId);
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true, 'data' => $data]);
+}
+
+function handleEliminarGestor(int $gestorId): void
+{
+    $svc = new OrganizacionService();
+    $svc->eliminarGestor($gestorId);
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true]);
+}
+
 // ─── Categorías disponibles para organizaciones ───────────────────────────────
 
 /**

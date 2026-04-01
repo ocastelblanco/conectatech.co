@@ -6,7 +6,7 @@
   <div class="flex items-start justify-between">
     <div>
       <h2 class="text-lg font-heading font-bold mb-1 text-cnt-midnight m-0">Organizaciones</h2>
-      <p class="text-sm text-gray-500 m-0">Gestiona las organizaciones y sus gestores de pines.</p>
+      <p class="text-sm text-gray-500 m-0">Gestiona las organizaciones y sus gestores.</p>
     </div>
     <p-button label="Nueva organización"
               icon="pi pi-plus"
@@ -21,69 +21,126 @@
   </div>
   }
 
-  <!-- Table -->
+  <!-- TreeTable -->
   @if (!loading()) {
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-    <p-table [value]="orgs()"
-             [paginator]="orgs().length > 10"
-             [rows]="10"
-             class="text-sm">
-      <ng-template #header>
+    <p-treeTable [value]="nodes()"
+                 [scrollable]="false"
+                 (onNodeExpand)="onNodeExpand($event)"
+                 styleClass="text-sm">
+      <ng-template pTemplate="header">
         <tr>
-          <th>Nombre</th>
-          <th>Categoría Moodle</th>
-          <th>Gestores</th>
-          <th>Pines</th>
-          <th>Creado</th>
-          <th class="text-right">Acciones</th>
+          <th style="width: 26%">Nombre</th>
+          <th style="width: 22%">Categoría / Email</th>
+          <th style="width: 16%">Usuario</th>
+          <th style="width: 16%">Pines</th>
+          <th style="width: 10%">Creado</th>
+          <th style="width: 10%" class="text-right">Acciones</th>
         </tr>
       </ng-template>
-      <ng-template #body let-org>
-        <tr>
-          <td class="font-medium text-cnt-midnight">{{ org.name }}</td>
-          <td class="text-sm text-gray-600">{{ org.moodle_category_id }} - {{ org.category_name }}</td>
-          <td class="text-sm text-gray-600">{{ org.gestor_count ?? 0 }}</td>
+
+      <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
+
+        <!-- ── Fila: organización ────────────────────────────────────────── -->
+        @if (rowData.type === 'org') {
+        <tr [ttRow]="rowNode">
           <td>
-            <div class="flex gap-1">
-              <p-tag [value]="(org.pins?.available ?? 0) + ' disp.'" severity="info" />
-              <p-tag [value]="(org.pins?.assigned ?? 0) + ' asig.'" severity="warn" />
-              <p-tag [value]="(org.pins?.active ?? 0) + ' act.'" severity="success" />
+            <div class="flex items-center gap-1">
+              <p-treeTableToggler [rowNode]="rowNode" />
+              <span class="font-semibold text-cnt-midnight">{{ rowData.name }}</span>
+              @if (rowData.gestor_count > 0) {
+              <span class="text-xs bg-cnt-blue/10 text-cnt-blue px-1.5 py-0.5 rounded-full font-medium ml-1">
+                {{ rowData.gestor_count }}
+              </span>
+              }
             </div>
           </td>
-          <td class="text-xs text-gray-400">{{ org.created_at * 1000 | date:'dd/MM/yyyy' }}</td>
+          <td class="text-sm text-gray-600">
+            {{ rowData.moodle_category_id }} - {{ rowData.category_name }}
+          </td>
+          <td></td>
+          <td>
+            <div class="flex gap-1 flex-wrap">
+              <p-tag [value]="(rowData.pins?.available ?? 0) + ' disp.'" severity="info" />
+              <p-tag [value]="(rowData.pins?.assigned ?? 0) + ' asig.'" severity="warn" />
+              <p-tag [value]="(rowData.pins?.active ?? 0) + ' act.'"   severity="success" />
+            </div>
+          </td>
+          <td class="text-xs text-gray-400">{{ rowData.created_at * 1000 | date:'dd/MM/yy' }}</td>
           <td>
             <div class="flex items-center justify-end gap-1">
-              <p-button icon="pi pi-key"
+              <p-button icon="pi pi-envelope"
                         size="small"
                         severity="secondary"
                         [text]="true"
-                        pTooltip="Gestores de pines"
-                        (onClick)="verGestorPines(org)" />
+                        pTooltip="Invitaciones de gestor"
+                        (onClick)="verGestorPines(rowData)" />
               <p-button icon="pi pi-pencil"
                         size="small"
                         severity="secondary"
                         [text]="true"
                         pTooltip="Editar"
-                        (onClick)="abrirEditar(org)" />
+                        (onClick)="abrirEditar(rowData)" />
               <p-button icon="pi pi-trash"
                         size="small"
                         severity="danger"
                         [text]="true"
-                        pTooltip="Eliminar"
-                        (onClick)="eliminar(org)" />
+                        pTooltip="Eliminar organización"
+                        (onClick)="eliminarOrg(rowData)" />
             </div>
           </td>
         </tr>
+        }
+
+        <!-- ── Fila: gestor activo ───────────────────────────────────────── -->
+        @if (rowData.type === 'gestor') {
+        <tr [ttRow]="rowNode" class="bg-gray-50/60">
+          <td>
+            <div class="flex items-center gap-2 pl-8">
+              <i class="pi pi-user text-gray-400 text-xs"></i>
+              <span class="text-sm text-gray-700">{{ rowData.firstname }} {{ rowData.lastname }}</span>
+              @if (rowData.deleted) {
+              <p-tag value="eliminado" severity="secondary" />
+              }
+            </div>
+          </td>
+          <td class="text-xs text-gray-500">{{ rowData.email }}</td>
+          <td class="font-mono text-xs text-gray-500">{{ rowData.username }}</td>
+          <td></td>
+          <td class="text-xs text-gray-400">{{ rowData.created_at * 1000 | date:'dd/MM/yy' }}</td>
+          <td>
+            <div class="flex items-center justify-end">
+              <p-button icon="pi pi-trash"
+                        size="small"
+                        severity="danger"
+                        [text]="true"
+                        pTooltip="Eliminar gestor"
+                        (onClick)="eliminarGestor(rowData)" />
+            </div>
+          </td>
+        </tr>
+        }
+
+        <!-- ── Fila: cargando ────────────────────────────────────────────── -->
+        @if (rowData.type === 'loading') {
+        <tr [ttRow]="rowNode">
+          <td colspan="6" class="pl-10 py-2 text-xs text-gray-400">
+            <i class="pi pi-spin pi-spinner mr-1"></i> Cargando gestores...
+          </td>
+        </tr>
+        }
+
       </ng-template>
-      <ng-template #emptymessage>
+
+      <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="6" class="text-center text-gray-400 py-8">
+          <td colspan="6" class="text-center text-gray-400 py-10">
             <i class="pi pi-building text-3xl mb-2 block"></i>
             No hay organizaciones. Crea la primera.
           </td>
         </tr>
       </ng-template>
-    </p-table>
+    </p-treeTable>
   </div>
   }
 </div>
@@ -131,16 +188,16 @@
   </ng-template>
 </p-dialog>
 
-<!-- Dialog gestores de pines -->
-<p-dialog [header]="'Gestores — ' + nombreOrg(verGestorPinesOrgId())"
+<!-- Dialog invitaciones (pines de gestor pendientes/usados) -->
+<p-dialog [header]="'Invitaciones — ' + nombreOrg(verGestorPinesOrgId())"
           [visible]="verGestorPinesOrgId() !== null"
           (visibleChange)="$event ? null : verGestorPinesOrgId.set(null)"
           [modal]="true"
-          [style]="{ width: '640px' }"
+          [style]="{ width: '620px' }"
           [closable]="true">
   <div class="space-y-3">
     <div class="flex justify-end">
-      <p-button label="Generar nuevo pin"
+      <p-button label="Generar pin"
                 icon="pi pi-plus"
                 size="small"
                 (onClick)="crearGestorPin(verGestorPinesOrgId()!)" />
@@ -149,7 +206,7 @@
     @if (loadingGestorPines()) {
     <div class="flex items-center justify-center py-8 text-gray-400">
       <i class="pi pi-spin pi-spinner mr-2"></i>
-      <span class="text-sm">Cargando gestores...</span>
+      <span class="text-sm">Cargando...</span>
     </div>
     }
 
@@ -191,7 +248,7 @@
                         size="small"
                         severity="danger"
                         [text]="true"
-                        pTooltip="Anular"
+                        pTooltip="Anular pin"
                         (onClick)="anularGestorPin(gp.hash)" />
               }
             </div>
@@ -201,8 +258,8 @@
       <ng-template #emptymessage>
         <tr>
           <td colspan="4" class="text-center text-gray-400 py-6">
-            <i class="pi pi-key text-2xl mb-2 block"></i>
-            No hay gestores de pines.
+            <i class="pi pi-envelope text-2xl mb-2 block"></i>
+            No hay invitaciones. Genera la primera.
           </td>
         </tr>
       </ng-template>
