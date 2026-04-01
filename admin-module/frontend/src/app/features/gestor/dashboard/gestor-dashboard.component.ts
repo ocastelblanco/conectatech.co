@@ -32,7 +32,7 @@ export class GestorDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.api.getGestorPinesLista().subscribe({
       next: (r: any) => {
-        this.pines.set(r.pines ?? r ?? []);
+        this.pines.set(r.data ?? []);
         this.loading.set(false);
       },
       error: () => {

@@ -14,7 +14,7 @@ export const gestorGuard: CanActivateFn = () => {
 
   return api.getGestorOrganizacion().pipe(
     map((r: any) => {
-      state.setOrg(r);
+      state.setOrg(r.data ?? r);
       return true;
     }),
     catchError(() => of(router.createUrlTree(['/auth-check'])))

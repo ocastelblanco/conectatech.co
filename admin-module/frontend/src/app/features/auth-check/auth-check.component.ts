@@ -35,7 +35,7 @@ export class AuthCheckComponent implements OnInit {
         // Detectar rol: ¿es gestor o admin?
         this.api.getGestorOrganizacion().subscribe({
           next: (r: any) => {
-            this.gestorState.setOrg(r);
+            this.gestorState.setOrg(r.data ?? r);
             this.router.navigate(['/gestor/dashboard']);
           },
           error: () => {

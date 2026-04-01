@@ -220,7 +220,9 @@ class GestorService
         }
 
         // Verificar que el curso pertenece a la categoría de la organización
-        if (!$DB->record_exists('course', ['id' => $courseId, 'category' => $ctGestor['moodle_category_id']])) {
+        // (incluyendo subcategorías a cualquier profundidad)
+        $allCourseIds = array_column($this->getAllCoursesInCategory((int)$ctGestor['moodle_category_id']), 'id');
+        if (!in_array($courseId, $allCourseIds, true)) {
             throw new InvalidArgumentException('El curso no pertenece a la categoría de esta organización.');
         }
 
