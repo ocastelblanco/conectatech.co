@@ -15,8 +15,10 @@ export class AuthService {
   checkAuth(): void {
     this.http.get(`${API_BASE}/cursos`, { params: { category: '__check__' } }).pipe(
       tap(() => this.isAuthenticated.set(true)),
-      catchError(() => {
-        this.isAuthenticated.set(false);
+      catchError((err: any) => {
+        // 403 → sesión Moodle válida pero sin rol de administrador (puede ser gestor).
+        // 401 → sin sesión activa → redirigir al login.
+        this.isAuthenticated.set(err.status === 403 ? true : false);
         return of(null);
       })
     ).subscribe();
