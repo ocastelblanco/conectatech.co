@@ -113,6 +113,8 @@ require_once LIB_DIR . '/MoodleContentBuilder.php';
 require_once LIB_DIR . '/MarkdownService.php';
 require_once LIB_DIR . '/OrganizacionService.php';
 require_once LIB_DIR . '/PinesService.php';
+require_once LIB_DIR . '/GestorAuth.php';
+require_once LIB_DIR . '/GestorService.php';
 require_once LIB_DIR . '/ActivacionService.php';
 
 // ─────────────────────────────────────────────────────────────────────────────
