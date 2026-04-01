@@ -87,3 +87,23 @@ function handleAnularGestorPin(string $hash): void
     while (ob_get_level() > 0) { ob_end_clean(); }
     echo json_encode(['ok' => true]);
 }
+
+// ─── Categorías disponibles para organizaciones ───────────────────────────────
+
+/**
+ * GET /api/organizaciones/categorias
+ * Devuelve las subcategorías de COLEGIOS (parent = 13) ordenadas por nombre.
+ */
+function handleGetCategoriasColegios(): void
+{
+    global $DB;
+
+    $cats = $DB->get_records('course_categories', ['parent' => 13], 'name ASC', 'id, name');
+    $data = array_values(array_map(fn($c) => [
+        'id'   => (int)$c->id,
+        'name' => $c->name,
+    ], $cats));
+
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true, 'categorias' => $data]);
+}

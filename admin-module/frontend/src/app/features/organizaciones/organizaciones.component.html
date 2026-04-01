@@ -41,7 +41,7 @@
       <ng-template #body let-org>
         <tr>
           <td class="font-medium text-cnt-midnight">{{ org.name }}</td>
-          <td class="text-sm text-gray-600">{{ org.moodle_category_name ?? org.moodle_category_id }}</td>
+          <td class="text-sm text-gray-600">{{ org.moodle_category_id }} - {{ org.category_name }}</td>
           <td class="text-sm text-gray-600">{{ org.gestor_count ?? 0 }}</td>
           <td>
             <div class="flex gap-1">
@@ -109,7 +109,7 @@
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium text-gray-700">Categoría Moodle</label>
       <p-select [options]="categorias()"
-                optionLabel="name"
+                optionLabel="label"
                 optionValue="id"
                 placeholder="Seleccionar categoría"
                 class="w-full"
@@ -169,10 +169,10 @@
             {{ gp.hash.substring(0, 12) }}...
           </td>
           <td>
-            @if (gp.status === 'active') {
-              <p-tag value="Activo" severity="success" />
-            } @else if (gp.status === 'revoked') {
-              <p-tag value="Anulado" severity="danger" />
+            @if (gp.status === 'pending') {
+              <p-tag value="Pendiente" severity="warn" />
+            } @else if (gp.status === 'used') {
+              <p-tag value="Activado" severity="success" />
             } @else {
               <p-tag [value]="gp.status" severity="secondary" />
             }
@@ -186,7 +186,7 @@
                         [text]="true"
                         pTooltip="Copiar hash"
                         (onClick)="copiarHash(gp.hash)" />
-              @if (gp.status === 'active') {
+              @if (gp.status === 'pending') {
               <p-button icon="pi pi-ban"
                         size="small"
                         severity="danger"

@@ -50,8 +50,11 @@ export class OrganizacionesComponent implements OnInit {
       }
     });
 
-    this.api.getMoodleCategorias().subscribe({
-      next: (r: any) => this.categorias.set(r.categorias ?? r.data ?? []),
+    this.api.getCategoriasOrganizaciones().subscribe({
+      next: (r: any) => {
+        const cats = r.categorias ?? [];
+        this.categorias.set(cats.map((c: any) => ({ ...c, label: `${c.id} - ${c.name}` })));
+      },
       error: () => {}
     });
   }

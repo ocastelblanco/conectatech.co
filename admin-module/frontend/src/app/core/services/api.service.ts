@@ -107,6 +107,9 @@ export class ApiService {
   getMoodleCategorias(): Observable<any> {
     return this.http.get(`${API_BASE}/arboles/categorias-raiz`);
   }
+  getCategoriasOrganizaciones(): Observable<any> {
+    return this.http.get(`${API_BASE}/organizaciones/categorias`);
+  }
 
   // Activos — integración Moodle
   getActivosCursosRepositorio(): Observable<{ ok: boolean; cursos: any[] }> {

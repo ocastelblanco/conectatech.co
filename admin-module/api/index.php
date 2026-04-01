@@ -256,6 +256,12 @@ try {
 
         // ── Organizaciones ──────────────────────────────────────────────────
 
+        // GET /api/organizaciones/categorias
+        case $method === 'GET' && $seg0 === 'organizaciones' && $seg1 === 'categorias':
+            require API_DIR . '/handlers/organizaciones.php';
+            handleGetCategoriasColegios();
+            break;
+
         // GET /api/organizaciones
         case $method === 'GET' && $seg0 === 'organizaciones' && $seg1 === '':
             require API_DIR . '/handlers/organizaciones.php';
