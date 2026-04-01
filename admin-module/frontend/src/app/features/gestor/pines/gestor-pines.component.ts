@@ -53,11 +53,24 @@ export class GestorPinesComponent implements OnInit {
     { label: 'Activo',     value: 'active'    },
   ];
 
-  readonly rolOpciones = [
-    { label: 'Estudiante',        value: 'student'       },
-    { label: 'Profesor',          value: 'teacher'       },
-    { label: 'Profesor Editor',   value: 'editingteacher'},
-  ];
+  readonly rolLabels: Record<string, string> = {
+    student:        'Estudiante',
+    teacher:        'Profesor',
+    editingteacher: 'Profesor Editor',
+  };
+
+  // Siempre incluye Estudiante + los teacher_role únicos de los pines cargados
+  readonly rolOpciones = computed(() => {
+    const teacherRoles = [...new Set(
+      this.pines()
+        .map((p: any) => p.teacher_role as string)
+        .filter((r): r is string => !!r && r !== 'student')
+    )];
+    return [
+      { label: 'Estudiante', value: 'student' },
+      ...teacherRoles.map(r => ({ label: this.rolLabels[r] ?? r, value: r })),
+    ];
+  });
 
   readonly cursos = computed(() => this.gestorState.org()?.courses ?? []);
 

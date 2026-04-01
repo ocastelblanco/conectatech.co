@@ -27,23 +27,45 @@ class GestorService
         global $DB;
 
         $org     = $DB->get_record('ct_organization', ['id' => $ctGestor['organization_id']], '*', MUST_EXIST);
-        $courses = $DB->get_records(
-            'course',
-            ['category' => $ctGestor['moodle_category_id']],
-            'fullname ASC',
-            'id, fullname, shortname'
-        );
+        $courses = $this->getAllCoursesInCategory((int)$ctGestor['moodle_category_id']);
+
+        // Ordenar por nombre completo
+        usort($courses, fn($a, $b) => strcmp($a['fullname'], $b['fullname']));
 
         return [
             'id'                 => (int)$org->id,
             'name'               => $org->name,
             'moodle_category_id' => (int)$org->moodle_category_id,
-            'courses'            => array_values(array_map(fn($c) => [
+            'courses'            => $courses,
+        ];
+    }
+
+    /**
+     * Devuelve todos los cursos dentro de $categoryId y sus subcategorías
+     * (a cualquier profundidad), excluyendo el sitio raíz.
+     */
+    private function getAllCoursesInCategory(int $categoryId): array
+    {
+        global $DB;
+
+        $result  = [];
+        $courses = $DB->get_records('course', ['category' => $categoryId], '', 'id, fullname, shortname');
+
+        foreach ($courses as $c) {
+            if ((int)$c->id === SITEID) continue;
+            $result[] = [
                 'id'        => (int)$c->id,
                 'fullname'  => $c->fullname,
                 'shortname' => $c->shortname,
-            ], $courses)),
-        ];
+            ];
+        }
+
+        $subcats = $DB->get_records('course_categories', ['parent' => $categoryId], '', 'id');
+        foreach ($subcats as $sub) {
+            $result = array_merge($result, $this->getAllCoursesInCategory((int)$sub->id));
+        }
+
+        return $result;
     }
 
     // =========================================================================
