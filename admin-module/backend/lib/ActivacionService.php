@@ -138,11 +138,26 @@ class ActivacionService
             'mnethostid' => $CFG->mnet_localhost_id,
         ], true, false);
 
-        // Asignar rol teacher a nivel de categoría
+        // Asignar rol teacher a nivel de categoría (herencia de contexto)
         $teacherRoleId = $DB->get_field('role', 'id', ['shortname' => 'teacher'], MUST_EXIST);
         $org    = $DB->get_record('ct_organization', ['id' => $pin->organization_id], '*', MUST_EXIST);
         $catCtx = context_coursecat::instance($org->moodle_category_id);
         role_assign($teacherRoleId, $userId, $catCtx->id);
+
+        // Matricular explícitamente como teacher en TODOS los cursos del árbol
+        // de la categoría (incluyendo subcategorías recursivamente).
+        $enrol      = enrol_get_plugin('manual');
+        $courseIds  = $this->getAllCourseIdsInCategory((int)$org->moodle_category_id);
+        foreach ($courseIds as $courseId) {
+            $instance = $DB->get_record('enrol', [
+                'courseid' => $courseId,
+                'enrol'    => 'manual',
+                'status'   => ENROL_INSTANCE_ENABLED,
+            ]);
+            if ($instance) {
+                $enrol->enrol_user($instance, $userId, $teacherRoleId);
+            }
+        }
 
         // Insertar en ct_gestor
         $DB->insert_record('ct_gestor', (object)[
@@ -251,5 +266,37 @@ class ActivacionService
             'group_name' => $ctGroup->name,
             'expires_at' => (int)$pkg->expires_at,
         ];
+    }
+
+    // =========================================================================
+    // Helpers privados
+    // =========================================================================
+
+    /**
+     * Devuelve recursivamente los IDs de todos los cursos que pertenecen a
+     * $categoryId o a cualquiera de sus subcategorías (a cualquier profundidad).
+     * Excluye el sitio raíz (id = SITEID).
+     */
+    private function getAllCourseIdsInCategory(int $categoryId): array
+    {
+        global $DB;
+
+        $ids = [];
+
+        // Cursos directamente en esta categoría
+        $courses = $DB->get_records('course', ['category' => $categoryId], '', 'id');
+        foreach ($courses as $course) {
+            if ((int)$course->id !== SITEID) {
+                $ids[] = (int)$course->id;
+            }
+        }
+
+        // Subcategorías → recursión
+        $subcats = $DB->get_records('course_categories', ['parent' => $categoryId], '', 'id');
+        foreach ($subcats as $subcat) {
+            $ids = array_merge($ids, $this->getAllCourseIdsInCategory((int)$subcat->id));
+        }
+
+        return $ids;
     }
 }
