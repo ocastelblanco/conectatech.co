@@ -32,7 +32,7 @@ export class GestorGruposComponent implements OnInit {
   private cargar(): void {
     this.loading.set(true);
     this.api.getGestorGrupos().subscribe({
-      next: (r: any) => { this.grupos.set(r.grupos ?? r ?? []); this.loading.set(false); },
+      next: (r: any) => { this.grupos.set(r.data ?? []); this.loading.set(false); },
       error: () => { this.loading.set(false); this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar los grupos' }); }
     });
   }

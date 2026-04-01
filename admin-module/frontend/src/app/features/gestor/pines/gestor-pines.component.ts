@@ -68,7 +68,7 @@ export class GestorPinesComponent implements OnInit {
 
   private cargarGrupos(): void {
     this.api.getGestorGrupos().subscribe({
-      next: (r: any) => this.grupos.set(r.grupos ?? r ?? []),
+      next: (r: any) => this.grupos.set(r.data ?? []),
       error: () => {}
     });
   }
@@ -81,7 +81,7 @@ export class GestorPinesComponent implements OnInit {
       group_id:  this.filtroGrupoId()  ?? undefined,
       course_id: this.filtroCursoId()  ?? undefined,
     }).subscribe({
-      next: (r: any) => { this.pines.set(r.pines ?? r ?? []); this.loading.set(false); },
+      next: (r: any) => { this.pines.set(r.data ?? []); this.loading.set(false); },
       error: () => { this.loading.set(false); this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar los pines' }); }
     });
   }
