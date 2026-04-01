@@ -14,10 +14,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       },
       {
-        path: 'cursos',
-        loadComponent: () => import('./features/cursos/cursos.component').then(m => m.CursosComponent)
-      },
-      {
         path: 'matriculas',
         loadComponent: () => import('./features/matriculas/matriculas.component').then(m => m.MatriculasComponent)
       },
@@ -36,10 +32,6 @@ export const routes: Routes = [
       {
         path: 'activos',
         loadComponent: () => import('./features/activos/activos.component').then(m => m.ActivosComponent)
-      },
-      {
-        path: 'reportes',
-        loadComponent: () => import('./features/reportes/reportes.component').then(m => m.ReportesComponent)
       },
       {
         path: 'organizaciones',
