@@ -182,6 +182,51 @@ class ActivacionService
     }
 
     // =========================================================================
+    // Registro de usuario regular (sin gestor)
+    // =========================================================================
+
+    /**
+     * Crea una cuenta Moodle para un usuario regular (estudiante / profesor).
+     * No asigna roles de categoría ni matricula en ningún curso: eso lo hace
+     * activarPin() justo después.
+     *
+     * @param array $datos  Claves: firstname, lastname, email, username, password.
+     * @return array        ['ok' => true, 'user_id' => int]
+     * @throws InvalidArgumentException Si los datos son inválidos o el
+     *         username/email ya existen.
+     */
+    public function registrarUsuario(array $datos): array
+    {
+        global $DB, $CFG;
+
+        // Verificar unicidad de username y email
+        if ($DB->record_exists('user', ['username' => $datos['username'], 'deleted' => 0])) {
+            throw new InvalidArgumentException("El nombre de usuario '{$datos['username']}' ya está en uso.");
+        }
+        if ($DB->record_exists('user', ['email' => $datos['email'], 'deleted' => 0])) {
+            throw new InvalidArgumentException("El correo electrónico '{$datos['email']}' ya está registrado.");
+        }
+
+        require_once $CFG->dirroot . '/user/lib.php';
+
+        $userId = user_create_user((object)[
+            'username'   => $datos['username'],
+            'password'   => $datos['password'],
+            'firstname'  => $datos['firstname'],
+            'lastname'   => $datos['lastname'],
+            'email'      => $datos['email'],
+            'auth'       => 'manual',
+            'confirmed'  => 1,
+            'mnethostid' => $CFG->mnet_localhost_id,
+        ], true, false);
+
+        return [
+            'ok'      => true,
+            'user_id' => (int)$userId,
+        ];
+    }
+
+    // =========================================================================
     // Activación de pin regular
     // =========================================================================
 

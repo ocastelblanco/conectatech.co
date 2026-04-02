@@ -45,6 +45,14 @@ export class ActivarComponent {
     password:  ['', [Validators.required, Validators.minLength(8)]],
   });
 
+  readonly registroForm = this.fb.group({
+    firstname: ['', Validators.required],
+    lastname:  ['', Validators.required],
+    email:     ['', [Validators.required, Validators.email]],
+    username:  ['', Validators.required],
+    password:  ['', [Validators.required, Validators.minLength(8)]],
+  });
+
   // ── Paso 1: resolver pin ────────────────────────────────────────────────────
 
   resolverPin(): void {
@@ -90,7 +98,40 @@ export class ActivarComponent {
     });
   }
 
-  // ── Paso 2b: login + activar pin ────────────────────────────────────────────
+  // ── Paso 2b: crear cuenta nueva + activar pin ───────────────────────────────
+
+  registrarYActivar(): void {
+    if (this.registroForm.invalid) { this.registroForm.markAllAsTouched(); return; }
+    this.cargando.set(true);
+    const v = this.registroForm.value;
+    this.api.registrarUsuario({
+      firstname: v.firstname!,
+      lastname:  v.lastname!,
+      email:     v.email!,
+      username:  v.username!,
+      password:  v.password!,
+    }).subscribe({
+      next: (r: any) => {
+        this.api.activarPin({ hash: this.hashInput().trim(), user_id: r.user_id }).subscribe({
+          next: (res: any) => {
+            this.cargando.set(false);
+            this.resultado.set({ tipo: 'pin', ...res });
+            this.paso.set('confirmacion');
+          },
+          error: (err: any) => {
+            this.cargando.set(false);
+            this.toast.add({ severity: 'error', summary: 'Error al activar', detail: err.error?.error ?? 'No se pudo activar el pin' });
+          }
+        });
+      },
+      error: (err: any) => {
+        this.cargando.set(false);
+        this.toast.add({ severity: 'error', summary: 'Error al crear cuenta', detail: err.error?.error ?? 'No se pudo crear la cuenta' });
+      }
+    });
+  }
+
+  // ── Paso 2c: login + activar pin ────────────────────────────────────────────
 
   loginYActivar(): void {
     if (this.loginForm.invalid) { this.loginForm.markAllAsTouched(); return; }
@@ -128,10 +169,7 @@ export class ActivarComponent {
     this.resultado.set(null);
     this.loginForm.reset();
     this.gestorForm.reset();
-  }
-
-  irAMoodleSignup(): void {
-    window.open('https://conectatech.co/login/signup.php', '_blank');
+    this.registroForm.reset();
   }
 
   irAMoodle(): void {

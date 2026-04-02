@@ -72,6 +72,43 @@ function handleActivarGestor(): void
 }
 
 /**
+ * POST /api/activar/registro
+ * Body: { firstname, lastname, email, username, password }
+ *
+ * Crea la cuenta Moodle del usuario regular sin asignarle ningún rol
+ * de categoría. El frontend llamará a /activar/pin justo después.
+ */
+function handleRegistrarUsuario(): void
+{
+    $body = readJsonBody();
+
+    $campos = ['firstname', 'lastname', 'email', 'username', 'password'];
+    foreach ($campos as $campo) {
+        if (empty(trim($body[$campo] ?? ''))) {
+            badRequest("El campo {$campo} es obligatorio.");
+        }
+    }
+
+    $datos = [
+        'firstname' => trim($body['firstname']),
+        'lastname'  => trim($body['lastname']),
+        'email'     => trim($body['email']),
+        'username'  => strtolower(trim($body['username'])),
+        'password'  => $body['password'],
+    ];
+
+    try {
+        $resultado = (new ActivacionService())->registrarUsuario($datos);
+        while (ob_get_level() > 0) { ob_end_clean(); }
+        echo json_encode($resultado);
+    } catch (InvalidArgumentException $e) {
+        while (ob_get_level() > 0) { ob_end_clean(); }
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+}
+
+/**
  * POST /api/activar/login
  * Body: { username: string, password: string }
  *

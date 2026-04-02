@@ -396,6 +396,12 @@ try {
             handleActivarGestor();
             break;
 
+        // POST /api/activar/registro
+        case $method === 'POST' && $seg0 === 'activar' && $seg1 === 'registro':
+            require API_DIR . '/handlers/activacion.php';
+            handleRegistrarUsuario();
+            break;
+
         // POST /api/activar/login
         case $method === 'POST' && $seg0 === 'activar' && $seg1 === 'login':
             require API_DIR . '/handlers/activacion.php';

@@ -168,6 +168,9 @@ export class ApiService {
   activarGestor(body: { hash: string; firstname: string; lastname: string; email: string; username: string; password: string }): Observable<any> {
     return this.http.post(`${API_BASE}/activar/gestor`, body);
   }
+  registrarUsuario(body: { firstname: string; lastname: string; email: string; username: string; password: string }): Observable<any> {
+    return this.http.post(`${API_BASE}/activar/registro`, body);
+  }
   activarLogin(body: { username: string; password: string }): Observable<any> {
     return this.http.post(`${API_BASE}/activar/login`, body);
   }
