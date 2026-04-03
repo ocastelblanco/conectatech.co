@@ -28,3 +28,8 @@ admin-module/backend/logs/*.log
 admin-module/backend/report-ultimo.json
 admin-module/backend/config/courses.csv
 admin-module/backend/test/*.*
+# Obsidian
+docs/.obsidian/
+
+# Worktrees
+.claude/worktrees/

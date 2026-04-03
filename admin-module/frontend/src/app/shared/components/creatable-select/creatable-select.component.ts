@@ -33,7 +33,7 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
       [forceSelection]="false"
       [placeholder]="placeholder()"
       class="w-full"
-      inputclass="w-full text-sm"
+      inputStyleClass="w-full text-sm"
     />
   `,
 })

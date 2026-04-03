@@ -267,6 +267,16 @@ a {
 	}
 }
 
+// Bloque de navegación de quizes
+#mod_quiz_navblock {
+	background-color: var(--conecta-midnight);
+	border: 1px solid rgb(255 255 255 / 60%);
+	box-shadow: 0 2px 8px rgb(255 255 255 / 40%);
+	.qnbutton {
+		background-color: var(--conecta-tech-blue) !important;
+	}
+}
+
 // ----------------------------------------------------------------------------
 // 6. TARJETAS DE CURSO (DASHBOARD)
 // ----------------------------------------------------------------------------
