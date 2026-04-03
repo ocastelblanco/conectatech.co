@@ -1,278 +1,316 @@
 <?php
 /**
  * ActivacionService.php
- * Lógica central para la activación pública de pines.
- *
- * Tres operaciones principales:
- *
- *   resolvePin()     — Identifica el pin (gestor o regular) y retorna su info
- *                      sin ejecutar ningún cambio.
- *
- *   activarGestor()  — Crea una cuenta Moodle de gestor usando un pin-gestor,
- *                      asigna el rol 'teacher' a nivel de categoría y registra
- *                      el gestor en ct_gestor.
- *
- *   activarPin()     — Activa un pin de acceso a curso. Crea el grupo en Moodle
- *                      si no existe, matricula al usuario con timeend = expires_at
- *                      y lo añade al grupo. Soporta creación de cuenta nueva o
- *                      autenticación de cuenta existente en el mismo paso.
+ * Lógica de negocio para la activación pública de pines:
+ *   - Resolver un pin por hash (gestor o regular).
+ *   - Crear cuenta de gestor y asignarle rol en la organización.
+ *   - Matricular un usuario en el curso asociado a un pin.
  */
 
 class ActivacionService
 {
     // =========================================================================
-    // Resolver pin
+    // Resolución de pin
     // =========================================================================
 
     /**
-     * Identifica el tipo de pin y retorna su información pública.
-     * No modifica ningún dato.
+     * Busca un pin por hash en ct_gestor_pin y ct_pin, y retorna sus datos
+     * junto con el tipo ('gestor' o 'regular').
      *
-     * Retorna:
-     *   Para pin-gestor:
-     *     ['type' => 'gestor', 'organization_name' => '...']
-     *
-     *   Para pin de acceso:
-     *     ['type' => 'pin', 'role' => '...', 'expires_at' => N,
-     *      'course_name' => '...', 'group_name' => '...', 'reuse' => bool]
-     *
-     * @throws InvalidArgumentException  Si el hash no existe o tiene formato inválido.
-     * @throws RuntimeException          Si el pin no está disponible para activación.
+     * @throws InvalidArgumentException Si el pin no existe, ya fue usado o
+     *         no está en estado activable.
      */
     public function resolvePin(string $hash): array
     {
         global $DB;
 
-        $hash = strtolower(trim($hash));
-
-        if (strlen($hash) !== 32 || !ctype_xdigit($hash)) {
-            throw new InvalidArgumentException('El hash del pin no tiene el formato correcto (32 caracteres hexadecimales).');
-        }
-
-        // ── Pin de gestor ────────────────────────────────────────────────────
+        // ── 1. Buscar en ct_gestor_pin ────────────────────────────────────────
         $gestorPin = $DB->get_record('ct_gestor_pin', ['hash' => $hash]);
+
         if ($gestorPin) {
             if ($gestorPin->status === 'used') {
-                throw new RuntimeException('Este pin de gestor ya fue utilizado.');
+                throw new InvalidArgumentException('Este pin de gestor ya fue utilizado.');
             }
+
+            // status === 'pending' → disponible para activar
             $org = $DB->get_record('ct_organization', ['id' => $gestorPin->organization_id], '*', MUST_EXIST);
+
             return [
-                'type'              => 'gestor',
-                'organization_name' => $org->name,
+                'type' => 'gestor',
+                'pin'  => [
+                    'id'              => (int)$gestorPin->id,
+                    'hash'            => $gestorPin->hash,
+                    'status'          => $gestorPin->status,
+                    'organization_id' => (int)$gestorPin->organization_id,
+                    'org_name'        => $org->name,
+                    'created_at'      => (int)$gestorPin->created_at,
+                ],
             ];
         }
 
-        // ── Pin de acceso ────────────────────────────────────────────────────
-        $pin = $DB->get_record_sql(
-            "SELECT p.id, p.role, p.status, p.group_id, p.moodle_course_id,
-                    pkg.expires_at,
-                    c.fullname AS course_name,
-                    g.name     AS group_name
-             FROM {ct_pin} p
-             JOIN {ct_pin_package} pkg ON pkg.id = p.package_id
-             LEFT JOIN {course} c   ON c.id  = p.moodle_course_id
-             LEFT JOIN {ct_group} g ON g.id  = p.group_id
-             WHERE p.hash = ?",
-            [$hash]
-        );
+        // ── 2. Buscar en ct_pin ───────────────────────────────────────────────
+        $sql = "SELECT p.id, p.hash, p.role, p.status, p.group_id,
+                       p.moodle_course_id, p.activated_by, p.activated_at,
+                       pkg.id         AS package_id,
+                       pkg.expires_at AS expires_at,
+                       c.fullname     AS course_name,
+                       g.name         AS group_name,
+                       o.name         AS org_name
+                FROM {ct_pin} p
+                JOIN {ct_pin_package} pkg ON pkg.id = p.package_id
+                JOIN {ct_organization} o  ON o.id  = pkg.organization_id
+                LEFT JOIN {course}    c   ON c.id  = p.moodle_course_id
+                LEFT JOIN {ct_group}  g   ON g.id  = p.group_id
+                WHERE p.hash = :hash";
+
+        $pin = $DB->get_record_sql($sql, ['hash' => $hash]);
 
         if (!$pin) {
-            throw new InvalidArgumentException('Pin no encontrado. Verifica que lo hayas escrito correctamente.');
+            throw new InvalidArgumentException('Pin no encontrado.');
         }
 
         if ($pin->status === 'available') {
-            throw new RuntimeException('Este pin aún no ha sido asignado a un curso. Contacta a tu gestor.');
+            throw new InvalidArgumentException('Este pin no ha sido asignado todavía.');
         }
 
         if ($pin->status === 'active' && (int)$pin->expires_at > time()) {
-            throw new RuntimeException('Este pin ya está activo y su vigencia no ha vencido aún.');
+            throw new InvalidArgumentException('Este pin ya está activo.');
         }
 
+        // status === 'assigned', o 'active' con vigencia vencida (reactivación)
         return [
-            'type'        => 'pin',
-            'role'        => $pin->role,
-            'expires_at'  => (int)$pin->expires_at,
-            'course_name' => $pin->course_name,
-            'group_name'  => $pin->group_name,
-            'reuse'       => $pin->status === 'active',   // true = reactivación tras vencimiento
+            'type' => 'regular',
+            'pin'  => [
+                'id'          => (int)$pin->id,
+                'hash'        => $pin->hash,
+                'role'        => $pin->role,
+                'status'      => $pin->status,
+                'expires_at'  => (int)$pin->expires_at,
+                'group_name'  => $pin->group_name,
+                'course_id'   => $pin->moodle_course_id ? (int)$pin->moodle_course_id : null,
+                'course_name' => $pin->course_name,
+                'org_name'    => $pin->org_name,
+            ],
         ];
     }
 
     // =========================================================================
-    // Activar pin de gestor
+    // Activación de pin de gestor
     // =========================================================================
 
     /**
-     * Crea la cuenta Moodle del gestor a partir de un pin-gestor pendiente.
+     * Crea la cuenta Moodle del gestor, le asigna rol de teacher en la
+     * categoría de la organización e inserta el registro en ct_gestor.
      *
-     * Pasos:
-     *   1. Valida el hash y los datos del formulario.
-     *   2. Crea el usuario en Moodle con auth 'manual'.
-     *   3. Asigna rol 'teacher' a nivel de categoría (visibilidad sin edición).
-     *   4. Registra al usuario en ct_gestor.
-     *   5. Marca el pin-gestor como 'used'.
-     *
-     * @param array $datos [firstname, lastname, email, username, password]
+     * @param string $hash   Hash del ct_gestor_pin.
+     * @param array  $datos  Claves: firstname, lastname, email, username, password.
+     * @throws InvalidArgumentException Si el pin no está pendiente o los datos son inválidos.
      */
     public function activarGestor(string $hash, array $datos): array
     {
         global $DB, $CFG;
 
-        $gestorPin = $DB->get_record('ct_gestor_pin', ['hash' => strtolower(trim($hash))], '*', MUST_EXIST);
-        if ($gestorPin->status !== 'pending') {
-            throw new RuntimeException('Este pin de gestor ya fue utilizado.');
+        $pin = $DB->get_record('ct_gestor_pin', ['hash' => $hash], '*', MUST_EXIST);
+
+        if ($pin->status !== 'pending') {
+            throw new InvalidArgumentException('Este pin de gestor no está en estado pendiente.');
         }
 
-        $userId = $this->crearUsuarioMoodle($datos);
+        // Verificar unicidad de username y email
+        if ($DB->record_exists('user', ['username' => $datos['username']])) {
+            throw new InvalidArgumentException("El nombre de usuario '{$datos['username']}' ya está en uso.");
+        }
+        if ($DB->record_exists('user', ['email' => $datos['email']])) {
+            throw new InvalidArgumentException("El correo electrónico '{$datos['email']}' ya está registrado.");
+        }
 
-        // Rol 'teacher' a nivel de categoría: el gestor ve los cursos sin poder editarlos
-        $org    = $DB->get_record('ct_organization', ['id' => $gestorPin->organization_id], '*', MUST_EXIST);
-        $ctx    = context_coursecat::instance((int)$org->moodle_category_id);
-        $roleId = $DB->get_field('role', 'id', ['shortname' => 'teacher'], MUST_EXIST);
-        role_assign($roleId, $userId, $ctx->id);
+        // Crear el usuario en Moodle
+        require_once $CFG->dirroot . '/user/lib.php';
 
-        $DB->insert_record('ct_gestor', (object)[
-            'organization_id' => $gestorPin->organization_id,
+        $userId = user_create_user((object)[
+            'username'   => $datos['username'],
+            'password'   => $datos['password'],
+            'firstname'  => $datos['firstname'],
+            'lastname'   => $datos['lastname'],
+            'email'      => $datos['email'],
+            'auth'       => 'manual',
+            'confirmed'  => 1,
+            'mnethostid' => $CFG->mnet_localhost_id,
+        ], true, false);
+
+        // Asignar rol teacher a nivel de categoría (herencia de contexto)
+        $teacherRoleId = $DB->get_field('role', 'id', ['shortname' => 'teacher'], MUST_EXIST);
+        $org    = $DB->get_record('ct_organization', ['id' => $pin->organization_id], '*', MUST_EXIST);
+        $catCtx = context_coursecat::instance($org->moodle_category_id);
+        role_assign($teacherRoleId, $userId, $catCtx->id);
+
+        // Matricular explícitamente como teacher en TODOS los cursos del árbol
+        // de la categoría (incluyendo subcategorías recursivamente).
+        $enrol      = enrol_get_plugin('manual');
+        $courseIds  = $this->getAllCourseIdsInCategory((int)$org->moodle_category_id);
+        foreach ($courseIds as $courseId) {
+            $instance = $DB->get_record('enrol', [
+                'courseid' => $courseId,
+                'enrol'    => 'manual',
+                'status'   => ENROL_INSTANCE_ENABLED,
+            ]);
+            if ($instance) {
+                $enrol->enrol_user($instance, $userId, $teacherRoleId);
+            }
+        }
+
+        // Insertar en ct_gestor
+        $gestorId = $DB->insert_record('ct_gestor', (object)[
+            'organization_id' => (int)$pin->organization_id,
             'moodle_userid'   => $userId,
             'created_at'      => time(),
         ]);
 
-        $gestorPin->status  = 'used';
-        $gestorPin->used_at = time();
-        $DB->update_record('ct_gestor_pin', $gestorPin);
+        // Marcar el pin como usado y vincularlo al gestor creado
+        $DB->update_record('ct_gestor_pin', (object)[
+            'id'        => $pin->id,
+            'status'    => 'used',
+            'used_at'   => time(),
+            'gestor_id' => $gestorId,
+        ]);
 
         return [
-            'user_id'   => (int)$userId,
-            'username'  => clean_param(trim($datos['username']), PARAM_USERNAME),
-            'firstname' => trim($datos['firstname']),
-            'lastname'  => trim($datos['lastname']),
+            'ok'       => true,
+            'user_id'  => $userId,
+            'username' => $datos['username'],
         ];
     }
 
     // =========================================================================
-    // Activar pin de acceso
+    // Registro de usuario regular (sin gestor)
     // =========================================================================
 
     /**
-     * Activa un pin de acceso a curso para un usuario.
+     * Crea una cuenta Moodle para un usuario regular (estudiante / profesor).
+     * No asigna roles de categoría ni matricula en ningún curso: eso lo hace
+     * activarPin() justo después.
      *
-     * El usuario puede ser nuevo (crear cuenta) o existente (autenticar).
-     * Si el campo 'firstname' está presente se asume cuenta nueva; en caso
-     * contrario se autentica la cuenta con username + password.
-     *
-     * Pasos de la activación:
-     *   1. Verifica el hash y el estado del pin.
-     *   2. Obtiene o crea el usuario Moodle.
-     *   3. Crea el grupo Moodle en el curso si ct_group.moodle_group_id es null.
-     *   4. Matricula el usuario con timeend = expires_at.
-     *   5. Añade el usuario al grupo.
-     *   6. Marca el pin como 'active'.
-     *
-     * @param array $datos [username, password, firstname?, lastname?, email?]
+     * @param array $datos  Claves: firstname, lastname, email, username, password.
+     * @return array        ['ok' => true, 'user_id' => int]
+     * @throws InvalidArgumentException Si los datos son inválidos o el
+     *         username/email ya existen.
      */
-    public function activarPin(string $hash, array $datos): array
+    public function registrarUsuario(array $datos): array
     {
         global $DB, $CFG;
 
-        $hash = strtolower(trim($hash));
-
-        $pin = $DB->get_record_sql(
-            "SELECT p.id, p.role, p.status, p.group_id, p.moodle_course_id,
-                    pkg.expires_at
-             FROM {ct_pin} p
-             JOIN {ct_pin_package} pkg ON pkg.id = p.package_id
-             WHERE p.hash = ?",
-            [$hash],
-            MUST_EXIST
-        );
-
-        if ($pin->status === 'available') {
-            throw new RuntimeException('Este pin aún no ha sido asignado a un curso.');
+        // Verificar unicidad de username y email
+        if ($DB->record_exists('user', ['username' => $datos['username'], 'deleted' => 0])) {
+            throw new InvalidArgumentException("El nombre de usuario '{$datos['username']}' ya está en uso.");
         }
-        if ($pin->status === 'active' && (int)$pin->expires_at > time()) {
-            throw new RuntimeException('Este pin ya está activo y su vigencia no ha vencido.');
-        }
-        if (!$pin->moodle_course_id || !$pin->group_id) {
-            throw new RuntimeException('Este pin no tiene curso o grupo asignado. Contacta a tu gestor.');
+        if ($DB->record_exists('user', ['email' => $datos['email'], 'deleted' => 0])) {
+            throw new InvalidArgumentException("El correo electrónico '{$datos['email']}' ya está registrado.");
         }
 
-        // Obtener o crear usuario
-        $nuevoUsuario = !empty(trim($datos['firstname'] ?? ''));
-        if ($nuevoUsuario) {
-            $userId = $this->crearUsuarioMoodle($datos);
-        } else {
-            $userId = $this->autenticarUsuario(
-                trim($datos['username'] ?? ''),
-                $datos['password'] ?? ''
-            );
+        require_once $CFG->dirroot . '/user/lib.php';
+
+        $userId = user_create_user((object)[
+            'username'   => $datos['username'],
+            'password'   => $datos['password'],
+            'firstname'  => $datos['firstname'],
+            'lastname'   => $datos['lastname'],
+            'email'      => $datos['email'],
+            'auth'       => 'manual',
+            'confirmed'  => 1,
+            'mnethostid' => $CFG->mnet_localhost_id,
+        ], true, false);
+
+        return [
+            'ok'      => true,
+            'user_id' => (int)$userId,
+        ];
+    }
+
+    // =========================================================================
+    // Activación de pin regular
+    // =========================================================================
+
+    /**
+     * Matricula al usuario en el curso del pin, lo añade al grupo y actualiza
+     * el estado del pin a 'active'.
+     *
+     * @param string $hash          Hash del ct_pin.
+     * @param int    $moodleUserId  ID del usuario Moodle ya autenticado.
+     * @throws InvalidArgumentException Si el pin no es activable o faltan datos de asignación.
+     */
+    public function activarPin(string $hash, int $moodleUserId): array
+    {
+        global $DB, $CFG;
+
+        $pin = $DB->get_record('ct_pin', ['hash' => $hash], '*', MUST_EXIST);
+
+        // Verificar que el pin es activable
+        $activable = ($pin->status === 'assigned')
+            || ($pin->status === 'active' && (int)$pin->expires_at <= time());
+
+        if (!$activable) {
+            throw new InvalidArgumentException('Este pin no está en un estado activable.');
         }
 
-        // Crear grupo Moodle si aún no existe
-        $grupo = $DB->get_record('ct_group', ['id' => $pin->group_id], '*', MUST_EXIST);
-        if (!$grupo->moodle_group_id) {
-            $moodleGroupId = $this->crearGrupoMoodle($grupo->name, (int)$pin->moodle_course_id);
-            $DB->update_record('ct_group', (object)['id' => $grupo->id, 'moodle_group_id' => $moodleGroupId]);
-            $grupo->moodle_group_id = $moodleGroupId;
+        if (empty($pin->moodle_course_id) || empty($pin->group_id)) {
+            throw new InvalidArgumentException('El pin no tiene curso ni grupo asignados.');
         }
 
-        // Matricular con fecha de fin = expires_at del paquete
-        $this->matricularUsuario($userId, (int)$pin->moodle_course_id, $pin->role, (int)$pin->expires_at);
+        // Crear el grupo en Moodle si aún no existe
+        $ctGroup = $DB->get_record('ct_group', ['id' => $pin->group_id], '*', MUST_EXIST);
+
+        if (empty($ctGroup->moodle_group_id)) {
+            require_once $CFG->dirroot . '/group/lib.php';
+
+            $moodleGroupId = groups_create_group((object)[
+                'courseid' => $pin->moodle_course_id,
+                'name'     => $ctGroup->name,
+            ]);
+
+            $DB->update_record('ct_group', (object)[
+                'id'              => $ctGroup->id,
+                'moodle_group_id' => $moodleGroupId,
+            ]);
+
+            $ctGroup->moodle_group_id = $moodleGroupId;
+        }
+
+        $moodleGroupId = (int)$ctGroup->moodle_group_id;
+
+        // Resolver el rol de Moodle según el shortname del pin
+        $roleId = $DB->get_field('role', 'id', ['shortname' => $pin->role], MUST_EXIST);
+
+        // Matricular al usuario con enrol_manual
+        $pkg      = $DB->get_record('ct_pin_package', ['id' => $pin->package_id], '*', MUST_EXIST);
+        $enrol    = enrol_get_plugin('manual');
+        $instance = $DB->get_record('enrol', [
+            'courseid' => $pin->moodle_course_id,
+            'enrol'    => 'manual',
+            'status'   => ENROL_INSTANCE_ENABLED,
+        ], '*', MUST_EXIST);
+
+        $enrol->enrol_user($instance, $moodleUserId, $roleId, 0, $pkg->expires_at);
 
         // Añadir al grupo
-        require_once($CFG->dirroot . '/group/lib.php');
-        groups_add_member((int)$grupo->moodle_group_id, $userId);
+        if (!function_exists('groups_add_member')) {
+            require_once $CFG->dirroot . '/group/lib.php';
+        }
+        groups_add_member($moodleGroupId, $moodleUserId);
 
-        // Marcar pin como activo
+        // Actualizar el estado del pin
         $DB->update_record('ct_pin', (object)[
             'id'           => $pin->id,
             'status'       => 'active',
-            'activated_by' => $userId,
+            'activated_by' => $moodleUserId,
             'activated_at' => time(),
         ]);
 
-        $course = $DB->get_record('course', ['id' => $pin->moodle_course_id], 'id, fullname', MUST_EXIST);
-
         return [
-            'course_name' => $course->fullname,
-            'role'        => $pin->role,
-            'expires_at'  => (int)$pin->expires_at,
-        ];
-    }
-
-    // =========================================================================
-    // Verificar credenciales (sin activar nada)
-    // =========================================================================
-
-    /**
-     * Verifica las credenciales de un usuario Moodle existente.
-     * Usada por el frontend para el paso de "¿ya tienes cuenta?" antes de activar.
-     */
-    public function verificarCredenciales(string $username, string $password): array
-    {
-        global $DB, $CFG;
-
-        $username = trim($username);
-        if (!$username || !$password) {
-            throw new InvalidArgumentException('Usuario y contraseña son obligatorios.');
-        }
-
-        $user = $DB->get_record('user', [
-            'username'   => $username,
-            'mnethostid' => $CFG->mnet_localhost_id,
-            'deleted'    => 0,
-            'suspended'  => 0,
-        ]);
-
-        if (!$user || !validate_internal_user_password($user, $password)) {
-            throw new RuntimeException('Usuario o contraseña incorrectos.');
-        }
-
-        return [
-            'id'        => (int)$user->id,
-            'username'  => $user->username,
-            'firstname' => $user->firstname,
-            'lastname'  => $user->lastname,
-            'email'     => $user->email,
+            'ok'         => true,
+            'course_id'  => (int)$pin->moodle_course_id,
+            'course_url' => $CFG->wwwroot . '/course/view.php?id=' . $pin->moodle_course_id,
+            'group_name' => $ctGroup->name,
+            'expires_at' => (int)$pkg->expires_at,
         ];
     }
 
@@ -281,123 +319,30 @@ class ActivacionService
     // =========================================================================
 
     /**
-     * Crea un usuario Moodle con autenticación manual.
-     * Valida que username y email no existan antes de insertar.
-     *
-     * @param array $datos [firstname, lastname, email, username, password]
-     * @return int  ID del usuario creado
+     * Devuelve recursivamente los IDs de todos los cursos que pertenecen a
+     * $categoryId o a cualquiera de sus subcategorías (a cualquier profundidad).
+     * Excluye el sitio raíz (id = SITEID).
      */
-    private function crearUsuarioMoodle(array $datos): int
-    {
-        global $DB, $CFG;
-        require_once($CFG->dirroot . '/user/lib.php');
-
-        $username  = clean_param(trim($datos['username']  ?? ''), PARAM_USERNAME);
-        $email     = clean_param(trim($datos['email']     ?? ''), PARAM_EMAIL);
-        $firstname = trim($datos['firstname'] ?? '');
-        $lastname  = trim($datos['lastname']  ?? '');
-        $password  = $datos['password'] ?? '';
-
-        foreach (['firstname' => $firstname, 'lastname' => $lastname, 'email' => $email,
-                  'username'  => $username,  'password' => $password] as $field => $value) {
-            if ($value === '') {
-                throw new InvalidArgumentException("El campo {$field} es obligatorio.");
-            }
-        }
-
-        if (!validate_email($email)) {
-            throw new InvalidArgumentException("El correo '{$email}' no es válido.");
-        }
-
-        if ($DB->record_exists('user', ['username' => $username, 'mnethostid' => $CFG->mnet_localhost_id])) {
-            throw new InvalidArgumentException("El nombre de usuario '{$username}' ya está en uso.");
-        }
-
-        if ($DB->record_exists('user', ['email' => $email, 'mnethostid' => $CFG->mnet_localhost_id, 'deleted' => 0])) {
-            throw new InvalidArgumentException("El correo '{$email}' ya está registrado.");
-        }
-
-        return (int)user_create_user((object)[
-            'auth'       => 'manual',
-            'username'   => $username,
-            'password'   => $password,
-            'firstname'  => $firstname,
-            'lastname'   => $lastname,
-            'email'      => $email,
-            'confirmed'  => 1,
-            'mnethostid' => $CFG->mnet_localhost_id,
-            'lang'       => 'es',
-            'country'    => 'CO',
-        ]);
-    }
-
-    /**
-     * Autentica un usuario Moodle existente y retorna su ID.
-     */
-    private function autenticarUsuario(string $username, string $password): int
-    {
-        global $DB, $CFG;
-
-        if (!$username || !$password) {
-            throw new InvalidArgumentException('Usuario y contraseña son obligatorios.');
-        }
-
-        $user = $DB->get_record('user', [
-            'username'   => $username,
-            'mnethostid' => $CFG->mnet_localhost_id,
-            'deleted'    => 0,
-            'suspended'  => 0,
-        ]);
-
-        if (!$user || !validate_internal_user_password($user, $password)) {
-            throw new RuntimeException('Usuario o contraseña incorrectos.');
-        }
-
-        return (int)$user->id;
-    }
-
-    /**
-     * Crea un grupo Moodle en el curso indicado y retorna su ID.
-     */
-    private function crearGrupoMoodle(string $nombre, int $courseId): int
-    {
-        global $CFG;
-        require_once($CFG->dirroot . '/group/lib.php');
-
-        return (int)groups_create_group((object)[
-            'courseid' => $courseId,
-            'name'     => $nombre,
-        ]);
-    }
-
-    /**
-     * Matricula al usuario en el curso usando la instancia de enrolamiento manual.
-     * Si no existe instancia manual, la crea. Si el usuario ya está matriculado,
-     * actualiza el timeend.
-     */
-    private function matricularUsuario(int $userId, int $courseId, string $roleShortname, int $timeEnd): void
+    private function getAllCourseIdsInCategory(int $categoryId): array
     {
         global $DB;
 
-        $course  = $DB->get_record('course', ['id' => $courseId], '*', MUST_EXIST);
-        $roleId  = $DB->get_field('role', 'id', ['shortname' => $roleShortname], MUST_EXIST);
-        $plugin  = enrol_get_plugin('manual');
+        $ids = [];
 
-        // Buscar instancia de enrolamiento manual en el curso
-        $instance = null;
-        foreach (enrol_get_instances($courseId, true) as $i) {
-            if ($i->enrol === 'manual') {
-                $instance = $i;
-                break;
+        // Cursos directamente en esta categoría
+        $courses = $DB->get_records('course', ['category' => $categoryId], '', 'id');
+        foreach ($courses as $course) {
+            if ((int)$course->id !== SITEID) {
+                $ids[] = (int)$course->id;
             }
         }
 
-        if (!$instance) {
-            $instanceId = $plugin->add_default_instance($course);
-            $instance   = $DB->get_record('enrol', ['id' => $instanceId], '*', MUST_EXIST);
+        // Subcategorías → recursión
+        $subcats = $DB->get_records('course_categories', ['parent' => $categoryId], '', 'id');
+        foreach ($subcats as $subcat) {
+            $ids = array_merge($ids, $this->getAllCourseIdsInCategory((int)$subcat->id));
         }
 
-        // enrol_user actualiza la matrícula si el usuario ya estaba inscrito
-        $plugin->enrol_user($instance, $userId, $roleId, 0, $timeEnd);
+        return $ids;
     }
 }

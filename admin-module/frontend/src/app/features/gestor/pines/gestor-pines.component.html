@@ -1,0 +1,185 @@
+<p-toast />
+
+<div class="space-y-5">
+  <!-- Header -->
+  <div class="flex items-start justify-between">
+    <div>
+      <h2 class="text-lg font-heading font-bold text-cnt-midnight m-0">Pines</h2>
+      <p class="text-sm text-gray-500 mt-1 m-0">Asigna pines a grupos y cursos. Descarga el CSV para distribuirlos.</p>
+    </div>
+    <div class="flex gap-2">
+      <p-button label="Descargar CSV"
+                icon="pi pi-download"
+                severity="secondary"
+                [loading]="descargando()"
+                (onClick)="descargarCsv()" />
+      <p-button label="Asignar seleccionados"
+                icon="pi pi-check"
+                [disabled]="seleccionados().length === 0"
+                (onClick)="abrirAsignar()" />
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="flex gap-3 flex-wrap">
+    <p-select [options]="statusOpciones"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Estado"
+              class="w-44"
+              [ngModel]="filtroStatus()"
+              (ngModelChange)="filtroStatus.set($event); cargarPines()" />
+
+    <p-select [options]="grupos()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Grupo"
+              [showClear]="true"
+              class="w-44"
+              [ngModel]="filtroGrupoId()"
+              (ngModelChange)="filtroGrupoId.set($event); cargarPines()" />
+
+    <p-select [options]="cursos()"
+              optionLabel="fullname"
+              optionValue="id"
+              placeholder="Curso"
+              [showClear]="true"
+              class="w-64"
+              [ngModel]="filtroCursoId()"
+              (ngModelChange)="filtroCursoId.set($event); cargarPines()" />
+  </div>
+
+  <!-- Indicador selección -->
+  @if (seleccionados().length > 0) {
+  <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-sm text-blue-700 flex items-center gap-2">
+    <i class="pi pi-info-circle"></i>
+    {{ seleccionados().length }} pin(es) seleccionado(s).
+    <p-button label="Limpiar selección"
+              size="small"
+              (onClick)="seleccionados.set([])" />
+  </div>
+  }
+
+  @if (loading()) {
+  <div class="flex items-center justify-center py-12 text-gray-400">
+    <i class="pi pi-spin pi-spinner mr-2 text-xl"></i>
+    <span class="text-sm">Cargando pines...</span>
+  </div>
+  }
+
+  @if (!loading()) {
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <p-table [value]="pines()"
+             [selection]="seleccionados()"
+             (selectionChange)="seleccionados.set($event)"
+             dataKey="id"
+             [paginator]="pines().length > 20"
+             [rows]="20"
+             class="text-sm">
+      <ng-template #header>
+        <tr>
+          <th style="width: 3rem"><p-tableHeaderCheckbox /></th>
+          <th>Hash</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Grupo</th>
+          <th>Curso</th>
+          <th>Vigencia</th>
+          <th>Activado</th>
+          <th>Usuario</th>
+        </tr>
+      </ng-template>
+      <ng-template #body
+                   let-pin>
+        <tr>
+          <td><p-tableCheckbox [value]="pin" /></td>
+          <td class="font-mono text-xs text-gray-500"
+              [pTooltip]="pin.hash">
+            {{ pin.hash | slice:0:10 }}...
+          </td>
+          <td class="text-xs">{{ getRolLabel(pin.role) }}</td>
+          <td><p-tag [value]="getStatusLabel(pin.status)"
+                   [severity]="getStatusSeverity(pin.status)" /></td>
+          <td class="text-sm text-gray-600">{{ pin.group_name ?? '—' }}</td>
+          <td class="text-sm text-gray-600">{{ pin.course_name ?? '—' }}</td>
+          <td class="text-xs"
+              [class.text-red-500]="pin.expires_at * 1000 < now"
+              [class.text-gray-500]="pin.expires_at * 1000 >= now">
+            {{ pin.expires_at * 1000 | date:'dd/MM/yyyy' }}
+          </td>
+          <td class="text-xs text-gray-400">
+            {{ pin.activated_at ? (pin.activated_at * 1000 | date:'dd/MM/yy') : '—' }}
+          </td>
+          <td class="text-sm text-gray-700">
+            {{ pin.status === 'active' ? (pin.activated_nombre ?? '—') : '—' }}
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="9"
+              class="text-center text-gray-400 py-8">
+            <i class="pi pi-inbox text-3xl mb-2 block"></i>
+            No hay pines con los filtros actuales.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+</div>
+
+<!-- Dialog asignar -->
+<p-dialog header="Asignar pines"
+          [visible]="dialogAsignar()"
+          (visibleChange)="$event ? null : dialogAsignar.set(false)"
+          [modal]="true"
+          [style]="{ width: '420px' }">
+  <div class="space-y-3 pt-1">
+    <p class="text-sm text-gray-600 m-0">
+      Asignando <strong>{{ seleccionados().length }}</strong> pin(es).
+    </p>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700">Grupo</label>
+      <p-select [options]="grupos()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Seleccionar grupo"
+                class="w-full"
+                [ngModel]="asignarGrupoId()"
+                (ngModelChange)="asignarGrupoId.set($event)" />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700">Curso</label>
+      <p-select [options]="cursos()"
+                optionLabel="fullname"
+                optionValue="id"
+                placeholder="Seleccionar curso"
+                class="w-full"
+                [ngModel]="asignarCursoId()"
+                (ngModelChange)="asignarCursoId.set($event)" />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700">Rol</label>
+      <p-select [options]="rolOpciones()"
+                optionLabel="label"
+                optionValue="value"
+                class="w-full"
+                [ngModel]="asignarRol()"
+                (ngModelChange)="asignarRol.set($event)" />
+    </div>
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancelar"
+              severity="secondary"
+              [text]="true"
+              (onClick)="dialogAsignar.set(false)" />
+    <p-button label="Asignar"
+              icon="pi pi-check"
+              [loading]="saving()"
+              (onClick)="confirmarAsignar()" />
+  </ng-template>
+</p-dialog>

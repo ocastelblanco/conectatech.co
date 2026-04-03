@@ -1,0 +1,75 @@
+<p-toast />
+
+<div class="space-y-6">
+  <!-- Título -->
+  <div>
+    <h2 class="text-lg font-heading font-bold text-cnt-midnight m-0">Dashboard</h2>
+    <p class="text-sm text-gray-500 mt-1">Resumen de pines de {{ gestorState.org()?.name }}</p>
+  </div>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-gray-400">
+      <i class="pi pi-spin pi-spinner mr-2 text-xl"></i>
+      <span class="text-sm">Cargando...</span>
+    </div>
+  }
+
+  @if (!loading()) {
+    <!-- Tarjetas de conteo -->
+    <div class="grid grid-cols-3 gap-4">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500 m-0">Disponibles</p>
+            <p class="text-3xl font-bold text-blue-600 mt-1 m-0">{{ counts().available }}</p>
+          </div>
+          <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
+            <i class="pi pi-ticket text-blue-500 text-xl"></i>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-3 m-0">Sin asignar a grupo/curso</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500 m-0">Asignados</p>
+            <p class="text-3xl font-bold text-orange-500 mt-1 m-0">{{ counts().assigned }}</p>
+          </div>
+          <div class="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center">
+            <i class="pi pi-users text-orange-400 text-xl"></i>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-3 m-0">Listos para activar</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500 m-0">Activos</p>
+            <p class="text-3xl font-bold text-green-600 mt-1 m-0">{{ counts().active }}</p>
+          </div>
+          <div class="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
+            <i class="pi pi-check-circle text-green-500 text-xl"></i>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-3 m-0">Usuarios matriculados</p>
+      </div>
+    </div>
+
+    <!-- Cursos disponibles -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3 m-0">Cursos disponibles en tu organización</h3>
+      @if ((gestorState.org()?.courses ?? []).length === 0) {
+        <p class="text-sm text-gray-400">No hay cursos asignados a tu organización.</p>
+      }
+      <div class="flex flex-wrap gap-2">
+        @for (curso of gestorState.org()?.courses ?? []; track curso.id) {
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+            {{ curso.fullname }}
+          </span>
+        }
+      </div>
+    </div>
+  }
+</div>

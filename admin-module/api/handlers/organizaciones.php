@@ -87,3 +87,41 @@ function handleAnularGestorPin(string $hash): void
     while (ob_get_level() > 0) { ob_end_clean(); }
     echo json_encode(['ok' => true]);
 }
+
+// ─── Gestores activos ────────────────────────────────────────────────────────
+
+function handleListarGestores(int $orgId): void
+{
+    $svc  = new OrganizacionService();
+    $data = $svc->listarGestores($orgId);
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true, 'data' => $data]);
+}
+
+function handleEliminarGestor(int $gestorId): void
+{
+    $svc = new OrganizacionService();
+    $svc->eliminarGestor($gestorId);
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true]);
+}
+
+// ─── Categorías disponibles para organizaciones ───────────────────────────────
+
+/**
+ * GET /api/organizaciones/categorias
+ * Devuelve las subcategorías de COLEGIOS (parent = 13) ordenadas por nombre.
+ */
+function handleGetCategoriasColegios(): void
+{
+    global $DB;
+
+    $cats = $DB->get_records('course_categories', ['parent' => 13], 'name ASC', 'id, name');
+    $data = array_values(array_map(fn($c) => [
+        'id'   => (int)$c->id,
+        'name' => $c->name,
+    ], $cats));
+
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true, 'categorias' => $data]);
+}

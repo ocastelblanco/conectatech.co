@@ -1,0 +1,183 @@
+<p-toast />
+<p-confirmdialog />
+
+<div class="space-y-5">
+  <!-- Header -->
+  <div class="flex items-start justify-between">
+    <div>
+      <h2 class="text-lg font-heading font-bold mb-1 text-cnt-midnight m-0">Paquetes de pines</h2>
+      <p class="text-sm text-gray-500 m-0">Gestiona los paquetes de pines por organización.</p>
+    </div>
+    <p-button label="Nuevo paquete"
+              icon="pi pi-plus"
+              (onClick)="creandoPaquete.set(true)" />
+  </div>
+
+  <!-- Filtro por organización -->
+  <div class="flex items-center gap-3">
+    <label class="text-sm font-medium text-gray-600">Filtrar por organización:</label>
+    <p-select [options]="[{ name: 'Todas las organizaciones', id: null }, ...orgs()]"
+              optionLabel="name"
+              optionValue="id"
+              [ngModel]="filtroOrgId()"
+              (ngModelChange)="aplicarFiltro($event)"
+              [style]="{ minWidth: '220px' }" />
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+  <div class="flex items-center justify-center py-12 text-gray-400">
+    <i class="pi pi-spin pi-spinner mr-2 text-xl"></i>
+    <span class="text-sm">Cargando paquetes...</span>
+  </div>
+  }
+
+  <!-- Table -->
+  @if (!loading()) {
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <p-table [value]="paquetesFiltrados()"
+             [paginator]="paquetesFiltrados().length > 10"
+             [rows]="10"
+             class="text-sm">
+      <ng-template #header>
+        <tr>
+          <th>Organización</th>
+          <th>Rol prof.</th>
+          <th>Vence</th>
+          <th>Disponibles</th>
+          <th>Asignados</th>
+          <th>Activos</th>
+          <th>Creado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-paq>
+        <tr>
+          <td class="font-medium text-cnt-midnight">{{ nombreOrg(paq.organization_id) }}</td>
+          <td>
+            <p-tag [value]="getRolLabel(paq.teacher_role)"
+                   [severity]="getRolSeverity(paq.teacher_role)" />
+          </td>
+          <td>
+            <span [class]="getPinExpirClass(paq.expires_at)">
+              {{ paq.expires_at * 1000 | date:'dd/MM/yyyy' }}
+            </span>
+          </td>
+          <td class="text-center text-gray-700">{{ paq.available ?? 0 }}</td>
+          <td class="text-center text-gray-700">{{ paq.assigned ?? 0 }}</td>
+          <td class="text-center text-gray-700">{{ paq.active ?? 0 }}</td>
+          <td class="text-xs text-gray-400">{{ paq.created_at * 1000 | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <div class="flex items-center justify-end gap-1">
+              <p-button icon="pi pi-arrow-right-arrow-left"
+                        size="small"
+                        severity="secondary"
+                        [text]="true"
+                        pTooltip="Reasignar organización"
+                        (onClick)="abrirAsignar(paq)" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="text-center text-gray-400 py-8">
+            <i class="pi pi-ticket text-3xl mb-2 block"></i>
+            No hay paquetes de pines.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+</div>
+
+<!-- Dialog crear paquete -->
+<p-dialog header="Nuevo paquete de pines"
+          [visible]="creandoPaquete()"
+          (visibleChange)="$event ? null : creandoPaquete.set(false)"
+          [modal]="true"
+          [style]="{ width: '460px' }"
+          [closable]="true">
+  <div class="space-y-4 pt-1">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700">Organización</label>
+      <p-select [options]="orgs()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Seleccionar organización"
+                class="w-full"
+                [ngModel]="nuevoPaquete().organization_id || null"
+                (ngModelChange)="updateNuevoPaqueteOrgId($event)" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700">Rol de profesor</label>
+      <p-select [options]="rolesProfesor"
+                optionLabel="label"
+                optionValue="value"
+                class="w-full"
+                [ngModel]="nuevoPaquete().teacher_role"
+                (ngModelChange)="updateNuevoPaqueteRol($event)" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700">Fecha de expiración</label>
+      <p-datepicker [showTime]="false"
+                    [minDate]="tomorrow"
+                    dateFormat="dd/mm/yy"
+                    class="w-full"
+                    [ngModel]="nuevoPaquete().expires_at"
+                    (ngModelChange)="updateNuevoPaqueteFecha($event)" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700">Cantidad de pines</label>
+      <input pInputText
+             type="number"
+             class="w-full"
+             [min]="1"
+             [max]="1000"
+             [ngModel]="nuevoPaquete().cantidad"
+             (ngModelChange)="updateNuevoPaqueteCantidad(+$event)" />
+    </div>
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancelar"
+              severity="secondary"
+              [text]="true"
+              (onClick)="creandoPaquete.set(false)" />
+    <p-button label="Crear paquete"
+              icon="pi pi-check"
+              [loading]="saving()"
+              [disabled]="!nuevoPaquete().organization_id || !nuevoPaquete().expires_at"
+              (onClick)="crearPaquete()" />
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog reasignar paquete -->
+<p-dialog header="Reasignar organización"
+          [visible]="asignandoPaquete() !== null"
+          (visibleChange)="$event ? null : asignandoPaquete.set(null)"
+          [modal]="true"
+          [style]="{ width: '400px' }"
+          [closable]="true">
+  <div class="space-y-4 pt-1">
+    <p class="text-sm text-gray-600 m-0">Selecciona la nueva organización para este paquete.</p>
+    <p-select [options]="orgs()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Seleccionar organización"
+              class="w-full"
+              [ngModel]="asignarOrgId()"
+              (ngModelChange)="asignarOrgId.set($event)" />
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancelar"
+              severity="secondary"
+              [text]="true"
+              (onClick)="asignandoPaquete.set(null)" />
+    <p-button label="Reasignar"
+              icon="pi pi-check"
+              [loading]="saving()"
+              [disabled]="!asignarOrgId()"
+              (onClick)="confirmarAsignar()" />
+  </ng-template>
+</p-dialog>

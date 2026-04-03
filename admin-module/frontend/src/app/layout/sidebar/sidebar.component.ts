@@ -18,10 +18,10 @@ export class SidebarComponent {
   readonly navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'pi pi-home', route: '/dashboard' },
     { label: 'Árboles Curriculares', icon: 'pi pi-sitemap', route: '/arboles' },
-    { label: 'Cursos', icon: 'pi pi-book', route: '/cursos' },
     { label: 'Matriculas', icon: 'pi pi-users', route: '/matriculas' },
     { label: 'Crear Contenido', icon: 'pi pi-file-edit', route: '/contenido' },
     { label: 'Activos CDN', icon: 'pi pi-folder-open', route: '/activos' },
-    { label: 'Reportes', icon: 'pi pi-chart-bar', route: '/reportes' },
+    { label: 'Organizaciones', icon: 'pi pi-building', route: '/organizaciones' },
+    { label: 'Pines', icon: 'pi pi-ticket', route: '/pines' },
   ];
 }

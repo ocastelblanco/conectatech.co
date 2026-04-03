@@ -27,23 +27,45 @@ class GestorService
         global $DB;
 
         $org     = $DB->get_record('ct_organization', ['id' => $ctGestor['organization_id']], '*', MUST_EXIST);
-        $courses = $DB->get_records(
-            'course',
-            ['category' => $ctGestor['moodle_category_id']],
-            'fullname ASC',
-            'id, fullname, shortname'
-        );
+        $courses = $this->getAllCoursesInCategory((int)$ctGestor['moodle_category_id']);
+
+        // Ordenar por nombre completo
+        usort($courses, fn($a, $b) => strcmp($a['fullname'], $b['fullname']));
 
         return [
             'id'                 => (int)$org->id,
             'name'               => $org->name,
             'moodle_category_id' => (int)$org->moodle_category_id,
-            'courses'            => array_values(array_map(fn($c) => [
+            'courses'            => $courses,
+        ];
+    }
+
+    /**
+     * Devuelve todos los cursos dentro de $categoryId y sus subcategorías
+     * (a cualquier profundidad), excluyendo el sitio raíz.
+     */
+    private function getAllCoursesInCategory(int $categoryId): array
+    {
+        global $DB;
+
+        $result  = [];
+        $courses = $DB->get_records('course', ['category' => $categoryId], '', 'id, fullname, shortname');
+
+        foreach ($courses as $c) {
+            if ((int)$c->id === SITEID) continue;
+            $result[] = [
                 'id'        => (int)$c->id,
                 'fullname'  => $c->fullname,
                 'shortname' => $c->shortname,
-            ], $courses)),
-        ];
+            ];
+        }
+
+        $subcats = $DB->get_records('course_categories', ['parent' => $categoryId], '', 'id');
+        foreach ($subcats as $sub) {
+            $result = array_merge($result, $this->getAllCoursesInCategory((int)$sub->id));
+        }
+
+        return $result;
     }
 
     // =========================================================================
@@ -133,11 +155,14 @@ class GestorService
                        p.group_id, p.moodle_course_id,
                        pkg.id AS pkg_id, pkg.teacher_role, pkg.expires_at,
                        c.fullname  AS course_name,
-                       g.name      AS group_name
+                       g.name      AS group_name,
+                       u.firstname AS activated_firstname,
+                       u.lastname  AS activated_lastname
                 FROM {ct_pin} p
                 JOIN {ct_pin_package} pkg ON pkg.id = p.package_id
-                LEFT JOIN {course} c   ON c.id  = p.moodle_course_id
+                LEFT JOIN {course}   c ON c.id  = p.moodle_course_id
                 LEFT JOIN {ct_group} g ON g.id  = p.group_id
+                LEFT JOIN {user}     u ON u.id  = p.activated_by
                 WHERE {$where}
                 ORDER BY p.id ASC";
 
@@ -155,9 +180,12 @@ class GestorService
                 'group_id'     => $row->group_id     ? (int)$row->group_id     : null,
                 'group_name'   => $row->group_name,
                 'course_id'    => $row->moodle_course_id ? (int)$row->moodle_course_id : null,
-                'course_name'  => $row->course_name,
-                'package_id'   => (int)$row->pkg_id,
-                'teacher_role' => $row->teacher_role,
+                'course_name'      => $row->course_name,
+                'package_id'       => (int)$row->pkg_id,
+                'teacher_role'     => $row->teacher_role,
+                'activated_nombre' => ($row->activated_firstname !== null)
+                    ? trim($row->activated_firstname . ' ' . $row->activated_lastname)
+                    : null,
             ];
         }
 
@@ -198,7 +226,9 @@ class GestorService
         }
 
         // Verificar que el curso pertenece a la categoría de la organización
-        if (!$DB->record_exists('course', ['id' => $courseId, 'category' => $ctGestor['moodle_category_id']])) {
+        // (incluyendo subcategorías a cualquier profundidad)
+        $allCourseIds = array_column($this->getAllCoursesInCategory((int)$ctGestor['moodle_category_id']), 'id');
+        if (!in_array($courseId, $allCourseIds, true)) {
             throw new InvalidArgumentException('El curso no pertenece a la categoría de esta organización.');
         }
 
