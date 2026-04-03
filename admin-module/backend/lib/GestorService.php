@@ -155,11 +155,14 @@ class GestorService
                        p.group_id, p.moodle_course_id,
                        pkg.id AS pkg_id, pkg.teacher_role, pkg.expires_at,
                        c.fullname  AS course_name,
-                       g.name      AS group_name
+                       g.name      AS group_name,
+                       u.firstname AS activated_firstname,
+                       u.lastname  AS activated_lastname
                 FROM {ct_pin} p
                 JOIN {ct_pin_package} pkg ON pkg.id = p.package_id
-                LEFT JOIN {course} c   ON c.id  = p.moodle_course_id
+                LEFT JOIN {course}   c ON c.id  = p.moodle_course_id
                 LEFT JOIN {ct_group} g ON g.id  = p.group_id
+                LEFT JOIN {user}     u ON u.id  = p.activated_by
                 WHERE {$where}
                 ORDER BY p.id ASC";
 
@@ -177,9 +180,12 @@ class GestorService
                 'group_id'     => $row->group_id     ? (int)$row->group_id     : null,
                 'group_name'   => $row->group_name,
                 'course_id'    => $row->moodle_course_id ? (int)$row->moodle_course_id : null,
-                'course_name'  => $row->course_name,
-                'package_id'   => (int)$row->pkg_id,
-                'teacher_role' => $row->teacher_role,
+                'course_name'      => $row->course_name,
+                'package_id'       => (int)$row->pkg_id,
+                'teacher_role'     => $row->teacher_role,
+                'activated_nombre' => ($row->activated_firstname !== null)
+                    ? trim($row->activated_firstname . ' ' . $row->activated_lastname)
+                    : null,
             ];
         }
 

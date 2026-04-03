@@ -354,7 +354,12 @@ class CursosService
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Copia el formato y sus opciones visuales del curso plantilla al nuevo curso.
+     * Copia el formato, sus opciones visuales y la configuración de grupos
+     * del curso plantilla al nuevo curso.
+     *
+     * Campos de grupos copiados:
+     *   - groupmode:      0 = sin grupos, 1 = grupos visibles, 2 = grupos separados.
+     *   - groupmodeforce: 1 = el modo de grupo se fuerza en todas las actividades.
      */
     private function copyFormatOptions(object $template, object $newCourse): void
     {
@@ -364,10 +369,14 @@ class CursosService
         $templateFormat = course_get_format($template->id);
         $formatOptions  = $templateFormat->get_format_options();
 
-        $updateData         = (object)['id' => $newCourse->id, 'format' => $template->format];
+        $updateData = (object)['id' => $newCourse->id, 'format' => $template->format];
         foreach ($formatOptions as $key => $value) {
             $updateData->$key = $value;
         }
+
+        // Heredar configuración de grupos del template
+        $updateData->groupmode      = (int)$template->groupmode;
+        $updateData->groupmodeforce = (int)$template->groupmodeforce;
 
         update_course($updateData);
     }

@@ -168,6 +168,11 @@ export class GestorPinesComponent implements OnInit {
     return map[status] ?? 'secondary';
   }
 
+  getStatusLabel(status: string): string {
+    const map: Record<string, string> = { available: 'Disponible', assigned: 'Asignado', active: 'Activo' };
+    return map[status] ?? status;
+  }
+
   getRolLabel(role: string): string {
     const map: Record<string, string> = { student: 'Estudiante', teacher: 'Profesor', editingteacher: 'Prof. Editor' };
     return map[role] ?? role;

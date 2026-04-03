@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, OnInit, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ApiService } from '../../core/services/api.service';
 import { GestorStateService } from '../../core/services/gestor-state.service';
@@ -23,6 +23,7 @@ export class AuthCheckComponent implements OnInit {
   private readonly api         = inject(ApiService);
   private readonly gestorState = inject(GestorStateService);
   private readonly router      = inject(Router);
+  private readonly route       = inject(ActivatedRoute);
 
   ngOnInit(): void {
     this.auth.checkAuth();
@@ -39,8 +40,10 @@ export class AuthCheckComponent implements OnInit {
             this.router.navigate(['/gestor/dashboard']);
           },
           error: () => {
-            // 403 = admin, 401 = sin sesión válida → ir al panel admin
-            this.router.navigate(['/dashboard']);
+            // 403 = admin → volver a la URL que estaba antes del reload,
+            // o al dashboard si no hay returnUrl (acceso directo a /auth-check)
+            const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
+            this.router.navigateByUrl(returnUrl);
           }
         });
       } else if (status === false) {

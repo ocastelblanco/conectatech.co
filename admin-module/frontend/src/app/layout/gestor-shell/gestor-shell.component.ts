@@ -12,8 +12,10 @@ import { GestorStateService } from '../../core/services/gestor-state.service';
     <div class="flex h-screen overflow-hidden bg-gray-50">
       <!-- Sidebar gestor -->
       <aside class="flex flex-col w-64 min-h-screen" style="background-color: #1D2B36;">
-        <div class="flex items-center px-4 py-3 border-b border-white/10">
-          <img src="logo-horizontal-blanco.svg" alt="ConectaTech" class="h-8 w-auto" />
+        <div class="flex items-center px-2 py-2 border-b border-white/10">
+          <img src="logo-horizontal-blanco.svg"
+              alt="ConectaTech"
+              class="sidebar-logo w-auto" />
         </div>
         <nav class="flex-1 px-3 py-4 space-y-1">
           @for (item of navItems; track item.route) {
@@ -56,6 +58,9 @@ import { GestorStateService } from '../../core/services/gestor-state.service';
       background-color: rgba(255,255,255,0.15) !important;
       color: white !important;
     }
+    .sidebar-logo {
+      height: 4rem;
+    }
   `]
 })
 export class GestorShellComponent {
@@ -63,9 +68,9 @@ export class GestorShellComponent {
   private readonly auth = inject(AuthService);
 
   readonly navItems = [
-    { label: 'Dashboard',  icon: 'pi pi-home',   route: '/gestor/dashboard' },
-    { label: 'Grupos',     icon: 'pi pi-users',  route: '/gestor/grupos'    },
-    { label: 'Pines',      icon: 'pi pi-ticket', route: '/gestor/pines'     },
+    { label: 'Dashboard', icon: 'pi pi-home', route: '/gestor/dashboard' },
+    { label: 'Grupos', icon: 'pi pi-users', route: '/gestor/grupos' },
+    { label: 'Pines', icon: 'pi pi-ticket', route: '/gestor/pines' },
   ];
 
   pageTitle(): string {
