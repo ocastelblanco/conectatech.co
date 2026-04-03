@@ -32,14 +32,14 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
       [dropdown]="true"
       [forceSelection]="false"
       [placeholder]="placeholder()"
-      styleClass="w-full"
-      inputStyleClass="w-full text-sm"
+      class="w-full"
+      inputclass="w-full text-sm"
     />
   `,
 })
 export class CreatableSelectComponent {
-  readonly options     = input<string[]>([]);
-  readonly value       = input<string>('');
+  readonly options = input<string[]>([]);
+  readonly value = input<string>('');
   readonly placeholder = input<string>('Seleccionar o escribir...');
 
   readonly valueChange = output<string>();

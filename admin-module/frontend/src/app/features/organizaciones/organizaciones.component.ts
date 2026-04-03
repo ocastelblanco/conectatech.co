@@ -26,18 +26,18 @@ import { ApiService } from '../../core/services/api.service';
   templateUrl: './organizaciones.component.html',
 })
 export class OrganizacionesComponent implements OnInit {
-  private readonly api     = inject(ApiService);
-  private readonly toast   = inject(MessageService);
+  private readonly api = inject(ApiService);
+  private readonly toast = inject(MessageService);
   private readonly confirm = inject(ConfirmationService);
 
-  readonly nodes               = signal<TreeNode[]>([]);
-  readonly loading             = signal(true);
-  readonly saving              = signal(false);
-  readonly editandoOrg         = signal<any | null>(null);
+  readonly nodes = signal<TreeNode[]>([]);
+  readonly loading = signal(true);
+  readonly saving = signal(false);
+  readonly editandoOrg = signal<any | null>(null);
   readonly verGestorPinesOrgId = signal<number | null>(null);
-  readonly gestorPines         = signal<any[]>([]);
-  readonly loadingGestorPines  = signal(false);
-  readonly categorias          = signal<any[]>([]);
+  readonly gestorPines = signal<any[]>([]);
+  readonly loadingGestorPines = signal(false);
+  readonly categorias = signal<any[]>([]);
 
   ngOnInit(): void {
     this.api.getOrganizaciones().subscribe({
@@ -57,7 +57,7 @@ export class OrganizacionesComponent implements OnInit {
         const cats = r.categorias ?? [];
         this.categorias.set(cats.map((c: any) => ({ ...c, label: `${c.id} - ${c.name}` })));
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -263,7 +263,7 @@ export class OrganizacionesComponent implements OnInit {
   copiarHash(hash: string): void {
     navigator.clipboard.writeText(hash).then(() => {
       this.toast.add({ severity: 'success', summary: 'Copiado', detail: 'Hash copiado al portapapeles' });
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   nombreOrg(orgId: number | null): string {
@@ -277,7 +277,7 @@ export class OrganizacionesComponent implements OnInit {
         const orgs: any[] = r.data ?? r.organizaciones ?? [];
         this.nodes.set(orgs.map(o => this.orgToNode(o)));
       },
-      error: () => {}
+      error: () => { }
     });
   }
 }

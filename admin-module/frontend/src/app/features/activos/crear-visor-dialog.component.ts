@@ -31,7 +31,7 @@ interface CursoRepo {
       [draggable]="false"
       [resizable]="false"
       header="Crear visor en Moodle"
-      styleClass="w-full max-w-lg"
+      class="w-full max-w-lg"
     >
       <div class="flex flex-col gap-4 py-2">
 
@@ -59,7 +59,7 @@ interface CursoRepo {
               [options]="cursos()"
               optionLabel="fullname"
               placeholder="Seleccionar curso..."
-              styleClass="w-full"
+              class="w-full"
               [filter]="true"
               filterBy="fullname,shortname"
             />
@@ -75,7 +75,7 @@ interface CursoRepo {
             [options]="secciones()"
             optionLabel="titulo"
             placeholder="Seleccionar sección..."
-            styleClass="w-full"
+            class="w-full"
             [disabled]="!selectedCourse()"
           />
         </div>
@@ -147,22 +147,22 @@ interface CursoRepo {
 })
 export class CrearVisorDialogComponent {
   readonly visible = input<boolean>(false);
-  readonly pdf     = input<AssetItem | null>(null);
-  readonly closed  = output<void>();
+  readonly pdf = input<AssetItem | null>(null);
+  readonly closed = output<void>();
   readonly created = output<void>();
 
-  private readonly api            = inject(ApiService);
+  private readonly api = inject(ApiService);
   private readonly messageService = inject(MessageService);
 
-  readonly cursos          = signal<CursoRepo[]>([]);
-  readonly loadingCursos   = signal(false);
-  readonly selectedCourse  = signal<CursoRepo | null>(null);
+  readonly cursos = signal<CursoRepo[]>([]);
+  readonly loadingCursos = signal(false);
+  readonly selectedCourse = signal<CursoRepo | null>(null);
   readonly selectedSeccion = signal<{ num: number; titulo: string } | null>(null);
-  readonly usePageRange    = signal(false);
-  readonly pageStart       = signal<number | null>(null);
-  readonly pageEnd         = signal<number | null>(null);
-  readonly pdfTitle        = signal('');
-  readonly creating        = signal(false);
+  readonly usePageRange = signal(false);
+  readonly pageStart = signal<number | null>(null);
+  readonly pageEnd = signal<number | null>(null);
+  readonly pdfTitle = signal('');
+  readonly creating = signal(false);
 
   readonly secciones = computed(() => this.selectedCourse()?.secciones ?? []);
   readonly canSubmit = computed(() =>
@@ -205,20 +205,20 @@ export class CrearVisorDialogComponent {
   }
 
   submit(): void {
-    const pdf     = this.pdf();
-    const course  = this.selectedCourse();
+    const pdf = this.pdf();
+    const course = this.selectedCourse();
     const seccion = this.selectedSeccion();
     if (!pdf || !course || !seccion) return;
 
     this.creating.set(true);
     const body: any = {
-      pdfId:      pdf.id,
-      pdfTitle:   this.pdfTitle().trim(),
-      courseId:   course.id,
+      pdfId: pdf.id,
+      pdfTitle: this.pdfTitle().trim(),
+      courseId: course.id,
       seccionNum: seccion.num,
     };
     if (this.usePageRange() && this.pageStart() !== null) body.pageStart = this.pageStart();
-    if (this.usePageRange() && this.pageEnd()   !== null) body.pageEnd   = this.pageEnd();
+    if (this.usePageRange() && this.pageEnd() !== null) body.pageEnd = this.pageEnd();
 
     this.api.crearVisor(body).subscribe({
       next: () => {

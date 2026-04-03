@@ -27,7 +27,7 @@
     <p-treeTable [value]="nodes()"
                  [scrollable]="false"
                  (onNodeExpand)="onNodeExpand($event)"
-                 styleClass="text-sm">
+                 class="text-sm">
       <ng-template pTemplate="header">
         <tr>
           <th style="width: 26%">Nombre</th>
@@ -35,11 +35,14 @@
           <th style="width: 16%">Usuario</th>
           <th style="width: 16%">Pines</th>
           <th style="width: 10%">Creado</th>
-          <th style="width: 10%" class="text-right">Acciones</th>
+          <th style="width: 10%"
+              class="text-right">Acciones</th>
         </tr>
       </ng-template>
 
-      <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
+      <ng-template pTemplate="body"
+                   let-rowNode
+                   let-rowData="rowData">
 
         <!-- ── Fila: organización ────────────────────────────────────────── -->
         @if (rowData.type === 'org') {
@@ -61,9 +64,12 @@
           <td></td>
           <td>
             <div class="flex gap-1 flex-wrap">
-              <p-tag [value]="(rowData.pins?.available ?? 0) + ' disp.'" severity="info" />
-              <p-tag [value]="(rowData.pins?.assigned ?? 0) + ' asig.'" severity="warn" />
-              <p-tag [value]="(rowData.pins?.active ?? 0) + ' act.'"   severity="success" />
+              <p-tag [value]="(rowData.pins?.available ?? 0) + ' disp.'"
+                     severity="info" />
+              <p-tag [value]="(rowData.pins?.assigned ?? 0) + ' asig.'"
+                     severity="warn" />
+              <p-tag [value]="(rowData.pins?.active ?? 0) + ' act.'"
+                     severity="success" />
             </div>
           </td>
           <td class="text-xs text-gray-400">{{ rowData.created_at * 1000 | date:'dd/MM/yy' }}</td>
@@ -94,13 +100,15 @@
 
         <!-- ── Fila: gestor activo ───────────────────────────────────────── -->
         @if (rowData.type === 'gestor') {
-        <tr [ttRow]="rowNode" class="bg-gray-50/60">
+        <tr [ttRow]="rowNode"
+            class="bg-gray-50/60">
           <td>
             <div class="flex items-center gap-2 pl-8">
               <i class="pi pi-user text-gray-400 text-xs"></i>
               <span class="text-sm text-gray-700">{{ rowData.firstname }} {{ rowData.lastname }}</span>
               @if (rowData.deleted) {
-              <p-tag value="eliminado" severity="secondary" />
+              <p-tag value="eliminado"
+                     severity="secondary" />
               }
             </div>
           </td>
@@ -124,7 +132,8 @@
         <!-- ── Fila: cargando ────────────────────────────────────────────── -->
         @if (rowData.type === 'loading') {
         <tr [ttRow]="rowNode">
-          <td colspan="6" class="pl-10 py-2 text-xs text-gray-400">
+          <td colspan="6"
+              class="pl-10 py-2 text-xs text-gray-400">
             <i class="pi pi-spin pi-spinner mr-1"></i> Cargando gestores...
           </td>
         </tr>
@@ -134,7 +143,8 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="6" class="text-center text-gray-400 py-10">
+          <td colspan="6"
+              class="text-center text-gray-400 py-10">
             <i class="pi pi-building text-3xl mb-2 block"></i>
             No hay organizaciones. Crea la primera.
           </td>
@@ -211,7 +221,8 @@
     }
 
     @if (!loadingGestorPines()) {
-    <p-table [value]="gestorPines()" class="text-sm">
+    <p-table [value]="gestorPines()"
+             class="text-sm">
       <ng-template #header>
         <tr>
           <th>Hash</th>
@@ -220,18 +231,23 @@
           <th class="text-right">Acciones</th>
         </tr>
       </ng-template>
-      <ng-template #body let-gp>
+      <ng-template #body
+                   let-gp>
         <tr>
-          <td class="font-mono text-xs text-gray-600" pTooltip="{{ gp.hash }}">
+          <td class="font-mono text-xs text-gray-600"
+              pTooltip="{{ gp.hash }}">
             {{ gp.hash.substring(0, 12) }}...
           </td>
           <td>
             @if (gp.status === 'pending') {
-              <p-tag value="Pendiente" severity="warn" />
+            <p-tag value="Pendiente"
+                   severity="warn" />
             } @else if (gp.status === 'used') {
-              <p-tag value="Activado" severity="success" />
+            <p-tag value="Activado"
+                   severity="success" />
             } @else {
-              <p-tag [value]="gp.status" severity="secondary" />
+            <p-tag [value]="gp.status"
+                   severity="secondary" />
             }
           </td>
           <td class="text-xs text-gray-400">{{ gp.created_at * 1000 | date:'dd/MM/yyyy' }}</td>
@@ -257,7 +273,8 @@
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="4" class="text-center text-gray-400 py-6">
+          <td colspan="4"
+              class="text-center text-gray-400 py-6">
             <i class="pi pi-envelope text-2xl mb-2 block"></i>
             No hay invitaciones. Genera la primera.
           </td>

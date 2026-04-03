@@ -29,17 +29,17 @@ type Tab = 'pdf' | 'imagen';
   templateUrl: './activos.component.html',
 })
 export class ActivosComponent implements OnInit {
-  private readonly cdn            = inject(CdnApiService);
+  private readonly cdn = inject(CdnApiService);
   private readonly messageService = inject(MessageService);
-  private readonly confirm        = inject(ConfirmationService);
+  private readonly confirm = inject(ConfirmationService);
 
   // ─── Tab ──────────────────────────────────────────────────────────────────
   readonly activeTab = signal<Tab>('pdf');
 
   // ─── Asset lists ──────────────────────────────────────────────────────────
-  readonly pdfs     = signal<AssetItem[]>([]);
+  readonly pdfs = signal<AssetItem[]>([]);
   readonly imagenes = signal<AssetItem[]>([]);
-  readonly loading  = signal(false);
+  readonly loading = signal(false);
 
   readonly activeItems = computed<AssetItem[]>(() =>
     this.activeTab() === 'pdf' ? this.pdfs() : this.imagenes()
@@ -47,22 +47,22 @@ export class ActivosComponent implements OnInit {
 
   // ─── Upload dialog ────────────────────────────────────────────────────────
   readonly uploadVisible = signal(false);
-  readonly uploadTitle   = signal('');
-  readonly uploadFile    = signal<File | null>(null);
-  readonly uploading     = signal(false);
-  readonly uploadError   = signal('');
-  readonly dragOver      = signal(false);
+  readonly uploadTitle = signal('');
+  readonly uploadFile = signal<File | null>(null);
+  readonly uploading = signal(false);
+  readonly uploadError = signal('');
+  readonly dragOver = signal(false);
 
   // ─── Rename inline ────────────────────────────────────────────────────────
-  readonly editingId    = signal<string | null>(null);
+  readonly editingId = signal<string | null>(null);
   readonly editingTitle = signal('');
 
   // ─── Crear visor dialog ───────────────────────────────────────────────────
   readonly visorVisible = signal(false);
-  readonly visorPdf     = signal<AssetItem | null>(null);
+  readonly visorPdf = signal<AssetItem | null>(null);
 
   // ─── Post-upload PDF prompt ───────────────────────────────────────────────
-  readonly postUploadPdf     = signal<AssetItem | null>(null);
+  readonly postUploadPdf = signal<AssetItem | null>(null);
   readonly postUploadVisible = signal(false);
 
   // ─── Computed ─────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ export class ActivosComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file  = input.files?.[0] ?? null;
+    const file = input.files?.[0] ?? null;
     this.uploadFile.set(file);
     if (file && !this.uploadTitle()) {
       this.uploadTitle.set(file.name.replace(/\.[^.]+$/, ''));
@@ -130,7 +130,7 @@ export class ActivosComponent implements OnInit {
   }
 
   async upload(): Promise<void> {
-    const file  = this.uploadFile();
+    const file = this.uploadFile();
     const title = this.uploadTitle().trim();
     if (!file || !title) return;
 
@@ -267,7 +267,7 @@ export class ActivosComponent implements OnInit {
 
   // ─── Copy URL ─────────────────────────────────────────────────────────────
   copyUrl(url: string): void {
-    navigator.clipboard.writeText(url).catch(() => {});
+    navigator.clipboard.writeText(url).catch(() => { });
   }
 
   onCopyUrl(item: AssetItem): void {
