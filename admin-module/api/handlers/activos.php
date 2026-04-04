@@ -104,7 +104,7 @@ function getSeccionesRepositorio($DB, int $courseId): array
  */
 function handleCrearVisor(): void
 {
-    global $DB;
+    global $DB, $CFG;
 
     $body       = readJsonBody();
     $pdfId      = trim($body['pdfId']    ?? '');
@@ -127,22 +127,24 @@ function handleCrearVisor(): void
     // HTML del iframe
     $iframeHtml = '<p>'
         . '<iframe src="' . htmlspecialchars($viewerUrl, ENT_QUOTES, 'UTF-8') . '"'
-        . ' style="width:100%;height:600px;border:none;"'
+        . ' style="width:100%;height:700px;border:none;"'
         . ' allow="fullscreen" loading="lazy"></iframe>'
         . '</p>';
 
     // Crear mod_label
-    $moduleId = $DB->get_field('modules', 'id', ['name' => 'label'], MUST_EXIST);
+    require_once($CFG->dirroot . '/course/lib.php');
 
     $module = (object) [
-        'course'      => $courseId,
-        'section'     => $seccionNum,
-        'module'      => $moduleId,
-        'modulename'  => 'label',
-        'name'        => $pdfTitle,
-        'intro'       => $iframeHtml,
-        'introformat' => FORMAT_HTML,
-        'visible'     => 1,
+        'course'       => $courseId,
+        'section'      => $seccionNum,
+        'modulename'   => 'label',
+        'name'         => $pdfTitle,
+        'introeditor'  => [
+            'text'   => $iframeHtml,
+            'format' => FORMAT_HTML,
+            'itemid' => 0,
+        ],
+        'visible'      => 1,
     ];
 
     $result = create_module($module);

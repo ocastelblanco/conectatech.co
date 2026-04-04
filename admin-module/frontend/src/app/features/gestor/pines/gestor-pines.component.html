@@ -134,7 +134,8 @@
           [visible]="dialogAsignar()"
           (visibleChange)="$event ? null : dialogAsignar.set(false)"
           [modal]="true"
-          [style]="{ width: '420px' }">
+          [style]="{ width: '420px' }"
+          [contentStyle]="{'overflow':'visible'}">
   <div class="space-y-3 pt-1">
     <p class="text-sm text-gray-600 m-0">
       Asignando <strong>{{ seleccionados().length }}</strong> pin(es).
@@ -147,6 +148,7 @@
                 optionValue="id"
                 placeholder="Seleccionar grupo"
                 class="w-full"
+                appendTo="body"
                 [ngModel]="asignarGrupoId()"
                 (ngModelChange)="asignarGrupoId.set($event)" />
     </div>
@@ -158,6 +160,7 @@
                 optionValue="id"
                 placeholder="Seleccionar curso"
                 class="w-full"
+                appendTo="body"
                 [ngModel]="asignarCursoId()"
                 (ngModelChange)="asignarCursoId.set($event)" />
     </div>
@@ -168,6 +171,7 @@
                 optionLabel="label"
                 optionValue="value"
                 class="w-full"
+                appendTo="body"
                 [ngModel]="asignarRol()"
                 (ngModelChange)="asignarRol.set($event)" />
     </div>

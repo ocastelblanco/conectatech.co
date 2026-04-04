@@ -161,6 +161,7 @@
           (visibleChange)="$event ? null : editandoOrg.set(null)"
           [modal]="true"
           [style]="{ width: '440px' }"
+          [contentStyle]="{'overflow':'visible'}"
           [closable]="true">
   @if (editandoOrg(); as org) {
   <div class="space-y-4 pt-1">
@@ -180,6 +181,7 @@
                 optionValue="id"
                 placeholder="Seleccionar categoría"
                 class="w-full"
+                appendTo="body"
                 [ngModel]="org.moodle_category_id"
                 (ngModelChange)="updateEditCatId($event)" />
     </div>

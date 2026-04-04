@@ -32,6 +32,7 @@ interface CursoRepo {
       [resizable]="false"
       header="Crear visor en Moodle"
       class="w-full max-w-lg"
+      [contentStyle]="{'overflow':'visible'}"
     >
       <div class="flex flex-col gap-4 py-2">
 
@@ -62,6 +63,7 @@ interface CursoRepo {
               class="w-full"
               [filter]="true"
               filterBy="fullname,shortname"
+              appendTo="body"
             />
           }
         </div>
@@ -77,6 +79,7 @@ interface CursoRepo {
             placeholder="Seleccionar sección..."
             class="w-full"
             [disabled]="!selectedCourse()"
+            appendTo="body"
           />
         </div>
 

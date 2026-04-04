@@ -10,6 +10,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { TabsModule } from 'primeng/tabs';
+import { BadgeModule } from 'primeng/badge';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { CdnApiService, AssetItem } from '../../core/services/cdn-api.service';
 import { CrearVisorDialogComponent } from './crear-visor-dialog.component';
@@ -24,6 +26,7 @@ type Tab = 'pdf' | 'imagen';
     FormsModule,
     ButtonModule, TableModule, DialogModule, InputTextModule,
     ToastModule, ConfirmDialogModule, TooltipModule,
+    TabsModule, BadgeModule,
     CrearVisorDialogComponent,
   ],
   templateUrl: './activos.component.html',
@@ -91,8 +94,10 @@ export class ActivosComponent implements OnInit {
   }
 
   // ─── Tab switch ───────────────────────────────────────────────────────────
-  switchTab(tab: Tab): void {
-    this.activeTab.set(tab);
+  switchTab(tab: string | number | undefined): void {
+    if (tab !== undefined) {
+      this.activeTab.set(tab as Tab);
+    }
     this.cancelEdit();
   }
 

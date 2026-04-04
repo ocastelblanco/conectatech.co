@@ -98,6 +98,7 @@
           (visibleChange)="$event ? null : creandoPaquete.set(false)"
           [modal]="true"
           [style]="{ width: '460px' }"
+          [contentStyle]="{'overflow':'visible'}"
           [closable]="true">
   <div class="space-y-4 pt-1">
     <div class="flex flex-col gap-1">
@@ -107,6 +108,7 @@
                 optionValue="id"
                 placeholder="Seleccionar organización"
                 class="w-full"
+                appendTo="body"
                 [ngModel]="nuevoPaquete().organization_id || null"
                 (ngModelChange)="updateNuevoPaqueteOrgId($event)" />
     </div>
@@ -116,6 +118,7 @@
                 optionLabel="label"
                 optionValue="value"
                 class="w-full"
+                appendTo="body"
                 [ngModel]="nuevoPaquete().teacher_role"
                 (ngModelChange)="updateNuevoPaqueteRol($event)" />
     </div>
@@ -125,6 +128,7 @@
                     [minDate]="tomorrow"
                     dateFormat="dd/mm/yy"
                     class="w-full"
+                    appendTo="body"
                     [ngModel]="nuevoPaquete().expires_at"
                     (ngModelChange)="updateNuevoPaqueteFecha($event)" />
     </div>
@@ -158,6 +162,7 @@
           (visibleChange)="$event ? null : asignandoPaquete.set(null)"
           [modal]="true"
           [style]="{ width: '400px' }"
+          [contentStyle]="{'overflow':'visible'}"
           [closable]="true">
   <div class="space-y-4 pt-1">
     <p class="text-sm text-gray-600 m-0">Selecciona la nueva organización para este paquete.</p>
@@ -166,6 +171,7 @@
               optionValue="id"
               placeholder="Seleccionar organización"
               class="w-full"
+              appendTo="body"
               [ngModel]="asignarOrgId()"
               (ngModelChange)="asignarOrgId.set($event)" />
   </div>

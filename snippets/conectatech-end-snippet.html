@@ -1,7 +1,7 @@
 <script>
   /********* AÑADE CLASES AL <BODY> DE UN CURSO SEGÚN EL ÁRBOL CURRICULAR - GENERAL ***********/
   /* CT:MAP:START */
-  const CT_COURSES = { "13": ["cosmovision-cristiana", "ciencias-naturales"], "14": ["cosmovision-cristiana", "matematicas"], "18": ["planeta-lector", "planeta-lector"] };
+  const CT_COURSES = { "13": ["cosmovision-cristiana", "ciencias-naturales"], "14": ["cosmovision-cristiana", "matematicas"], "19": ["planeta-lector", "planeta-lector"] };
   /* CT:MAP:END */
   const bodyElement = document.querySelector("body");
   if (bodyElement !== null) {
@@ -49,14 +49,28 @@
     cardGrids.forEach(grid => {
       const cards = grid.querySelectorAll('.card.course-card');
       cards.forEach(cardCurso => {
-        const tituloCursoElement = cardCurso.querySelector(".coursename span.multiline > span:last-of-type") ?? cardCurso.querySelector(".coursename");
-        const cardCursoTop = cardCurso.querySelector(".card-img-top");
-        if (tituloCursoElement) {
-          const cursoID = tituloCursoElement.attributes.href.value.split('?')[1].replace(/id=/g, '');
-          const proyecto = CT_COURSES[cursoID] ? CT_COURSES[cursoID][0] : null;
-          if (proyecto == 'cosmovision-cristiana') generaDivGrado(tituloCursoElement, cardCursoTop);
-          if (proyecto == 'planeta-lector') generaDivGrado(tituloCursoElement, cardCursoTop, false);
-        }
+        // Elemento de texto:
+        //   Mis Cursos   → span.multiline > span[aria-hidden="true"]  (safe: solo el texto visible)
+        //   Página Principal → a.coursename directamente (texto + span.visually-hidden;
+        //                      generaDivGrado maneja el salto de línea en extraeMateriaCurso)
+        const textoElement = cardCurso.querySelector('.coursename span.multiline > span[aria-hidden="true"]')
+          ?? cardCurso.querySelector('.coursename span.multiline > span:last-of-type')
+          ?? cardCurso.querySelector('a.coursename');
+        if (!textoElement) return;
+
+        // Enlace del curso para extraer el ID (nunca el <a> de la imagen)
+        const anchorCurso = cardCurso.querySelector('a.coursename, a[href*="course/view.php"]');
+        if (!anchorCurso) return;
+
+        const hrefParts = anchorCurso.href.split('?');
+        if (hrefParts.length < 2) return;
+        const cursoID = hrefParts[1].replace(/id=/g, '');
+
+        const proyecto = CT_COURSES[cursoID] ? CT_COURSES[cursoID][0] : null;
+        const cardCursoTop = cardCurso.querySelector('.card-img-top');
+
+        if (proyecto == 'cosmovision-cristiana') generaDivGrado(textoElement, cardCursoTop);
+        if (proyecto == 'planeta-lector') generaDivGrado(textoElement, cardCursoTop, false);
       });
     });
   }
@@ -89,8 +103,8 @@
   }
 
   function generaDivGrado(tituloCursoElement, padre, addGrado = true) {
-    if (padre.querySelector('.grado')) return;
-    const tituloCurso = tituloCursoElement.innerText;
+    if (!padre || padre.querySelector('.grado')) return;
+    const tituloCurso = tituloCursoElement.innerText.trim();
     if (!tituloCurso) return;
     const datos = extraeMateriaCurso(tituloCurso);
     if (datos) {

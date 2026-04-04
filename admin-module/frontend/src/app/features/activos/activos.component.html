@@ -7,30 +7,24 @@
   <div class="flex items-center justify-between">
 
     <!-- Tabs -->
-    <div class="flex gap-1 bg-gray-100 rounded-lg p-1">
-      <button (click)="switchTab('pdf')"
-              [class]="
-          'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ' +
-          (activeTab() === 'pdf'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900')
-        ">
-        <i class="pi pi-file-pdf text-red-500"></i>
-        PDFs
-        <span class="bg-gray-200 text-gray-700 text-xs px-1.5 py-0.5 rounded-full">{{ pdfs().length }}</span>
-      </button>
-      <button (click)="switchTab('imagen')"
-              [class]="
-          'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ' +
-          (activeTab() === 'imagen'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900')
-        ">
-        <i class="pi pi-image text-blue-500"></i>
-        Imágenes
-        <span class="bg-gray-200 text-gray-700 text-xs px-1.5 py-0.5 rounded-full">{{ imagenes().length }}</span>
-      </button>
-    </div>
+    <p-tabs [value]="activeTab()" (valueChange)="switchTab($event)">
+      <p-tablist>
+        <p-tab value="pdf">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-file-pdf text-red-500"></i>
+            PDFs
+            <p-badge [value]="pdfs().length" severity="secondary" />
+          </span>
+        </p-tab>
+        <p-tab value="imagen">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-image text-blue-500"></i>
+            Imágenes
+            <p-badge [value]="imagenes().length" severity="secondary" />
+          </span>
+        </p-tab>
+      </p-tablist>
+    </p-tabs>
 
     <!-- Actions -->
     <div class="flex items-center gap-2">
