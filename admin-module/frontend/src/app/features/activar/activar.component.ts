@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -9,6 +9,15 @@ import { MessageService } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 
 type Paso = 'inicio' | 'pin-gestor' | 'pin-regular' | 'login' | 'registro-nuevo' | 'confirmacion';
+
+function cedulaValidator(control: AbstractControl): ValidationErrors | null {
+  const val = (control.value ?? '') as string;
+  if (!val) return null; // required se encarga del vacío
+  if (!/^\d+$/.test(val)) return { cedula: 'soloNumeros' };
+  const n = Number(val);
+  if (n < 10_000 || n > 2_000_000_000) return { cedula: 'rangoInvalido' };
+  return null;
+}
 
 @Component({
   selector: 'cnt-activar',
@@ -33,7 +42,7 @@ export class ActivarComponent {
 
   // Formularios reactivos
   readonly loginForm = this.fb.group({
-    username: ['', Validators.required],
+    username: ['', [Validators.required, cedulaValidator]],
     password: ['', Validators.required],
   });
 
@@ -41,7 +50,7 @@ export class ActivarComponent {
     firstname: ['', Validators.required],
     lastname:  ['', Validators.required],
     email:     ['', [Validators.required, Validators.email]],
-    username:  ['', Validators.required],
+    username:  ['', [Validators.required, cedulaValidator]],
     password:  ['', [Validators.required, Validators.minLength(8)]],
   });
 
@@ -49,7 +58,7 @@ export class ActivarComponent {
     firstname: ['', Validators.required],
     lastname:  ['', Validators.required],
     email:     ['', [Validators.required, Validators.email]],
-    username:  ['', Validators.required],
+    username:  ['', [Validators.required, cedulaValidator]],
     password:  ['', [Validators.required, Validators.minLength(8)]],
   });
 
@@ -188,5 +197,17 @@ export class ActivarComponent {
   fieldInvalid(form: any, field: string): boolean {
     const c = form.get(field);
     return !!(c?.invalid && c?.touched);
+  }
+
+  cedulaError(form: any, field: string): string | null {
+    const c = form.get(field);
+    if (!c?.touched) return null;
+    if (c.hasError('required')) return 'El documento de identidad es obligatorio';
+    if (c.hasError('cedula')) {
+      return c.errors?.['cedula'] === 'soloNumeros'
+        ? 'Solo se permiten números, sin comas ni puntos'
+        : 'Debe ser un número entre 10.000 y 2.000.000.000';
+    }
+    return null;
   }
 }

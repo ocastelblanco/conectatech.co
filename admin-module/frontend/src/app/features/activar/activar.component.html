@@ -109,12 +109,14 @@
             class="space-y-3"
             (ngSubmit)="loginYActivar()">
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-700">Usuario</label>
+          <label class="text-sm font-medium text-gray-700">Documento de identidad</label>
           <input pInputText
                  class="w-full"
+                 inputmode="numeric"
                  formControlName="username" />
-          @if (fieldInvalid(loginForm, 'username')) {
-          <span class="text-xs text-red-500">El usuario es obligatorio</span>
+          <span class="text-xs text-gray-400">Únicamente números, sin comas ni puntos</span>
+          @if (cedulaError(loginForm, 'username'); as msg) {
+          <span class="text-xs text-red-500">{{ msg }}</span>
           }
         </div>
         <div class="flex flex-col gap-1">
@@ -187,12 +189,14 @@
           }
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-700">Nombre de usuario</label>
+          <label class="text-sm font-medium text-gray-700">Documento de identidad</label>
           <input pInputText
                  class="w-full"
+                 inputmode="numeric"
                  formControlName="username" />
-          @if (fieldInvalid(registroForm, 'username')) {
-          <span class="text-xs text-red-500">Obligatorio</span>
+          <span class="text-xs text-gray-400">Únicamente números, sin comas ni puntos</span>
+          @if (cedulaError(registroForm, 'username'); as msg) {
+          <span class="text-xs text-red-500">{{ msg }}</span>
           }
         </div>
         <div class="flex flex-col gap-1">
@@ -257,12 +261,14 @@
           }
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-700">Nombre de usuario</label>
+          <label class="text-sm font-medium text-gray-700">Documento de identidad</label>
           <input pInputText
                  class="w-full"
+                 inputmode="numeric"
                  formControlName="username" />
-          @if (fieldInvalid(gestorForm, 'username')) {
-          <span class="text-xs text-red-500">Obligatorio</span>
+          <span class="text-xs text-gray-400">Únicamente números, sin comas ni puntos</span>
+          @if (cedulaError(gestorForm, 'username'); as msg) {
+          <span class="text-xs text-red-500">{{ msg }}</span>
           }
         </div>
         <div class="flex flex-col gap-1">
