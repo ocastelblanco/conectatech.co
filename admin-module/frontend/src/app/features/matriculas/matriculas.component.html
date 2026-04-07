@@ -32,7 +32,7 @@
     </div>
     <input type="file" accept=".csv,.xlsx,.xls" (change)="parseFile($event)"
       class="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100" />
-    <p class="text-xs text-gray-400 mt-2">CSV: username, password, firstname, lastname, email, institution, rol, grado</p>
+    <p class="text-xs text-gray-400 mt-2">CSV: username, password, firstname, lastname, email, institution, rol, grado, idnumber, grupo <span class="text-gray-300">(últimos dos opcionales)</span></p>
   </div>
 
   @if (rows().length > 0) {
@@ -43,7 +43,7 @@
       </div>
       <p-table [value]="rows()" [scrollable]="true" scrollHeight="280px" class="text-sm">
         <ng-template #header>
-          <tr><th>Username</th><th>Nombre</th><th>Institucion</th><th>Rol</th><th>Grado</th></tr>
+          <tr><th>Documento</th><th>Nombre</th><th>Institucion</th><th>Rol</th><th>Grado</th><th>Grupo</th></tr>
         </ng-template>
         <ng-template #body let-r>
           <tr>
@@ -52,6 +52,7 @@
             <td class="text-gray-500 text-xs">{{ r.institution }}</td>
             <td><p-tag [value]="r.rol" [severity]="r.rol === 'student' ? 'info' : 'success'" /></td>
             <td class="text-center">{{ r.grado || '--' }}</td>
+            <td class="text-center text-xs font-mono">{{ r.grupo || '--' }}</td>
           </tr>
         </ng-template>
       </p-table>
@@ -65,12 +66,13 @@
       </div>
       <p-table [value]="results()" class="text-sm">
         <ng-template #header>
-          <tr><th>Username</th><th>Accion</th><th>Cursos</th><th>Error</th></tr>
+          <tr><th>Documento</th><th>Accion</th><th>Grupo</th><th>Cursos</th><th>Error</th></tr>
         </ng-template>
         <ng-template #body let-r>
           <tr>
             <td class="font-mono text-xs">{{ r.username }}</td>
             <td><p-tag [value]="r.action" [severity]="getSeverity(r.action)" /></td>
+            <td class="text-xs font-mono text-center">{{ r.group || '--' }}</td>
             <td class="text-xs text-gray-600">{{ r.courses?.join(', ') || '--' }}</td>
             <td class="text-xs text-red-500">{{ r.error || '' }}</td>
           </tr>

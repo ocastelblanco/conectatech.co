@@ -64,6 +64,8 @@ class MatriculasService
         $institution = trim($data['institution']);
         $rol         = strtolower(trim($data['rol']));
         $grado       = isset($data['grado']) ? (int)$data['grado'] : 0;
+        $idnumber    = trim($data['idnumber'] ?? $username); // por defecto igual al username
+        $grupo       = trim($data['grupo']    ?? '');
 
         $moodleRol = $this->normalizeRol($rol);
 
@@ -72,6 +74,7 @@ class MatriculasService
             'institution' => $institution,
             'rol'         => $rol,
             'grado'       => $grado ?: null,
+            'group'       => $grupo ?: null,
             'action'      => '',
             'user_id'     => null,
             'courses'     => [],
@@ -100,6 +103,7 @@ class MatriculasService
                 'lastname'    => $lastname,
                 'email'       => $email,
                 'institution' => $institution,
+                'idnumber'    => $idnumber,
             ], false, false);
 
             $userId          = (int)$existing->id;
@@ -112,6 +116,7 @@ class MatriculasService
                 'lastname'    => $lastname,
                 'email'       => $email,
                 'institution' => $institution,
+                'idnumber'    => $idnumber,
                 'confirmed'   => 1,
                 'auth'        => 'manual',
                 'mnethostid'  => $CFG->mnet_localhost_id,
@@ -130,6 +135,9 @@ class MatriculasService
         foreach ($courses as $course) {
             $instance = $this->ensureManualEnrolInstance($course);
             $enrol->enrol_user($instance, $userId, $roleId);
+            if ($grupo !== '') {
+                $this->ensureGroupMembership((int)$course->id, $userId, $grupo);
+            }
             $result['courses'][] = $course->shortname;
         }
 
@@ -235,6 +243,27 @@ class MatriculasService
         }
 
         return array_values($courses);
+    }
+
+    /**
+     * Busca el grupo $groupName en el curso; lo crea si no existe.
+     * Añade $userId al grupo (idempotente: groups_add_member ignora duplicados).
+     */
+    private function ensureGroupMembership(int $courseId, int $userId, string $groupName): void
+    {
+        global $CFG;
+        require_once($CFG->dirroot . '/group/lib.php');
+
+        $groupId = groups_get_group_by_name($courseId, $groupName);
+
+        if ($groupId === false) {
+            $groupId = groups_create_group((object)[
+                'courseid' => $courseId,
+                'name'     => $groupName,
+            ]);
+        }
+
+        groups_add_member((int)$groupId, $userId);
     }
 
     /**
