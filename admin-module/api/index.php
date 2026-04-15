@@ -160,8 +160,14 @@ try {
             handleMatriculas();
             break;
 
+        // POST /api/markdown/preview  (debe estar ANTES de la ruta genérica de markdown)
+        case $method === 'POST' && $seg0 === 'markdown' && $seg1 === 'preview':
+            require API_DIR . '/handlers/markdown.php';
+            handleMarkdownPreview();
+            break;
+
         // POST /api/markdown
-        case $method === 'POST' && $seg0 === 'markdown':
+        case $method === 'POST' && $seg0 === 'markdown' && $seg1 === '':
             require API_DIR . '/handlers/markdown.php';
             handleMarkdown();
             break;

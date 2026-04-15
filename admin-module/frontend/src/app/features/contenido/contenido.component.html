@@ -6,10 +6,12 @@
     <p class="text-sm text-gray-500 m-0">Convierte un archivo Markdown en secciones y contenido dentro de un curso repositorio.</p>
   </div>
 
-  <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
-    <!-- Course tree -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">Curso repositorio destino</label>
+  <!-- ── Fila 1: Curso repositorio + Archivo Markdown (mínimo 520px c/u) ── -->
+  <div class="flex flex-wrap gap-4">
+
+    <!-- Curso repositorio destino -->
+    <div class="flex-1 min-w-[520px] bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-3">
+      <label class="block text-sm font-medium text-gray-700">Curso repositorio destino</label>
       @if (treeLoading()) {
         <div class="flex items-center gap-2 py-4 text-sm text-gray-400">
           <i class="pi pi-spin pi-spinner"></i> Cargando cursos...
@@ -36,7 +38,7 @@
           </p-tree>
         </div>
         @if (shortname()) {
-          <div class="flex items-center gap-2 mt-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
             <i class="pi pi-check-circle"></i>
             <span>{{ selectedNode()?.label }}</span>
             <span class="font-mono text-blue-500">({{ shortname() }})</span>
@@ -45,41 +47,128 @@
       }
     </div>
 
-    <!-- File upload -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">Archivo Markdown (.md)</label>
-      <input type="file" accept=".md,.txt" (change)="loadFile($event)"
-        class="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" />
+    <!-- Archivo Markdown (dropzone) -->
+    <div class="flex-1 min-w-[520px] bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-3">
+      <label class="block text-sm font-medium text-gray-700">Archivo Markdown (.md)</label>
+
+      <!-- Dropzone -->
+      <div
+        class="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-150 select-none"
+        [class.border-blue-400]="isDragOver()"
+        [class.bg-blue-50]="isDragOver()"
+        [class.border-gray-300]="!isDragOver()"
+        [class.hover:border-gray-400]="!isDragOver()"
+        (click)="fileInput.click()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+        (drop)="onDrop($event)"
+      >
+        @if (fileName()) {
+          <div class="flex flex-col items-center gap-1">
+            <i class="pi pi-file-check text-3xl text-green-500"></i>
+            <p class="text-sm font-medium text-green-700 m-0">{{ fileName() }}</p>
+            <p class="text-xs text-gray-400 m-0">{{ content().split('\n').length }} líneas · clic para reemplazar</p>
+          </div>
+        } @else {
+          <div class="flex flex-col items-center gap-1 text-gray-400">
+            <i class="pi pi-upload text-3xl"></i>
+            <p class="text-sm font-medium m-0 mt-1">Arrastra tu archivo <strong>.md</strong> aquí</p>
+            <p class="text-xs m-0">o haz clic para seleccionar</p>
+          </div>
+        }
+        <input #fileInput type="file" accept=".md,.txt" class="hidden" (change)="loadFile($event)" />
+      </div>
+
+      <!-- Botón procesar -->
+      <div class="flex justify-end pt-1">
+        <p-button
+          label="Procesar en Moodle"
+          icon="pi pi-play"
+          [loading]="loading()"
+          [disabled]="!shortname() || !content()"
+          (onClick)="procesar()"
+        />
+      </div>
     </div>
 
-    <!-- Preview textarea -->
-    @if (content()) {
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Vista previa <span class="text-gray-400 font-normal">({{ content().split('\n').length }} lineas)</span>
-        </label>
+  </div><!-- / Fila 1 -->
+
+  <!-- ── Fila 2: Estructura del contenido + Vista previa (mínimo 640px c/u) ── -->
+  @if (content() || previewLoading()) {
+    <div class="flex flex-wrap gap-4">
+
+      <!-- Estructura del contenido (izquierda) -->
+      <div class="flex-1 min-w-[640px] bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-cnt-midnight m-0">Estructura del contenido</h3>
+          @if (previewLoading()) {
+            <div class="flex items-center gap-1.5 text-xs text-gray-400">
+              <p-progress-spinner styleClass="!w-4 !h-4" strokeWidth="6" />
+              <span>Analizando...</span>
+            </div>
+          } @else if (previewTree().length) {
+            <span class="text-xs text-gray-400">Arrastra para reordenar</span>
+          }
+        </div>
+
+        @if (previewTree().length) {
+          <div class="border border-gray-100 rounded-lg overflow-y-auto max-h-[520px]">
+            <p-tree
+              [value]="previewTree()"
+              [draggableNodes]="true"
+              [droppableNodes]="true"
+              draggableScope="markdown-preview"
+              droppableScope="markdown-preview"
+              (onNodeDrop)="onNodeDrop($event)"
+              styleClass="border-none text-sm"
+            >
+              <ng-template pTemplate="default" let-node>
+                <div class="flex items-center gap-2 py-0.5">
+                  <i [class]="getNodeIcon(node)"></i>
+                  <span [class]="node.data?.hiddenTitle ? 'text-gray-400 italic' : 'text-gray-800'">
+                    {{ node.label }}
+                    @if (node.data?.hiddenTitle) {
+                      <span class="text-xs not-italic ml-0.5">(título no visible)</span>
+                    }
+                  </span>
+                  @if (node.data?.moodleResource) {
+                    <code class="text-[10px] bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-gray-500 ml-1 shrink-0">
+                      {{ node.data.moodleResource }}
+                    </code>
+                  }
+                </div>
+              </ng-template>
+            </p-tree>
+          </div>
+        } @else if (!previewLoading()) {
+          <div class="text-sm text-gray-400 py-6 text-center">
+            <i class="pi pi-info-circle block text-xl mb-1"></i>
+            No se pudo generar la estructura del Markdown.
+          </div>
+        }
+      </div>
+
+      <!-- Vista previa (derecha) -->
+      <div class="flex-1 min-w-[640px] bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-cnt-midnight m-0">
+            Vista previa
+            <span class="text-gray-400 font-normal text-xs ml-1">({{ content().split('\n').length }} líneas)</span>
+          </h3>
+        </div>
         <textarea
           pTextarea
           [value]="content()"
-          [rows]="8"
+          [rows]="20"
           readonly
-          class="w-full font-mono text-xs resize-none bg-gray-50"
+          class="w-full font-mono text-xs resize-none bg-gray-50 leading-relaxed"
         ></textarea>
       </div>
-    }
 
-    <div class="flex justify-end">
-      <p-button
-        label="Procesar en Moodle"
-        icon="pi pi-play"
-        [loading]="loading()"
-        [disabled]="!shortname() || !content()"
-        (onClick)="procesar()"
-      />
-    </div>
-  </div>
+    </div><!-- / Fila 2 -->
+  }
 
-  <!-- Results -->
+  <!-- ── Resultados del procesamiento ── -->
   @if (summary()) {
     <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
       <h3 class="font-heading font-semibold text-sm mb-3 text-cnt-midnight m-0">Resultado del procesamiento</h3>
@@ -109,4 +198,5 @@
       </ul>
     </div>
   }
+
 </div>
