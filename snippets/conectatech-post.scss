@@ -235,6 +235,13 @@ a {
 	.divider {
 		border-color: rgba(255, 255, 255, 0.12);
 	}
+
+	// Menú dropdown visible en el drawer
+	.dropdown-menu {
+		&.show {
+			background-color: var(--conecta-growth-green) !important;
+		}
+	}
 }
 
 // Ajuste para el drawer content (scroll area)
@@ -817,6 +824,19 @@ body {
 			.section-item {
 				.sectionname > a {
 					color: $area-cs;
+				}
+			}
+		}
+	}
+	/** PÁGINAS DE UNA SOLA SECCIÓN **/
+	&.single-section-page {
+		&.cosmovision-cristiana {
+			#courseheaderimage {
+				.bucoursetitle {
+					padding-right: 8rem;
+					.page-header-headings {
+						margin-left: 4rem;
+					}
 				}
 			}
 		}
