@@ -6,7 +6,7 @@ import { TreeModule } from 'primeng/tree';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { MessageService, SharedModule, TreeNode } from 'primeng/api';
+import { MessageService, SharedModule, TreeDragDropService, TreeNode } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 
 /** Representa un bloque de sección H1 dividido en H2-subsecciones. */
@@ -24,7 +24,7 @@ interface RawSection {
     FormsModule, ButtonModule, TextareaModule, TreeModule,
     SharedModule, TagModule, ToastModule, ProgressSpinnerModule,
   ],
-  providers: [MessageService],
+  providers: [MessageService, TreeDragDropService],
   templateUrl: './contenido.component.html',
 })
 export class ContenidoComponent implements OnInit {
@@ -120,9 +120,9 @@ export class ContenidoComponent implements OnInit {
     this.previewTree.update(t => [...t]);
   }
 
-  /** Retorna la clase de ícono PrimeIcons según el tipo de nodo */
+  /** Retorna la clase de ícono PrimeIcons según el tipo de nodo (almacenado en data.nodeType) */
   getNodeIcon(node: any): string {
-    switch (node.type) {
+    switch (node.data?.nodeType) {
       case 'seccion':                   return 'pi pi-folder-open text-amber-500 text-base';
       case 'subseccion-regular':        return 'pi pi-folder text-blue-500 text-base';
       case 'subseccion-evaluacion':     return 'pi pi-question-circle text-purple-600 text-base';
@@ -133,6 +133,20 @@ export class ContenidoComponent implements OnInit {
       case 'quiz':                      return 'pi pi-question-circle text-purple-400 text-base';
       default:                          return 'pi pi-file text-gray-400 text-base';
     }
+  }
+
+  // ── Expandir / contraer árbol de estructura ──────────────────────────────
+
+  expandAll(): void {
+    this.previewTree.set(this.previewTree().map(n => this.setNodeExpanded(n, true)));
+  }
+
+  collapseAll(): void {
+    this.previewTree.set(this.previewTree().map(n => this.setNodeExpanded(n, false)));
+  }
+
+  private setNodeExpanded(node: TreeNode, expanded: boolean): TreeNode {
+    return { ...node, expanded, children: node.children?.map(c => this.setNodeExpanded(c, expanded)) };
   }
 
   // ── Procesamiento en Moodle ──────────────────────────────────────────────

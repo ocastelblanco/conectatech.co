@@ -44,12 +44,20 @@ function handleMarkdownPreview(): void
 
         $tree = [];
 
+        // Cargar mapa show_h3 desde semantic-blocks.json para hiddenTitle de bloques H3
+        $semanticBlocksFile = CONFIG_DIR . '/semantic-blocks.json';
+        $semanticData       = json_decode(file_get_contents($semanticBlocksFile), true) ?? [];
+        $showH3Map          = [];
+        foreach (($semanticData['blocks'] ?? []) as $blockDef) {
+            $showH3Map[mb_strtolower(trim($blockDef['h3_title']))] = $blockDef['show_h3'] ?? true;
+        }
+        $fallbackShowH3 = $semanticData['fallback']['show_h3'] ?? true;
+
         foreach ($sections as $sIdx => $section) {
             $sectionNode = [
                 'key'      => "s{$sIdx}",
                 'label'    => $section['title'],
-                'type'     => 'seccion',
-                'data'     => ['sectionIdx' => $sIdx, 'moodleResource' => null, 'hiddenTitle' => false],
+                'data'     => ['sectionIdx' => $sIdx, 'moodleResource' => null, 'hiddenTitle' => false, 'nodeType' => 'seccion'],
                 'children' => [],
                 'expanded' => true,
                 'leaf'     => false,
@@ -62,12 +70,12 @@ function handleMarkdownPreview(): void
                 $subNode = [
                     'key'           => "s{$sIdx}-ss{$ssIdx}",
                     'label'         => $sub['title'],
-                    'type'          => $sub['type'],
                     'data'          => [
                         'sectionIdx'    => $sIdx,
                         'subsectionIdx' => $ssIdx,
                         'moodleResource'=> $moodleResource,
                         'hiddenTitle'   => $hiddenTitle,
+                        'nodeType'      => $sub['type'],
                     ],
                     'children'      => [],
                     'expanded'      => true,
@@ -76,27 +84,60 @@ function handleMarkdownPreview(): void
 
                 // Hijos informativos (H3 bloques y cuestionarios) — no arrastrables
                 if ($sub['type'] === 'subseccion-regular') {
-                    foreach (($sub['blocks'] ?? []) as $bIdx => $block) {
-                        $subNode['children'][] = [
-                            'key'      => "s{$sIdx}-ss{$ssIdx}-b{$bIdx}",
-                            'label'    => $block['h3_title'],
-                            'type'     => 'label',
-                            'data'     => ['moodleResource' => 'Área de texto y medios', 'hiddenTitle' => false],
-                            'leaf'     => true,
-                            'draggable'=> false,
-                            'droppable'=> false,
-                        ];
-                    }
-                    foreach (($sub['h3_evaluaciones'] ?? []) as $eIdx => $eval) {
-                        $subNode['children'][] = [
-                            'key'      => "s{$sIdx}-ss{$ssIdx}-e{$eIdx}",
-                            'label'    => $eval['title'],
-                            'type'     => 'quiz',
-                            'data'     => ['moodleResource' => 'Cuestionario', 'hiddenTitle' => false],
-                            'leaf'     => true,
-                            'draggable'=> false,
-                            'droppable'=> false,
-                        ];
+                    $itemsOrdered = $sub['items_ordered'] ?? [];
+                    if (!empty($itemsOrdered)) {
+                        // Orden preservado del Markdown (usa items_ordered del parser)
+                        foreach ($itemsOrdered as $item) {
+                            if ($item['kind'] === 'block') {
+                                $bIdx  = $item['index'];
+                                $block = $sub['blocks'][$bIdx] ?? null;
+                                if ($block === null) { continue; }
+                                $showH3 = $showH3Map[mb_strtolower(trim($block['h3_title']))] ?? $fallbackShowH3;
+                                $subNode['children'][] = [
+                                    'key'      => "s{$sIdx}-ss{$ssIdx}-b{$bIdx}",
+                                    'label'    => $block['h3_title'],
+                                    'data'     => ['moodleResource' => 'Área de texto y medios', 'hiddenTitle' => !$showH3, 'nodeType' => 'label'],
+                                    'leaf'     => true,
+                                    'draggable'=> false,
+                                    'droppable'=> false,
+                                ];
+                            } elseif ($item['kind'] === 'eval') {
+                                $eIdx = $item['index'];
+                                $eval = $sub['h3_evaluaciones'][$eIdx] ?? null;
+                                if ($eval === null) { continue; }
+                                $subNode['children'][] = [
+                                    'key'      => "s{$sIdx}-ss{$ssIdx}-e{$eIdx}",
+                                    'label'    => $eval['title'],
+                                    'data'     => ['moodleResource' => 'Cuestionario', 'hiddenTitle' => false, 'nodeType' => 'quiz'],
+                                    'leaf'     => true,
+                                    'draggable'=> false,
+                                    'droppable'=> false,
+                                ];
+                            }
+                        }
+                    } else {
+                        // Fallback legacy: sin items_ordered, blocks primero luego evals
+                        foreach (($sub['blocks'] ?? []) as $bIdx => $block) {
+                            $showH3 = $showH3Map[mb_strtolower(trim($block['h3_title']))] ?? $fallbackShowH3;
+                            $subNode['children'][] = [
+                                'key'      => "s{$sIdx}-ss{$ssIdx}-b{$bIdx}",
+                                'label'    => $block['h3_title'],
+                                'data'     => ['moodleResource' => 'Área de texto y medios', 'hiddenTitle' => !$showH3, 'nodeType' => 'label'],
+                                'leaf'     => true,
+                                'draggable'=> false,
+                                'droppable'=> false,
+                            ];
+                        }
+                        foreach (($sub['h3_evaluaciones'] ?? []) as $eIdx => $eval) {
+                            $subNode['children'][] = [
+                                'key'      => "s{$sIdx}-ss{$ssIdx}-e{$eIdx}",
+                                'label'    => $eval['title'],
+                                'data'     => ['moodleResource' => 'Cuestionario', 'hiddenTitle' => false, 'nodeType' => 'quiz'],
+                                'leaf'     => true,
+                                'draggable'=> false,
+                                'droppable'=> false,
+                            ];
+                        }
                     }
                 }
 

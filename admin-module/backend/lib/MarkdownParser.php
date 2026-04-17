@@ -149,6 +149,7 @@ class MarkdownParser
             'title'           => $title,
             'blocks'          => [],
             'h3_evaluaciones' => [],   // cuestionarios H3-level (nueva estructura)
+            'items_ordered'   => [],   // orden de aparición de blocks y h3_evaluaciones en el MD
             'questions'       => [],   // preguntas H2-level [evaluacion]
             'pregunta_blocks' => [],   // bloques presaberes
         ];
@@ -478,7 +479,8 @@ class MarkdownParser
                     $isEmpty     = $this->curBlock['content'] === '';
                     $isAutoBlock = !($this->curSub['has_h3'] ?? true);
                     if (!($isEmpty && $isAutoBlock)) {
-                        $this->curSub['blocks'][] = $this->curBlock;
+                        $this->curSub['blocks'][]       = $this->curBlock;
+                        $this->curSub['items_ordered'][] = ['kind' => 'block', 'index' => count($this->curSub['blocks']) - 1];
                     }
                     $this->curBlock = null;
                 }
@@ -515,6 +517,7 @@ class MarkdownParser
         $this->saveH3EvalQuestion();
         if ($this->curH3Eval !== null && $this->curSub !== null) {
             $this->curSub['h3_evaluaciones'][] = $this->curH3Eval;
+            $this->curSub['items_ordered'][]   = ['kind' => 'eval', 'index' => count($this->curSub['h3_evaluaciones']) - 1];
             $this->curH3Eval                   = null;
             $this->curH3EvalQ                  = null;
         }
