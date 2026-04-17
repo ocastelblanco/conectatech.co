@@ -116,7 +116,7 @@ class MoodleContentBuilder
 
         } catch (Throwable $e) {
             $result['errors'][] = $e->getMessage();
-            fwrite(STDERR, "ERROR en sección '{$section['title']}': " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n");
+            error_log("ERROR en sección '{$section['title']}': " . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
 
         return $result;
@@ -204,9 +204,14 @@ class MoodleContentBuilder
                     break;
             }
         } catch (Throwable $e) {
+            // Si la excepción dejó una transacción Moodle rota (force_rollback=true),
+            // limpiarla para que las secciones siguientes puedan operar en la BD.
+            global $DB;
+            try { $DB->force_transaction_rollback(); } catch (Throwable $ignored) {}
+
             $result['error'] = $e->getMessage();
-            fwrite(STDERR, "ERROR subsección '{$subsection['title']}' [{$subsection['type']}]: "
-                . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n");
+            error_log("ERROR subsección '{$subsection['title']}' [{$subsection['type']}]: "
+                . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
 
         return $result;
@@ -400,14 +405,21 @@ class MoodleContentBuilder
 
     private function createEssayQuestion(array $question, int $categoryId, object $context): ?int
     {
+        $variante  = strtolower(trim($question['variante'] ?? 'texto'));
         $enunciado = trim(!empty($question['enunciado']) ? $question['enunciado'] : $question['title']);
+
+        // question.name es VARCHAR(255) en Moodle. Un nombre más largo lanza dml_write_exception
+        // dentro de la transacción delegada de save_question(), lo que establece
+        // $DB->force_rollback = true y bloquea TODAS las operaciones DB posteriores
+        // (incluyendo course_create_section de las secciones siguientes).
+        $name = mb_substr($question['title'], 0, 255, 'UTF-8');
 
         // save_question($question, $form) lee las opciones DIRECTAMENTE de $form,
         // no de $form->options. Se pasa el mismo objeto como ambos argumentos.
         // questiontext y generalfeedback deben ser arrays ['text'=>..., 'format'=>...]
         $qdata                          = new stdClass();
         $qdata->qtype                   = 'essay';
-        $qdata->name                    = $question['title'];
+        $qdata->name                    = $name;
         $qdata->questiontext            = ['text' => '<p>' . htmlspecialchars($enunciado, ENT_QUOTES, 'UTF-8') . '</p>', 'format' => FORMAT_HTML];
         $qdata->generalfeedback         = ['text' => '', 'format' => FORMAT_HTML];
         $qdata->defaultmark             = 1;
@@ -416,13 +428,27 @@ class MoodleContentBuilder
         $qdata->contextid               = $context->id;
         $qdata->context                 = $context;   // save_question_options lo requiere
 
-        // Opciones de ensayo directamente en $qdata (no en $qdata->options)
-        $qdata->responseformat          = 'editor';
-        $qdata->responserequired        = 1;
-        $qdata->responsefieldlines      = 15;
-        $qdata->attachments             = 0;
-        $qdata->attachmentsrequired     = 0;
-        $qdata->maxbytes                = 0;
+        // Opciones según variante
+        if ($variante === 'adjunto') {
+            // El alumno entrega un archivo; sin editor de texto obligatorio
+            $qdata->responseformat      = 'noinline';
+            $qdata->responserequired    = 0;
+            $qdata->responsefieldlines  = 5;
+            $qdata->attachments         = -1;  // sin límite de adjuntos
+            $qdata->attachmentsrequired = 1;
+            $qdata->maxbytes            = 0;   // límite del sitio
+            $qdata->filetypeslist       = '';
+        } else {
+            // variante: texto (por defecto) — editor de texto, sin adjuntos
+            $qdata->responseformat      = 'editor';
+            $qdata->responserequired    = 1;
+            $qdata->responsefieldlines  = 15;
+            $qdata->attachments         = 0;
+            $qdata->attachmentsrequired = 0;
+            $qdata->maxbytes            = 0;
+            $qdata->filetypeslist       = '';
+        }
+
         // graderinfo y responsetemplate en formato de importación (con clave 'files')
         $qdata->graderinfo              = ['text' => '', 'format' => FORMAT_HTML, 'files' => []];
         $qdata->graderinfoformat        = FORMAT_HTML;
@@ -436,7 +462,7 @@ class MoodleContentBuilder
             $saved = $qtype->save_question($qdata, clone $qdata);
             return (int)$saved->id;
         } catch (Throwable $e) {
-            fwrite(STDERR, "ERROR pregunta ensayo '{$question['title']}': " . $e->getMessage() . "\n");
+            error_log("ERROR pregunta ensayo '{$question['title']}': " . $e->getMessage());
             return null;
         }
     }
@@ -509,6 +535,38 @@ class MoodleContentBuilder
             [$this->course->id]
         );
 
+        // Resetear numsections a 0: course_create_section() solo actualiza
+        // course_format_options cuando el nuevo número > numsections actual.
+        // Si no reseteamos, las secciones 1..N (donde N = numsections anterior)
+        // no disparan el update y permanecen ocultas en el formato topics.
+        $courseformat = course_get_format($this->course->id);
+        $courseformat->update_course_format_options(['numsections' => 0]);
+
+        rebuild_course_cache($this->course->id, true);
+    }
+
+    /**
+     * Actualiza numsections al MAX(section) real de course_sections.
+     *
+     * Se usa MAX en lugar del conteo de H1 porque:
+     * - Las secciones delegadas (mod_subsection) ocupan números de sección propios.
+     * - Los H1 de secciones 7-11 quedan en posiciones > 6 (p.ej. 37, 42…).
+     * - numsections actúa como cota superior del número de sección visible;
+     *   si es menor que el número de un H1, ese H1 queda oculto.
+     * Llamar al terminar de procesar todas las secciones del markdown.
+     */
+    public function finalizeCourse(): void
+    {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $maxSection = (int) $DB->get_field_sql(
+            'SELECT MAX(section) FROM {course_sections} WHERE course = ?',
+            [$this->course->id]
+        );
+
+        $courseformat = course_get_format($this->course->id);
+        $courseformat->update_course_format_options(['numsections' => $maxSection]);
         rebuild_course_cache($this->course->id, true);
     }
 

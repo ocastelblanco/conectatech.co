@@ -128,6 +128,11 @@ class MarkdownService
             gc_collect_cycles();
         }
 
+        // Actualizar numsections al MAX(section) real para que todos los H1
+        // sean visibles, incluso los que quedan en posiciones altas por las
+        // secciones delegadas (mod_subsection) que se intercalan entre ellos.
+        $builder->finalizeCourse();
+
         $result['summary'] = [
             'total_sections'   => count($sections),
             'sections_created' => $createdCount,

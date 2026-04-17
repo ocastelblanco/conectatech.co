@@ -95,6 +95,59 @@ class PobladorService
             gc_collect_cycles();
         }
 
+        // Eliminar secciones placeholder vacías que Moodle crea automáticamente
+        // cuando la sección origen tiene section_num > 1 (ej. secciones 8-10 en
+        // un repositorio compartido). TARGET_EXISTING_ADDING preserva el número
+        // de sección origen, lo que crea huecos vacíos en el curso destino.
+        if (!$dryRun && $result['cloned'] > 0) {
+            $this->eliminarPlaceholdersVacios($targetId);
+        }
+
         return $result;
+    }
+
+    /**
+     * Elimina secciones vacías (sin nombre, sin summary, sin módulos) que Moodle
+     * genera como placeholder cuando el restore preserva un section_num > posición
+     * actual del cursor en el curso destino.
+     *
+     * Moodle auto-renumera las secciones al borrar, por lo que no se requiere
+     * renumeración explícita posterior.
+     */
+    private function eliminarPlaceholdersVacios(int $targetId): void
+    {
+        global $DB, $CFG;
+
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $course = $DB->get_record('course', ['id' => $targetId]);
+        if (!$course) {
+            return;
+        }
+
+        // Buscar secciones > 0 sin nombre, sin summary y sin módulos asignados
+        $placeholders = $DB->get_records_sql(
+            "SELECT id, section, name
+               FROM {course_sections}
+              WHERE course   = ?
+                AND section  > 0
+                AND (name     IS NULL OR name     = '')
+                AND (summary  IS NULL OR summary  = '')
+                AND (sequence IS NULL OR sequence = '')",
+            [$targetId]
+        );
+
+        if (empty($placeholders)) {
+            return;
+        }
+
+        // Borrar de mayor a menor para aprovechar el auto-renumerado de Moodle
+        usort($placeholders, fn($a, $b) => (int)$b->section - (int)$a->section);
+
+        foreach ($placeholders as $s) {
+            course_delete_section($course, $s, true);
+        }
+
+        rebuild_course_cache($targetId, true);
     }
 }

@@ -45,6 +45,10 @@ export class ApiService {
     return this.http.post(`${API_BASE}/markdown`, body);
   }
 
+  previewMarkdown(content: string): Observable<{ ok: boolean; tree: any[] }> {
+    return this.http.post<{ ok: boolean; tree: any[] }>(`${API_BASE}/markdown/preview`, { content });
+  }
+
   getReporte(nombre: 'matriculas' | 'creacion' | 'poblamiento' | 'markdown'): Observable<any> {
     return this.http.get(`${API_BASE}/reportes/${nombre}`);
   }
