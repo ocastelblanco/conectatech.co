@@ -59,7 +59,7 @@ class MoodleContentBuilder
             'fullname'    => $this->courseData['fullname'],
             'shortname'   => $this->shortname,
             'category'    => $categoryId,   // Moodle usa 'category', no 'categoryid'
-            'visible'     => 0,
+            'visible'     => 1,
             'format'      => 'topics',
             'numsections' => 0,
         ];

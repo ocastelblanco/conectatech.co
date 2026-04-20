@@ -91,7 +91,7 @@ class CursosService
             'fullname'    => $fullname,
             'shortname'   => $shortname,
             'category'    => $categoryId,
-            'visible'     => 0,
+            'visible'     => 1,
             'format'      => 'topics',
             'numsections' => 0,
         ];
