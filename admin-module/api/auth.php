@@ -39,7 +39,7 @@ if (!isloggedin() || isguestuser()) {
 
 // ─── Rutas de gestor ──────────────────────────────────────────────────────────
 
-if (str_starts_with($rawPath, 'gestor')) {
+if ($rawPath === 'gestor' || str_starts_with($rawPath, 'gestor/')) {
     require_once LIB_DIR . '/GestorAuth.php';
 
     $ctGestor = (new GestorAuth())->lookupGestor((int)$USER->id);
