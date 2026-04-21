@@ -63,9 +63,9 @@
               {{ paq.expires_at * 1000 | date:'dd/MM/yyyy' }}
             </span>
           </td>
-          <td class="text-center text-gray-700">{{ paq.available ?? 0 }}</td>
-          <td class="text-center text-gray-700">{{ paq.assigned ?? 0 }}</td>
-          <td class="text-center text-gray-700">{{ paq.active ?? 0 }}</td>
+          <td class="text-center text-gray-700">{{ paq.pins?.available ?? 0 }}</td>
+          <td class="text-center text-gray-700">{{ paq.pins?.assigned ?? 0 }}</td>
+          <td class="text-center text-gray-700">{{ paq.pins?.active ?? 0 }}</td>
           <td class="text-xs text-gray-400">{{ paq.created_at * 1000 | date:'dd/MM/yyyy' }}</td>
           <td>
             <div class="flex items-center justify-end gap-1">
