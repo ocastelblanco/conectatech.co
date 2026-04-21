@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-15 (rev. 2)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-17 (rev. 3)
 
 ---
 
@@ -159,6 +159,7 @@ Agregar ruta en `app.routes.ts`:
 | 2026-04-14 | [FIX] Pipeline Markdown truncado | Fix `force_rollback` Moodle, `numsections` MAX(section), `question.name` 255 chars, `ensayo` variante adjunto |
 | 2026-04-14 | [DOCS] Sistema de documentación | PRD.md, tech-specs.md, CLAUDE.md actualizado (OWASP + git flow), MEMORY.md, TODO.md |
 | 2026-04-15 | [FEATURE] Previsualizador de contenido Markdown | Endpoint `POST /admin-api/markdown/preview`, árbol `p-tree` con drag & drop, dropzone, layout en dos filas (520px / 640px), reconstrucción de contenido en tiempo real |
+| 2026-04-17 | [FIX] Árbol de preview y PobladorService | `items_ordered` en MarkdownParser para orden correcto de nodos; `hiddenTitle` derivado de `semantic-blocks.json`; `TreeDragDropService` en providers (fix drag-and-drop); dropzone a la izquierda, card destino condicional; `eliminarPlaceholdersVacios()` en PobladorService |
 
 ---
 
@@ -186,3 +187,17 @@ Agregar ruta en `app.routes.ts`:
 - Pendientes de Alta prioridad (PRD §6): Sección 0 de cursos finales, Reportes de progreso
 
 **Resultado:** Tarea 1 = Sección 0 de cursos finales (Alta, ADR-005). Tarea 2 = Reportes de progreso (Alta, siguiente feature de mayor valor).
+
+### 2026-04-17 — Revisión 3 (Fixes del previsualizador completados)
+
+**Cambios en esta sesión:**
+- Fixes de calidad sobre el previsualizador: orden de nodos (`items_ordered`), `hiddenTitle` desde config, drag-and-drop, layout, placeholders en PobladorService
+- Limpieza manual de secciones «sucias» en cursos MA-6 y MA-7 (artefactos del timeout anterior)
+- PR mergeada a main
+
+**Comparación PRD vs MEMORY:**
+- Previsualizador y sus fixes: ✅ en producción
+- Sin nuevos gaps de seguridad
+- Pendientes de Alta prioridad (PRD §6): Sección 0 de cursos finales, Reportes de progreso
+
+**Resultado:** Sin cambio de prioridad — Tarea 1 = Sección 0 de cursos finales. Tarea 2 = Reportes de progreso.
