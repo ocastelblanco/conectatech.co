@@ -63,8 +63,6 @@ $allows = [
     'mod/forum:viewdiscussion',
     'mod/assign:view',
     'mod/assign:viewgrades',
-    'mod/subsection:view',
-
     // Calificaciones (solo lectura)
     'moodle/grade:viewall',
     'gradereport/grader:view',
