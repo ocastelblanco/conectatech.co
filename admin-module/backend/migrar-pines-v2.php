@@ -77,4 +77,7 @@ echo "  OK    ct_gestor_pin vaciado\n";
 $DB->delete_records('ct_group');
 echo "  OK    ct_group vaciado\n";
 
+$DB->delete_records('ct_organization');
+echo "  OK    ct_organization vaciado\n";
+
 echo "\n=== Migración completada ===\n";
