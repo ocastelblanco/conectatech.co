@@ -102,7 +102,7 @@ export class ApiService {
     if (orgId) params = params.set('org_id', orgId);
     return this.http.get(`${API_BASE}/paquetes`, { params });
   }
-  crearPaquete(body: { organization_id: number; teacher_role: string; expires_at: number; cantidad: number }): Observable<any> {
+  crearPaquete(body: { organization_id: number; teacher_role: string; duration_days: number; cantidad: number }): Observable<any> {
     return this.http.post(`${API_BASE}/paquetes`, body);
   }
   asignarPaquete(id: number, body: { organization_id: number }): Observable<any> {

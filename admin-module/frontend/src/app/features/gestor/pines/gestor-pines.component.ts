@@ -177,4 +177,9 @@ export class GestorPinesComponent implements OnInit {
     const map: Record<string, string> = { student: 'Estudiante', teacher: 'Profesor', editingteacher: 'Prof. Editor' };
     return map[role] ?? role;
   }
+
+  getDurationLabel(days: number): string {
+    const map: Record<number, string> = { 93: '3 meses', 182: '6 meses', 365: '12 meses' };
+    return map[days] ?? `${days} días`;
+  }
 }

@@ -30,7 +30,7 @@
 | **Público secundario** | Estudiantes de las organizaciones suscritas |
 | **Idioma de la plataforma** | Español colombiano |
 | **URLs de producción** | `https://conectatech.co` (LMS) · `https://admin.conectatech.co` (panel admin) · `https://assets.conectatech.co` (recursos) · `https://api.conectatech.co` (API pública de recursos) |
-| **Propietario técnico** | IdeasMaestras — Ocastelblanco |
+| **Propietario técnico** | IdeasMaestras — [Oliver Castelblanco](https://ocastelblanco.com) |
 
 **Visión en una oración:** ConectaTech.co es una plataforma educativa que permite a colegios colombianos ofrecer a sus estudiantes cursos digitales de alta calidad mediante un modelo de acceso por pines, gestionado por un representante institucional.
 
@@ -217,6 +217,7 @@ Página pública (`/activar`) donde un estudiante ingresa su pin y:
 
 | Funcionalidad | Descripción | Prioridad |
 |---|---|---|
+| **Revisión del sistema de pines** *(en progreso — cliente activo)* | Vigencia por duración desde activación (3/6/12 meses), rol Moodle exclusivo `ct_gestor` (solo lectura: contenidos, participantes, calificaciones), ajustes de UX en flujos de asignación y activación | **Prioridad 1** |
 | **Previsualizador de contenido Markdown** | Componente de árbol visual (`p-tree` de PrimeNG) que muestra la estructura del Markdown antes de cargarlo en Moodle: secciones (H1), subsecciones (H2) y cuestionarios, con íconos por tipo de recurso Moodle (`Área de texto y medios`, `Cuestionario`, etc.). Permite reordenar los nodos con drag & drop antes de ejecutar el pipeline. | Alta |
 | **Sección 0 de cursos finales** | Al desplegar un árbol curricular, cada curso final debe tener contenido de portada/bienvenida. El panel admin necesita una UI para definir ese contenido por curso dentro del editor de árboles. | Alta |
 | **Reportes de progreso** | Dashboard con métricas de avance de estudiantes por organización: completitud de cursos, calificaciones promedio, actividad reciente | Alta |

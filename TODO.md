@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-17 (rev. 3)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-21 (rev. 4)
 
 ---
 
@@ -20,7 +20,51 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Sección 0 de cursos finales
+## Tarea 1 — [FEATURE] Revisión sistema de pines: vigencia por duración
+
+**Origen:** PRD §6 (Prioridad 1 — cliente activo) · Rama: `revison-gestion-pines`
+
+**Problema:** El modelo actual usa una fecha absoluta de expiración (`expires_at`) en el paquete de pines. Esto significa que todos los pines vencen en la misma fecha sin importar cuándo los activa el usuario. El cliente necesita que la vigencia cuente desde el momento de activación.
+
+**Qué se hizo:**
+- Esquema BD: `ct_pin_package.expires_at` → `duration_days` (93 | 182 | 365)
+- `ct_pin.expires_at` calculado al momento de activación: `activated_at + duration_days * 86400`
+- `ActivacionService::activarPin()` calcula `timeend = time() + duration_days * 86400`
+- Frontend: datepicker reemplazado por select (3/6/12 meses) en formulario de creación
+- Vista gestor: columna "Vigencia" muestra "Hasta dd/MM/yyyy" para pines activos, duración para los demás
+
+**Pendiente en esta rama:**
+- Ejecutar `migrar-pines-v2.php` en el servidor (limpia tablas y aplica ALTER TABLE)
+- Ejecutar `crear-rol-gestor.php` para crear el rol `ct_gestor` en Moodle
+- Deploy del backend y frontend al servidor
+- Pruebas end-to-end con flujo completo: crear paquete → asignar → activar → verificar `timeend`
+
+**Definición de done:**
+- [ ] `migrar-pines-v2.php` ejecutado en producción sin errores
+- [ ] `crear-rol-gestor.php` ejecutado — rol `ct_gestor` visible en Moodle Admin > Roles
+- [ ] Frontend desplegado — selector de duración funciona en `/pines`
+- [ ] Nuevo gestor activado con rol `ct_gestor` (no teacher)
+- [ ] Pin activado → `user_enrolments.timeend` = tiempo de activación + N días
+
+---
+
+## Tarea 2 — [FEATURE] Revisión sistema de pines: rol gestor en Moodle
+
+**Origen:** PRD §6 (Prioridad 1 — cliente activo) · Misma rama: `revison-gestion-pines`
+
+**Problema:** El gestor actual recibe rol `teacher` en Moodle (puede editar contenido de cursos). Debe ser un rol de solo lectura: ver contenidos, participantes y calificaciones, pero no editar nada.
+
+**Qué se hizo:**
+- `crear-rol-gestor.php`: script CLI que crea rol `ct_gestor` con permisos ALLOW solo de lectura
+- `ActivacionService::activarGestor()`: asigna `ct_gestor` en lugar de `teacher` a nivel de categoría
+
+**Pendiente:** Ejecutar scripts en el servidor (ver Tarea 1).
+
+---
+
+<!-- PAUSADAS — reanudar cuando se complete la revisión de pines -->
+
+## [PAUSADA] Sección 0 de cursos finales
 
 **Origen:** PRD §6 (roadmap Alta prioridad) · ADR-005 (deuda técnica intencional documentada)
 
@@ -83,7 +127,7 @@ if (!empty($nodo['seccion0'])) {
 
 ---
 
-## Tarea 2 — [FEATURE] Reporte de progreso de estudiantes
+## [PAUSADA] Tarea — [FEATURE] Reporte de progreso de estudiantes
 
 **Origen:** PRD §6 (roadmap Alta prioridad) · No iniciado
 
@@ -187,6 +231,19 @@ Agregar ruta en `app.routes.ts`:
 - Pendientes de Alta prioridad (PRD §6): Sección 0 de cursos finales, Reportes de progreso
 
 **Resultado:** Tarea 1 = Sección 0 de cursos finales (Alta, ADR-005). Tarea 2 = Reportes de progreso (Alta, siguiente feature de mayor valor).
+
+### 2026-04-21 — Revisión 4 (Revisión sistema de pines — cliente activo)
+
+**Cambios en esta sesión:**
+- Solicitud de cliente: vigencia de pines por duración desde activación (3/6/12 meses)
+- Nuevo rol Moodle `ct_gestor` (solo lectura) en lugar de `teacher`
+- Rama `revison-gestion-pines` creada para todos los cambios de los próximos días
+
+**Comparación PRD vs MEMORY:**
+- Revisión sistema de pines: ⏳ en progreso (rama activa)
+- Tareas anteriores pausadas mientras dure la revisión de pines
+
+**Resultado:** Tarea 1 = Deploy y pruebas de vigencia por duración. Tarea 2 = Deploy y pruebas de rol `ct_gestor`.
 
 ### 2026-04-17 — Revisión 3 (Fixes del previsualizador completados)
 

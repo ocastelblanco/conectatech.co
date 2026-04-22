@@ -151,9 +151,9 @@ class GestorService
             $params['courseid'] = $courseId;
         }
 
-        $sql = "SELECT p.id, p.hash, p.role, p.status, p.activated_at,
+        $sql = "SELECT p.id, p.hash, p.role, p.status, p.activated_at, p.expires_at,
                        p.group_id, p.moodle_course_id,
-                       pkg.id AS pkg_id, pkg.teacher_role, pkg.expires_at,
+                       pkg.id AS pkg_id, pkg.teacher_role, pkg.duration_days,
                        c.fullname  AS course_name,
                        g.name      AS group_name,
                        u.firstname AS activated_firstname,
@@ -171,19 +171,20 @@ class GestorService
 
         foreach ($rows as $row) {
             $result[] = [
-                'id'           => (int)$row->id,
-                'hash'         => $row->hash,
-                'role'         => $row->role,
-                'status'       => $row->status,
-                'expires_at'   => (int)$row->expires_at,
-                'activated_at' => $row->activated_at ? (int)$row->activated_at : null,
-                'group_id'     => $row->group_id     ? (int)$row->group_id     : null,
-                'group_name'   => $row->group_name,
-                'course_id'    => $row->moodle_course_id ? (int)$row->moodle_course_id : null,
-                'course_name'      => $row->course_name,
-                'package_id'       => (int)$row->pkg_id,
-                'teacher_role'     => $row->teacher_role,
-                'activated_nombre' => ($row->activated_firstname !== null)
+                'id'            => (int)$row->id,
+                'hash'          => $row->hash,
+                'role'          => $row->role,
+                'status'        => $row->status,
+                'duration_days' => (int)$row->duration_days,
+                'expires_at'    => $row->expires_at ? (int)$row->expires_at : null,
+                'activated_at'  => $row->activated_at ? (int)$row->activated_at : null,
+                'group_id'      => $row->group_id ? (int)$row->group_id : null,
+                'group_name'    => $row->group_name,
+                'course_id'     => $row->moodle_course_id ? (int)$row->moodle_course_id : null,
+                'course_name'       => $row->course_name,
+                'package_id'        => (int)$row->pkg_id,
+                'teacher_role'      => $row->teacher_role,
+                'activated_nombre'  => ($row->activated_firstname !== null)
                     ? trim($row->activated_firstname . ' ' . $row->activated_lastname)
                     : null,
             ];
@@ -297,7 +298,9 @@ class GestorService
         // BOM UTF-8 para compatibilidad con Excel
         fwrite($buffer, "\xEF\xBB\xBF");
 
-        fputcsv($buffer, ['Hash', 'Rol', 'Estado', 'Grupo', 'Curso', 'Vigencia hasta', 'Activado el']);
+        fputcsv($buffer, ['Hash', 'Rol', 'Estado', 'Grupo', 'Curso', 'Duración', 'Vence el', 'Activado el']);
+
+        $durationLabel = [93 => '3 meses', 182 => '6 meses', 365 => '12 meses'];
 
         foreach ($pins as $pin) {
             fputcsv($buffer, [
@@ -306,8 +309,9 @@ class GestorService
                 $pin['status'],
                 $pin['group_name']  ?? '',
                 $pin['course_name'] ?? '',
-                date('Y-m-d', $pin['expires_at']),
-                $pin['activated_at'] ? date('Y-m-d H:i', $pin['activated_at']) : '',
+                $durationLabel[$pin['duration_days']] ?? $pin['duration_days'] . ' días',
+                $pin['expires_at']   ? date('Y-m-d', $pin['expires_at'])          : '',
+                $pin['activated_at'] ? date('Y-m-d H:i', $pin['activated_at'])    : '',
             ]);
         }
 

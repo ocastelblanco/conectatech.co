@@ -111,14 +111,14 @@ create_if_not_exists($dbman, $t);
 //    Lote de pines creado por el administrador.
 //    teacher_role define el rol Moodle que se asignará a los pines de tipo
 //    profesor en este paquete: 'editingteacher' o 'teacher'.
-//    expires_at es la fecha de expiración de todos los pines del paquete
-//    (también se usa como timeend en las matrículas Moodle).
+//    duration_days define la vigencia de la matrícula a partir del momento
+//    de activación del pin: 93 = 3 meses, 182 = 6 meses, 365 = 12 meses.
 // ─────────────────────────────────────────────────────────────────────────────
 $t = new xmldb_table('ct_pin_package');
 $t->add_field('id',              XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
 $t->add_field('organization_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
 $t->add_field('teacher_role',    XMLDB_TYPE_CHAR,    '20', null, XMLDB_NOTNULL);  // editingteacher | teacher
-$t->add_field('expires_at',      XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);  // unix timestamp
+$t->add_field('duration_days',   XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);  // 93 | 182 | 365
 $t->add_field('created_by',      XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);  // moodle user id del admin
 $t->add_field('created_at',      XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
 $t->add_key(  'primary',         XMLDB_KEY_PRIMARY,  ['id']);
@@ -151,6 +151,7 @@ $t->add_field('moodle_course_id', XMLDB_TYPE_INTEGER, '10', null, null);        
 $t->add_field('status',           XMLDB_TYPE_CHAR,    '10', null, XMLDB_NOTNULL, null, 'available');
 $t->add_field('activated_by',     XMLDB_TYPE_INTEGER, '10', null, null);            // moodle user id; null hasta activar
 $t->add_field('activated_at',     XMLDB_TYPE_INTEGER, '10', null, null);            // null hasta activar
+$t->add_field('expires_at',       XMLDB_TYPE_INTEGER, '10', null, null);            // activated_at + duration_days * 86400; null hasta activar
 $t->add_key(  'primary',          XMLDB_KEY_PRIMARY,  ['id']);
 $t->add_index('idx_hash',         XMLDB_INDEX_UNIQUE,    ['hash']);
 $t->add_index('idx_package',      XMLDB_INDEX_NOTUNIQUE, ['package_id']);

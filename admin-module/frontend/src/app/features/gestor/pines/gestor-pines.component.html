@@ -102,10 +102,15 @@
                    [severity]="getStatusSeverity(pin.status)" /></td>
           <td class="text-sm text-gray-600">{{ pin.group_name ?? '—' }}</td>
           <td class="text-sm text-gray-600">{{ pin.course_name ?? '—' }}</td>
-          <td class="text-xs"
-              [class.text-red-500]="pin.expires_at * 1000 < now"
-              [class.text-gray-500]="pin.expires_at * 1000 >= now">
-            {{ pin.expires_at * 1000 | date:'dd/MM/yyyy' }}
+          <td class="text-xs">
+            @if (pin.status === 'active' && pin.expires_at) {
+              <span [class.text-red-500]="pin.expires_at * 1000 < now"
+                    [class.text-gray-500]="pin.expires_at * 1000 >= now">
+                Hasta {{ pin.expires_at * 1000 | date:'dd/MM/yyyy' }}
+              </span>
+            } @else {
+              <span class="text-gray-400">{{ getDurationLabel(pin.duration_days) }}</span>
+            }
           </td>
           <td class="text-xs text-gray-400">
             {{ pin.activated_at ? (pin.activated_at * 1000 | date:'dd/MM/yy') : '—' }}
