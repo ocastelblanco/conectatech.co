@@ -141,10 +141,16 @@ export class ApiService {
   getGestorOrganizacion(): Observable<any> {
     return this.http.get(`${API_BASE}/gestor/organizacion`);
   }
+  getGestorColegios(): Observable<any> {
+    return this.http.get(`${API_BASE}/gestor/colegios`);
+  }
+  crearGestorColegio(body: { name: string }): Observable<any> {
+    return this.http.post(`${API_BASE}/gestor/colegios`, body);
+  }
   getGestorGrupos(): Observable<any> {
     return this.http.get(`${API_BASE}/gestor/grupos`);
   }
-  crearGestorGrupo(body: { name: string }): Observable<any> {
+  crearGestorGrupo(body: { colegio_id?: number; name: string }): Observable<any> {
     return this.http.post(`${API_BASE}/gestor/grupos`, body);
   }
   getGestorPinesLista(params?: { status?: string; group_id?: number; course_id?: number }): Observable<any> {

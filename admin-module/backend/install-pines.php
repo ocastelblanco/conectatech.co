@@ -10,8 +10,9 @@
  * Orden de creación respeta las dependencias entre tablas.
  *
  * Tablas:
- *   ct_organization  — organizaciones (colegios / empresas)
- *   ct_group         — grupos de la app (→ grupos Moodle al matricular)
+ *   ct_organization  — organizaciones (clientes de ConectaTech)
+ *   ct_colegio       — colegios dentro de una organización
+ *   ct_group         — grupos dentro de un colegio (→ grupos Moodle al matricular)
  *   ct_gestor        — relación usuario Moodle ↔ organización con rol gestor
  *   ct_gestor_pin    — pines de un solo uso para crear cuentas de gestor
  *   ct_pin_package   — paquetes de pines creados por el administrador
@@ -59,21 +60,36 @@ $t->add_index('idx_category',       XMLDB_INDEX_UNIQUE, ['moodle_category_id']);
 create_if_not_exists($dbman, $t);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. ct_group
-//    Grupos creados por el gestor dentro de la app.
-//    moodle_group_id se rellena al matricular el primer usuario del grupo.
+// 2. ct_colegio
+//    Institución educativa dentro de una organización. Un gestor crea sus
+//    colegios y luego agrupa los pines en grupos dentro de cada colegio.
 // ─────────────────────────────────────────────────────────────────────────────
-$t = new xmldb_table('ct_group');
+$t = new xmldb_table('ct_colegio');
 $t->add_field('id',              XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
 $t->add_field('organization_id', XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL);
 $t->add_field('name',            XMLDB_TYPE_CHAR,    '255', null, XMLDB_NOTNULL);
-$t->add_field('moodle_group_id', XMLDB_TYPE_INTEGER, '10',  null, null);  // null hasta la primera matriculación
+$t->add_field('created_at',      XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL);
 $t->add_key(  'primary',         XMLDB_KEY_PRIMARY,  ['id']);
 $t->add_index('idx_org',         XMLDB_INDEX_NOTUNIQUE, ['organization_id']);
 create_if_not_exists($dbman, $t);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. ct_gestor
+// 3. ct_group
+//    Grupos dentro de un colegio. moodle_group_id se rellena al matricular
+//    el primer usuario. El nombre Moodle se compone como "{colegio} - {grupo}".
+// ─────────────────────────────────────────────────────────────────────────────
+$t = new xmldb_table('ct_group');
+$t->add_field('id',              XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+$t->add_field('organization_id', XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL);
+$t->add_field('colegio_id',      XMLDB_TYPE_INTEGER, '10',  null, null);            // FK → ct_colegio
+$t->add_field('name',            XMLDB_TYPE_CHAR,    '255', null, XMLDB_NOTNULL);
+$t->add_field('moodle_group_id', XMLDB_TYPE_INTEGER, '10',  null, null);            // null hasta la primera matriculación
+$t->add_key(  'primary',         XMLDB_KEY_PRIMARY,  ['id']);
+$t->add_index('idx_org',         XMLDB_INDEX_NOTUNIQUE, ['organization_id']);
+create_if_not_exists($dbman, $t);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. ct_gestor
 //    Vincula un usuario Moodle con una organización, otorgándole el rol gestor
 //    dentro de la app. Un usuario puede ser gestor de una sola organización.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,7 +104,7 @@ $t->add_index('idx_org',         XMLDB_INDEX_NOTUNIQUE, ['organization_id']);
 create_if_not_exists($dbman, $t);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. ct_gestor_pin
+// 5. ct_gestor_pin
 //    Pin de un solo uso generado por el administrador para que el futuro
 //    gestor cree su cuenta Moodle y quede vinculado a la organización.
 //    status: 'pending' → disponible; 'used' → ya utilizado.
@@ -107,7 +123,7 @@ $t->add_index('idx_org',         XMLDB_INDEX_NOTUNIQUE, ['organization_id', 'sta
 create_if_not_exists($dbman, $t);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. ct_pin_package
+// 6. ct_pin_package
 //    Lote de pines creado por el administrador.
 //    teacher_role define el rol Moodle que se asignará a los pines de tipo
 //    profesor en este paquete: 'editingteacher' o 'teacher'.
@@ -126,7 +142,7 @@ $t->add_index('idx_org',         XMLDB_INDEX_NOTUNIQUE, ['organization_id']);
 create_if_not_exists($dbman, $t);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. ct_pin
+// 7. ct_pin
 //    Pin individual de acceso a un curso. Representa un cupo en el curso.
 //
 //    role: el rol que se asigna en Moodle al activar el pin.

@@ -8,8 +8,10 @@
  *
  * Rutas:
  *   GET  /api/gestor/organizacion       → datos de la org + cursos disponibles
- *   GET  /api/gestor/grupos             → listar grupos de la organización
- *   POST /api/gestor/grupos             → crear grupo
+ *   GET  /api/gestor/colegios           → listar colegios con sus grupos
+ *   POST /api/gestor/colegios           → crear colegio
+ *   GET  /api/gestor/grupos             → listar todos los grupos (con info de colegio)
+ *   POST /api/gestor/grupos             → crear grupo (requiere colegio_id)
  *   GET  /api/gestor/pines              → listar pines [?status=X&group_id=Y&course_id=Z]
  *   PUT  /api/gestor/pines/asignar      → asignar lote de pines
  *   GET  /api/gestor/pines/descargar    → descarga CSV [mismos filtros que listar]
@@ -23,6 +25,26 @@ function handleGetOrganizacion(): void
     echo json_encode(['ok' => true, 'data' => $data]);
 }
 
+function handleListarColegios(): void
+{
+    global $ctGestor;
+    $data = (new GestorService())->listarColegios($ctGestor);
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true, 'data' => $data]);
+}
+
+function handleCrearColegio(): void
+{
+    global $ctGestor;
+    $body = readJsonBody();
+    $name = trim($body['name'] ?? '');
+    if ($name === '') badRequest('El campo name es obligatorio.');
+    $result = (new GestorService())->crearColegio($ctGestor, $name);
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    http_response_code(201);
+    echo json_encode(['ok' => true, 'data' => $result]);
+}
+
 function handleListarGrupos(): void
 {
     global $ctGestor;
@@ -34,10 +56,12 @@ function handleListarGrupos(): void
 function handleCrearGrupo(): void
 {
     global $ctGestor;
-    $body = readJsonBody();
-    $name = trim($body['name'] ?? '');
-    if ($name === '') badRequest('El campo name es obligatorio.');
-    $result = (new GestorService())->crearGrupo($ctGestor, $name);
+    $body      = readJsonBody();
+    $colegioId = isset($body['colegio_id']) ? (int)$body['colegio_id'] : 0;
+    $name      = trim($body['name'] ?? '');
+    if ($colegioId === 0) badRequest('El campo colegio_id es obligatorio.');
+    if ($name === '')     badRequest('El campo name es obligatorio.');
+    $result = (new GestorService())->crearGrupo($ctGestor, $colegioId, $name);
     while (ob_get_level() > 0) { ob_end_clean(); }
     http_response_code(201);
     echo json_encode(['ok' => true, 'data' => $result]);

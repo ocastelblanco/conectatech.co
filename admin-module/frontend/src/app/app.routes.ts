@@ -62,14 +62,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/gestor/dashboard/gestor-dashboard.component').then(m => m.GestorDashboardComponent)
       },
       {
-        path: 'grupos',
-        loadComponent: () => import('./features/gestor/grupos/gestor-grupos.component').then(m => m.GestorGruposComponent)
+        path: 'colegios',
+        loadComponent: () => import('./features/gestor/colegios/gestor-colegios.component').then(m => m.GestorColegiosComponent)
       },
       {
         path: 'pines',
         loadComponent: () => import('./features/gestor/pines/gestor-pines.component').then(m => m.GestorPinesComponent)
       },
     ]
+  },
+  {
+    path: 'activar/:hash',
+    loadComponent: () => import('./features/activar/activar.component').then(m => m.ActivarComponent)
   },
   {
     path: 'activar',

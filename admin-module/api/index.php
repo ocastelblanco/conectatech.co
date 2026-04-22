@@ -358,6 +358,18 @@ try {
             handleGetOrganizacion();
             break;
 
+        // GET /api/gestor/colegios
+        case $method === 'GET' && $seg0 === 'gestor' && $seg1 === 'colegios':
+            require API_DIR . '/handlers/gestor.php';
+            handleListarColegios();
+            break;
+
+        // POST /api/gestor/colegios
+        case $method === 'POST' && $seg0 === 'gestor' && $seg1 === 'colegios':
+            require API_DIR . '/handlers/gestor.php';
+            handleCrearColegio();
+            break;
+
         // GET /api/gestor/grupos
         case $method === 'GET' && $seg0 === 'gestor' && $seg1 === 'grupos':
             require API_DIR . '/handlers/gestor.php';

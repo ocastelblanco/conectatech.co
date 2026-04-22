@@ -58,7 +58,34 @@ if (!$dbman->field_exists($table, $field)) {
     echo "  SKIP  ct_pin.expires_at (ya existe)\n";
 }
 
-// ─── 4. Limpiar datos de prueba ───────────────────────────────────────────────
+// ─── 4. Crear tabla ct_colegio ────────────────────────────────────────────────
+
+$table = new xmldb_table('ct_colegio');
+if (!$dbman->table_exists($table)) {
+    $table->add_field('id',              XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+    $table->add_field('organization_id', XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL);
+    $table->add_field('name',            XMLDB_TYPE_CHAR,    '255', null, XMLDB_NOTNULL);
+    $table->add_field('created_at',      XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL);
+    $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+    $table->add_index('idx_org', XMLDB_INDEX_NOTUNIQUE, ['organization_id']);
+    $dbman->create_table($table);
+    echo "  OK    ct_colegio creada\n";
+} else {
+    echo "  SKIP  ct_colegio (ya existe)\n";
+}
+
+// ─── 5. ct_group: añadir colegio_id ──────────────────────────────────────────
+
+$table = new xmldb_table('ct_group');
+$field = new xmldb_field('colegio_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'organization_id');
+if (!$dbman->field_exists($table, $field)) {
+    $dbman->add_field($table, $field);
+    echo "  OK    ct_group.colegio_id añadido\n";
+} else {
+    echo "  SKIP  ct_group.colegio_id (ya existe)\n";
+}
+
+// ─── 6. Limpiar datos de prueba ───────────────────────────────────────────────
 
 echo "\n--- Limpiando datos de prueba ---\n";
 

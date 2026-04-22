@@ -266,9 +266,18 @@ class ActivacionService
         if (empty($ctGroup->moodle_group_id)) {
             require_once $CFG->dirroot . '/group/lib.php';
 
+            // Componer nombre Moodle: "{colegio} - {grupo}" (si tiene colegio asignado)
+            $moodleGroupName = $ctGroup->name;
+            if (!empty($ctGroup->colegio_id)) {
+                $colegio = $DB->get_record('ct_colegio', ['id' => (int)$ctGroup->colegio_id]);
+                if ($colegio) {
+                    $moodleGroupName = $colegio->name . ' - ' . $ctGroup->name;
+                }
+            }
+
             $moodleGroupId = groups_create_group((object)[
                 'courseid' => $pin->moodle_course_id,
-                'name'     => $ctGroup->name,
+                'name'     => $moodleGroupName,
             ]);
 
             $DB->update_record('ct_group', (object)[
@@ -304,6 +313,17 @@ class ActivacionService
             require_once $CFG->dirroot . '/group/lib.php';
         }
         groups_add_member($moodleGroupId, $moodleUserId);
+
+        // Configurar el curso con grupos separados forzados (idempotente)
+        $course = $DB->get_record('course', ['id' => (int)$pin->moodle_course_id], '*', MUST_EXIST);
+        if ((int)$course->groupmode !== SEPARATEGROUPS || !(int)$course->groupmodeforce) {
+            $DB->update_record('course', (object)[
+                'id'             => $course->id,
+                'groupmode'      => SEPARATEGROUPS,
+                'groupmodeforce' => 1,
+            ]);
+            rebuild_course_cache((int)$pin->moodle_course_id);
+        }
 
         // Actualizar el estado del pin con la fecha de expiración calculada
         $DB->update_record('ct_pin', (object)[

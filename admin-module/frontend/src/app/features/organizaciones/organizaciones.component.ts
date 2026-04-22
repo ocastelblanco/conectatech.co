@@ -2,7 +2,6 @@ import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@ang
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { TreeTableModule } from 'primeng/treetable';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -11,7 +10,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService, ConfirmationService, TreeNode } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 
 @Component({
@@ -20,30 +19,34 @@ import { ApiService } from '../../core/services/api.service';
   providers: [MessageService, ConfirmationService],
   imports: [
     DatePipe, FormsModule,
-    ButtonModule, TreeTableModule, TableModule, DialogModule, InputTextModule,
+    ButtonModule, TableModule, DialogModule, InputTextModule,
     SelectModule, ToastModule, ConfirmDialogModule, TagModule, TooltipModule,
   ],
   templateUrl: './organizaciones.component.html',
 })
 export class OrganizacionesComponent implements OnInit {
-  private readonly api = inject(ApiService);
-  private readonly toast = inject(MessageService);
+  private readonly api     = inject(ApiService);
+  private readonly toast   = inject(MessageService);
   private readonly confirm = inject(ConfirmationService);
 
-  readonly nodes = signal<TreeNode[]>([]);
-  readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly editandoOrg = signal<any | null>(null);
+  readonly orgs              = signal<any[]>([]);
+  readonly loading           = signal(true);
+  readonly saving            = signal(false);
+  readonly editandoOrg       = signal<any | null>(null);
   readonly verGestorPinesOrgId = signal<number | null>(null);
-  readonly gestorPines = signal<any[]>([]);
+  readonly gestorPines       = signal<any[]>([]);
   readonly loadingGestorPines = signal(false);
-  readonly categorias = signal<any[]>([]);
+  readonly categorias        = signal<any[]>([]);
+
+  // Row expansion: gestores loaded lazily per org
+  readonly gestoresMap  = signal<Record<number, any[]>>({});
+  readonly loadingIds   = signal<number[]>([]);
+  expandedRows: Record<string, boolean> = {};
 
   ngOnInit(): void {
     this.api.getOrganizaciones().subscribe({
       next: (r: any) => {
-        const orgs: any[] = r.data ?? r.organizaciones ?? [];
-        this.nodes.set(orgs.map(o => this.orgToNode(o)));
+        this.orgs.set(r.data ?? r.organizaciones ?? []);
         this.loading.set(false);
       },
       error: () => {
@@ -61,45 +64,33 @@ export class OrganizacionesComponent implements OnInit {
     });
   }
 
-  // ── TreeTable ──────────────────────────────────────────────────────────────
+  // ── Row expansion ──────────────────────────────────────────────────────────
 
-  onNodeExpand(event: any): void {
-    const node: TreeNode = event.node;
-    if (node.data?.type !== 'org') return;
+  onRowExpand(event: any): void {
+    const org = event.data;
+    if (this.gestoresMap()[org.id] !== undefined) return;
 
-    const orgId: number = node.data.id;
+    this.loadingIds.update(ids => [...ids, org.id]);
 
-    // Mostrar loading mientras se cargan los gestores
-    this.setNodeChildren(orgId, [{ data: { type: 'loading' }, leaf: true }]);
-
-    this.api.getGestores(orgId).subscribe({
+    this.api.getGestores(org.id).subscribe({
       next: (r: any) => {
-        const gestores: any[] = r.data ?? [];
-        const children: TreeNode[] = gestores.map(g => ({
-          data: { type: 'gestor', ...g, org_id: orgId },
-          leaf: true,
-        }));
-        this.setNodeChildren(orgId, children);
+        this.gestoresMap.update(map => ({ ...map, [org.id]: r.data ?? [] }));
+        this.loadingIds.update(ids => ids.filter(id => id !== org.id));
       },
       error: () => {
-        this.setNodeChildren(orgId, []);
+        this.gestoresMap.update(map => ({ ...map, [org.id]: [] }));
+        this.loadingIds.update(ids => ids.filter(id => id !== org.id));
         this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los gestores' });
       }
     });
   }
 
-  private setNodeChildren(orgId: number, children: TreeNode[]): void {
-    this.nodes.update(nodes =>
-      nodes.map(n => n.data?.id === orgId ? { ...n, children } : n)
-    );
+  isLoadingGestores(orgId: number): boolean {
+    return this.loadingIds().includes(orgId);
   }
 
-  private orgToNode(org: any): TreeNode {
-    return {
-      data: { type: 'org', ...org },
-      children: [],
-      leaf: false,
-    };
+  getGestoresOrg(orgId: number): any[] {
+    return this.gestoresMap()[orgId] ?? [];
   }
 
   // ── Organizaciones ─────────────────────────────────────────────────────────
@@ -175,25 +166,15 @@ export class OrganizacionesComponent implements OnInit {
         this.api.eliminarGestor(gestor.id).subscribe({
           next: () => {
             this.toast.add({ severity: 'success', summary: 'Eliminado', detail: `Gestor "${nombre}" eliminado` });
-            // Recargar gestores del nodo padre
-            this.setNodeChildren(gestor.org_id, [{ data: { type: 'loading' }, leaf: true }]);
-            this.api.getGestores(gestor.org_id).subscribe({
-              next: (r: any) => {
-                const gestores: any[] = r.data ?? [];
-                const children = gestores.map(g => ({
-                  data: { type: 'gestor', ...g, org_id: gestor.org_id },
-                  leaf: true,
-                }));
-                this.setNodeChildren(gestor.org_id, children);
-              },
-              error: () => this.setNodeChildren(gestor.org_id, [])
-            });
-            // Actualizar el gestor_count en el nodo de la org
-            this.nodes.update(nodes =>
-              nodes.map(n => {
-                if (n.data?.id !== gestor.org_id) return n;
-                return { ...n, data: { ...n.data, gestor_count: Math.max(0, (n.data.gestor_count ?? 1) - 1) } };
-              })
+            this.gestoresMap.update(map => ({
+              ...map,
+              [gestor.org_id]: (map[gestor.org_id] ?? []).filter((g: any) => g.id !== gestor.id)
+            }));
+            this.orgs.update(orgs =>
+              orgs.map(o => o.id === gestor.org_id
+                ? { ...o, gestor_count: Math.max(0, (o.gestor_count ?? 1) - 1) }
+                : o
+              )
             );
           },
           error: (err: any) => {
@@ -268,14 +249,15 @@ export class OrganizacionesComponent implements OnInit {
 
   nombreOrg(orgId: number | null): string {
     if (!orgId) return '';
-    return this.nodes().find(n => n.data?.id === orgId)?.data?.name ?? '';
+    return this.orgs().find(o => o.id === orgId)?.name ?? '';
   }
 
   private recargarOrgs(): void {
     this.api.getOrganizaciones().subscribe({
       next: (r: any) => {
-        const orgs: any[] = r.data ?? r.organizaciones ?? [];
-        this.nodes.set(orgs.map(o => this.orgToNode(o)));
+        this.orgs.set(r.data ?? r.organizaciones ?? []);
+        this.gestoresMap.set({});
+        this.expandedRows = {};
       },
       error: () => { }
     });

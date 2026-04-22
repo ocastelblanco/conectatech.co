@@ -69,35 +69,118 @@ class GestorService
     }
 
     // =========================================================================
+    // Colegios
+    // =========================================================================
+
+    /**
+     * Lista los colegios de la organización con sus grupos anidados.
+     */
+    public function listarColegios(array $ctGestor): array
+    {
+        global $DB;
+
+        $colegios = $DB->get_records(
+            'ct_colegio',
+            ['organization_id' => $ctGestor['organization_id']],
+            'name ASC'
+        );
+
+        $result = [];
+        foreach ($colegios as $c) {
+            $grupos = $this->listarGruposDeColegio($ctGestor, (int)$c->id);
+            $result[] = [
+                'id'         => (int)$c->id,
+                'name'       => $c->name,
+                'created_at' => (int)$c->created_at,
+                'grupos'     => $grupos,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Crea un nuevo colegio en la organización.
+     * El nombre debe ser único dentro de la organización.
+     */
+    public function crearColegio(array $ctGestor, string $name): array
+    {
+        global $DB;
+
+        $name = trim($name);
+        if ($name === '') {
+            throw new InvalidArgumentException('El nombre del colegio no puede estar vacío.');
+        }
+
+        if ($DB->record_exists('ct_colegio', ['organization_id' => $ctGestor['organization_id'], 'name' => $name])) {
+            throw new InvalidArgumentException("Ya existe un colegio con el nombre '{$name}' en esta organización.");
+        }
+
+        $id = $DB->insert_record('ct_colegio', (object)[
+            'organization_id' => $ctGestor['organization_id'],
+            'name'            => $name,
+            'created_at'      => time(),
+        ]);
+
+        return ['id' => (int)$id, 'name' => $name, 'grupos' => []];
+    }
+
+    // =========================================================================
     // Grupos
     // =========================================================================
 
     /**
-     * Lista los grupos de la organización.
+     * Lista todos los grupos de la organización (con info de colegio).
      */
     public function listarGrupos(array $ctGestor): array
     {
         global $DB;
 
+        $sql = "SELECT g.id, g.name, g.colegio_id, g.moodle_group_id,
+                       c.name AS colegio_name
+                FROM {ct_group} g
+                LEFT JOIN {ct_colegio} c ON c.id = g.colegio_id
+                WHERE g.organization_id = :orgid
+                ORDER BY c.name ASC, g.name ASC";
+
+        $rows = $DB->get_records_sql($sql, ['orgid' => $ctGestor['organization_id']]);
+
+        return array_values(array_map(fn($g) => [
+            'id'              => (int)$g->id,
+            'name'            => $g->name,
+            'colegio_id'      => $g->colegio_id ? (int)$g->colegio_id : null,
+            'colegio_name'    => $g->colegio_name,
+            'moodle_group_id' => $g->moodle_group_id ? (int)$g->moodle_group_id : null,
+        ], $rows));
+    }
+
+    /**
+     * Lista los grupos de un colegio específico.
+     */
+    private function listarGruposDeColegio(array $ctGestor, int $colegioId): array
+    {
+        global $DB;
+
         $grupos = $DB->get_records(
             'ct_group',
-            ['organization_id' => $ctGestor['organization_id']],
+            ['organization_id' => $ctGestor['organization_id'], 'colegio_id' => $colegioId],
             'name ASC'
         );
 
         return array_values(array_map(fn($g) => [
             'id'              => (int)$g->id,
             'name'            => $g->name,
+            'colegio_id'      => (int)$colegioId,
             'moodle_group_id' => $g->moodle_group_id ? (int)$g->moodle_group_id : null,
         ], $grupos));
     }
 
     /**
-     * Crea un nuevo grupo en la organización.
-     * El nombre debe ser único dentro de la organización.
+     * Crea un nuevo grupo dentro de un colegio.
+     * El nombre debe ser único dentro del colegio.
      * El grupo aún no existe en Moodle; se creará al matricular el primer usuario.
      */
-    public function crearGrupo(array $ctGestor, string $name): array
+    public function crearGrupo(array $ctGestor, int $colegioId, string $name): array
     {
         global $DB;
 
@@ -106,17 +189,23 @@ class GestorService
             throw new InvalidArgumentException('El nombre del grupo no puede estar vacío.');
         }
 
-        if ($DB->record_exists('ct_group', ['organization_id' => $ctGestor['organization_id'], 'name' => $name])) {
-            throw new InvalidArgumentException("Ya existe un grupo con el nombre '{$name}' en esta organización.");
+        // Verificar que el colegio pertenece a la organización
+        if (!$DB->record_exists('ct_colegio', ['id' => $colegioId, 'organization_id' => $ctGestor['organization_id']])) {
+            throw new InvalidArgumentException('El colegio no pertenece a esta organización.');
+        }
+
+        if ($DB->record_exists('ct_group', ['colegio_id' => $colegioId, 'name' => $name])) {
+            throw new InvalidArgumentException("Ya existe un grupo con el nombre '{$name}' en este colegio.");
         }
 
         $id = $DB->insert_record('ct_group', (object)[
             'organization_id' => $ctGestor['organization_id'],
+            'colegio_id'      => $colegioId,
             'name'            => $name,
             'moodle_group_id' => null,
         ]);
 
-        return ['id' => (int)$id, 'name' => $name, 'moodle_group_id' => null];
+        return ['id' => (int)$id, 'name' => $name, 'colegio_id' => $colegioId, 'moodle_group_id' => null];
     }
 
     // =========================================================================
