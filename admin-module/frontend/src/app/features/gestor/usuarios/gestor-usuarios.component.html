@@ -1,18 +1,45 @@
 <p-toast />
 
 <div class="space-y-5">
-  <!-- Header -->
-  <div class="flex items-start justify-between gap-4">
+  <!-- Header con búsqueda y filtros -->
+  <div class="flex items-start justify-between gap-4 flex-wrap">
     <div>
       <h2 class="text-lg font-heading font-bold text-cnt-midnight m-0">Usuarios</h2>
       <p class="text-sm text-gray-500 mt-1 m-0">Consulta y da soporte a los usuarios de tu organización.</p>
     </div>
-    <div class="w-72 shrink-0">
+    <div class="flex gap-2 flex-wrap justify-end">
       <input pInputText
-             class="w-full"
-             placeholder="Buscar por nombre, cédula o email..."
+             class="w-56"
+             placeholder="Buscar nombre, cédula, email..."
              [ngModel]="searchInput()"
              (ngModelChange)="onSearch($event)" />
+      <p-select [options]="colegiosFiltro()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Todos los colegios"
+                [showClear]="true"
+                appendTo="body"
+                class="w-48"
+                [ngModel]="colegioSeleccionado()"
+                (ngModelChange)="colegioSeleccionado.set($event)" />
+      <p-select [options]="gruposFiltro()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Todos los grupos"
+                [showClear]="true"
+                appendTo="body"
+                class="w-44"
+                [ngModel]="grupoSeleccionado()"
+                (ngModelChange)="grupoSeleccionado.set($event)" />
+      <p-select [options]="cursosFiltro()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Todos los cursos"
+                [showClear]="true"
+                appendTo="body"
+                class="w-48"
+                [ngModel]="cursoSeleccionado()"
+                (ngModelChange)="cursoSeleccionado.set($event)" />
     </div>
   </div>
 
@@ -25,12 +52,15 @@
 
   @if (!loading()) {
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-    <p-table [value]="usuarios()" class="text-sm">
+    <p-table [value]="usuariosFiltrados()" class="text-sm">
       <ng-template #header>
         <tr>
           <th>Nombre</th>
           <th>Documento</th>
           <th>Email</th>
+          <th>Colegio</th>
+          <th>Grupo</th>
+          <th>Curso</th>
           <th>Último acceso</th>
           <th class="text-right">Acciones</th>
         </tr>
@@ -47,9 +77,37 @@
           </td>
           <td class="font-mono text-xs text-gray-500">{{ u.username }}</td>
           <td class="text-xs text-gray-500">{{ u.email }}</td>
+          <td>
+            <div class="flex gap-1 flex-wrap">
+              @for (c of u.colegios; track c.id) {
+              <p-tag [value]="c.name" severity="secondary" />
+              }
+            </div>
+          </td>
+          <td>
+            <div class="flex gap-1 flex-wrap">
+              @for (g of u.grupos; track g.id) {
+              <p-tag [value]="g.name" severity="info" />
+              }
+            </div>
+          </td>
+          <td>
+            <div class="flex gap-1 flex-wrap">
+              @for (c of u.cursos; track c.id) {
+              <p-tag [value]="c.name" severity="warn" />
+              }
+            </div>
+          </td>
           <td class="text-xs text-gray-400">{{ formatLastLogin(u.lastlogin) }}</td>
           <td>
-            <div class="flex justify-end">
+            <div class="flex justify-end gap-1">
+              <p-button icon="pi pi-pencil"
+                        size="small"
+                        severity="secondary"
+                        [text]="true"
+                        pTooltip="Editar perfil"
+                        tooltipPosition="left"
+                        (onClick)="abrirEditar(u)" />
               <p-button icon="pi pi-key"
                         size="small"
                         severity="secondary"
@@ -63,11 +121,11 @@
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="5"
+          <td colspan="8"
               class="text-center text-gray-400 py-10">
             <i class="pi pi-users text-3xl mb-2 block"></i>
-            @if (searchInput().length > 0) {
-            No se encontraron usuarios con ese criterio.
+            @if (searchInput().length > 0 || cursoSeleccionado() || grupoSeleccionado() || colegioSeleccionado()) {
+            No hay usuarios con los filtros seleccionados.
             } @else {
             No hay usuarios matriculados en tu organización.
             }
@@ -78,6 +136,43 @@
   </div>
   }
 </div>
+
+<!-- Dialog editar perfil -->
+<p-dialog [header]="'Editar perfil — ' + (usuarioEditar()?.firstname ?? '') + ' ' + (usuarioEditar()?.lastname ?? '')"
+          [visible]="usuarioEditar() !== null"
+          (visibleChange)="$event ? null : usuarioEditar.set(null)"
+          [modal]="true"
+          [style]="{ width: '420px' }"
+          [contentStyle]="{'overflow':'visible'}"
+          [closable]="true">
+  <div class="space-y-4 pt-1">
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-gray-700">Nombre</label>
+        <input pInputText class="w-full" [(ngModel)]="editFirstname" placeholder="Nombre" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-gray-700">Apellido</label>
+        <input pInputText class="w-full" [(ngModel)]="editLastname" placeholder="Apellido" />
+      </div>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700">Email</label>
+      <input pInputText class="w-full" type="email" [(ngModel)]="editEmail" placeholder="correo@ejemplo.com" />
+    </div>
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancelar"
+              severity="secondary"
+              [text]="true"
+              (onClick)="usuarioEditar.set(null)" />
+    <p-button label="Guardar"
+              icon="pi pi-check"
+              [loading]="saving()"
+              [disabled]="!editFirstname || !editLastname || !editEmail"
+              (onClick)="confirmarEditar()" />
+  </ng-template>
+</p-dialog>
 
 <!-- Dialog restablecer contraseña -->
 <p-dialog [header]="'Restablecer contraseña — ' + (usuarioReset()?.firstname ?? '') + ' ' + (usuarioReset()?.lastname ?? '')"

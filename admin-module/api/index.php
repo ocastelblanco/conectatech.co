@@ -401,6 +401,12 @@ try {
             handleAsignarPines();
             break;
 
+        // PUT /api/gestor/usuarios/{id}
+        case $method === 'PUT' && $seg0 === 'gestor' && $seg1 === 'usuarios' && $seg2 !== '' && $seg3 === '':
+            require API_DIR . '/handlers/gestor.php';
+            handleEditarPerfil((int)$seg2);
+            break;
+
         // GET /api/gestor/usuarios
         case $method === 'GET' && $seg0 === 'gestor' && $seg1 === 'usuarios' && $seg2 === '':
             require API_DIR . '/handlers/gestor.php';

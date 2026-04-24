@@ -442,16 +442,18 @@ class GestorService
 
     /**
      * Lista los usuarios matriculados en cursos de la organización del gestor.
-     * Alcance: categoría Moodle de la org y sus subcategorías.
-     * Máximo 200 resultados.
+     * Incluye cursos, grupos Moodle y colegios de ConectaTech de cada usuario.
+     * Alcance: categoría Moodle de la org y sus subcategorías. Máximo 200 usuarios.
      */
     public function listarUsuarios(array $ctGestor, ?string $search): array
     {
         global $DB;
 
         $catId   = (int)$ctGestor['moodle_category_id'];
+        $orgId   = (int)$ctGestor['organization_id'];
         $catPath = '%/' . $catId . '/%';
 
+        // Query 1 — IDs distintos (con filtro de búsqueda opcional, límite 200)
         $params = ['catid' => $catId, 'catpath' => $catPath];
         $where  = '(cc.id = :catid OR cc.path LIKE :catpath)';
 
@@ -469,29 +471,135 @@ class GestorService
             $params['s4'] = $like;
         }
 
-        $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
-                                u.username, u.lastlogin, u.suspended
-                  FROM {user} u
-                  JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
-                  JOIN {enrol}            e  ON e.id = ue.enrolid AND e.status = 0
-                  JOIN {course}           c  ON c.id = e.courseid
-                  JOIN {course_categories} cc ON cc.id = c.category
-                 WHERE u.deleted = 0
-                   AND u.id != 1
-                   AND {$where}
-              ORDER BY u.lastname, u.firstname";
+        $userRows = $DB->get_records_sql(
+            "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
+                             u.username, u.lastlogin, u.suspended
+               FROM {user} u
+               JOIN {user_enrolments}  ue ON ue.userid = u.id AND ue.status = 0
+               JOIN {enrol}             e  ON e.id = ue.enrolid AND e.status = 0
+               JOIN {course}            c  ON c.id = e.courseid
+               JOIN {course_categories} cc ON cc.id = c.category
+              WHERE u.deleted = 0 AND u.id != 1 AND {$where}
+           ORDER BY u.lastname, u.firstname",
+            $params, 0, 200
+        );
 
-        $rows = $DB->get_records_sql($sql, $params, 0, 200);
+        if (empty($userRows)) {
+            return [];
+        }
 
-        return array_values(array_map(fn($u) => [
-            'id'        => (int)$u->id,
-            'firstname' => $u->firstname,
-            'lastname'  => $u->lastname,
-            'email'     => $u->email,
-            'username'  => $u->username,
-            'lastlogin' => (int)$u->lastlogin,
-            'suspended' => (bool)$u->suspended,
-        ], $rows));
+        // Mapa base de usuarios
+        $users = [];
+        foreach ($userRows as $u) {
+            $users[(int)$u->id] = [
+                'id'        => (int)$u->id,
+                'firstname' => $u->firstname,
+                'lastname'  => $u->lastname,
+                'email'     => $u->email,
+                'username'  => $u->username,
+                'lastlogin' => (int)$u->lastlogin,
+                'suspended' => (bool)$u->suspended,
+                'cursos'    => [],
+                'grupos'    => [],
+                'colegios'  => [],
+            ];
+        }
+
+        // Query 2 — cursos, grupos y colegios para esos usuarios
+        [$inSql, $inParams] = $DB->get_in_or_equal(array_keys($users));
+        $enrichParams = array_merge(
+            $inParams,
+            ['catid' => $catId, 'catpath' => $catPath, 'orgid' => $orgId]
+        );
+
+        $enrichRows = $DB->get_records_sql(
+            "SELECT u.id          AS user_id,
+                    c.id          AS course_id,  c.fullname AS course_name,
+                    g.id          AS group_id,   g.name     AS group_name,
+                    ctc.id        AS colegio_id, ctc.name   AS colegio_name
+               FROM {user} u
+               JOIN {user_enrolments}  ue  ON ue.userid = u.id AND ue.status = 0
+               JOIN {enrol}             e  ON e.id = ue.enrolid AND e.status = 0
+               JOIN {course}            c  ON c.id = e.courseid
+               JOIN {course_categories} cc ON cc.id = c.category
+               LEFT JOIN {groups_members} gm  ON gm.userid = u.id
+               LEFT JOIN {groups}         g   ON g.id = gm.groupid AND g.courseid = c.id
+               LEFT JOIN {ct_group}       ctg ON ctg.moodle_group_id = g.id
+                                              AND ctg.organization_id = :orgid
+               LEFT JOIN {ct_colegio}     ctc ON ctc.id = ctg.colegio_id
+              WHERE u.id {$inSql}
+                AND (cc.id = :catid OR cc.path LIKE :catpath)
+           ORDER BY u.id, c.fullname, g.name",
+            $enrichParams
+        );
+
+        // Agregar cursos, grupos y colegios (deduplicados por id)
+        $seen = [];
+        foreach ($enrichRows as $row) {
+            $uid = (int)$row->user_id;
+            if (!isset($users[$uid])) continue;
+
+            if ($row->course_id) {
+                $key = "c{$row->course_id}";
+                if (empty($seen[$uid][$key])) {
+                    $users[$uid]['cursos'][] = ['id' => (int)$row->course_id, 'name' => $row->course_name];
+                    $seen[$uid][$key] = true;
+                }
+            }
+            if ($row->group_id) {
+                $key = "g{$row->group_id}";
+                if (empty($seen[$uid][$key])) {
+                    $users[$uid]['grupos'][] = ['id' => (int)$row->group_id, 'name' => $row->group_name];
+                    $seen[$uid][$key] = true;
+                }
+            }
+            if ($row->colegio_id) {
+                $key = "col{$row->colegio_id}";
+                if (empty($seen[$uid][$key])) {
+                    $users[$uid]['colegios'][] = ['id' => (int)$row->colegio_id, 'name' => $row->colegio_name];
+                    $seen[$uid][$key] = true;
+                }
+            }
+        }
+
+        return array_values($users);
+    }
+
+    /**
+     * Edita nombre, apellido y email de un usuario de la organización.
+     *
+     * @throws Exception Si el usuario no pertenece a la org, es admin, o los datos son inválidos.
+     */
+    public function editarPerfil(array $ctGestor, int $userId,
+                                  string $firstname, string $lastname, string $email): void
+    {
+        global $CFG, $DB;
+
+        if ($firstname === '') throw new Exception('El nombre no puede estar vacío.');
+        if ($lastname  === '') throw new Exception('El apellido no puede estar vacío.');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new Exception('El email no es válido.');
+        if ($userId <= 1) throw new Exception('Usuario no válido.');
+        if (is_siteadmin($userId)) throw new Exception('No se puede modificar este usuario.');
+
+        $catId   = (int)$ctGestor['moodle_category_id'];
+        $catPath = '%/' . $catId . '/%';
+        $pertenece = $DB->record_exists_sql(
+            "SELECT 1
+               FROM {user_enrolments} ue
+               JOIN {enrol}            e  ON e.id = ue.enrolid AND e.status = 0
+               JOIN {course}           c  ON c.id = e.courseid
+               JOIN {course_categories} cc ON cc.id = c.category
+              WHERE ue.userid = :uid AND ue.status = 0
+                AND (cc.id = :catid OR cc.path LIKE :catpath)",
+            ['uid' => $userId, 'catid' => $catId, 'catpath' => $catPath]
+        );
+        if (!$pertenece) throw new Exception('El usuario no pertenece a tu organización.');
+
+        require_once($CFG->dirroot . '/user/lib.php');
+        user_update_user(
+            ['id' => $userId, 'firstname' => $firstname, 'lastname' => $lastname, 'email' => $email],
+            false, false
+        );
     }
 
     /**

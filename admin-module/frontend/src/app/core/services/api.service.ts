@@ -161,6 +161,9 @@ export class ApiService {
   resetearPasswordGestor(userId: number, password: string): Observable<any> {
     return this.http.post(`${API_BASE}/gestor/usuarios/${userId}/reset-password`, { password });
   }
+  editarPerfilGestor(userId: number, body: { firstname: string; lastname: string; email: string }): Observable<any> {
+    return this.http.put(`${API_BASE}/gestor/usuarios/${userId}`, body);
+  }
 
   getGestorPinesLista(params?: { status?: string; group_id?: number; course_id?: number }): Observable<any> {
     let p = new HttpParams();

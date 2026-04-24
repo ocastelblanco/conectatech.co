@@ -130,6 +130,18 @@ function handleDescargarPines(): void
     echo $csv;
 }
 
+function handleEditarPerfil(int $userId): void
+{
+    global $ctGestor;
+    $body      = readJsonBody();
+    $firstname = trim($body['firstname'] ?? '');
+    $lastname  = trim($body['lastname']  ?? '');
+    $email     = trim($body['email']     ?? '');
+    (new GestorService())->editarPerfil($ctGestor, $userId, $firstname, $lastname, $email);
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true]);
+}
+
 function handleListarUsuarios(): void
 {
     global $ctGestor;
