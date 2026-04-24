@@ -126,6 +126,7 @@ $segments = $rawPath !== '' ? explode('/', $rawPath) : [];
 $seg0     = $segments[0] ?? '';
 $seg1     = $segments[1] ?? '';
 $seg2     = $segments[2] ?? '';
+$seg3     = $segments[3] ?? '';
 
 try {
     switch (true) {
@@ -398,6 +399,18 @@ try {
         case $method === 'PUT' && $seg0 === 'gestor' && $seg1 === 'pines' && $seg2 === 'asignar':
             require API_DIR . '/handlers/gestor.php';
             handleAsignarPines();
+            break;
+
+        // GET /api/gestor/usuarios
+        case $method === 'GET' && $seg0 === 'gestor' && $seg1 === 'usuarios' && $seg2 === '':
+            require API_DIR . '/handlers/gestor.php';
+            handleListarUsuarios();
+            break;
+
+        // POST /api/gestor/usuarios/{id}/reset-password
+        case $method === 'POST' && $seg0 === 'gestor' && $seg1 === 'usuarios' && $seg2 !== '' && $seg3 === 'reset-password':
+            require API_DIR . '/handlers/gestor.php';
+            handleResetearPassword((int)$seg2);
             break;
 
         // ── Activación pública ───────────────────────────────────────────────────

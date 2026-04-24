@@ -69,6 +69,10 @@ export const routes: Routes = [
         path: 'pines',
         loadComponent: () => import('./features/gestor/pines/gestor-pines.component').then(m => m.GestorPinesComponent)
       },
+      {
+        path: 'usuarios',
+        loadComponent: () => import('./features/gestor/usuarios/gestor-usuarios.component').then(m => m.GestorUsuariosComponent)
+      },
     ]
   },
   {

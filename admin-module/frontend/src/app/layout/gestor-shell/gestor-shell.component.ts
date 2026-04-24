@@ -71,6 +71,7 @@ export class GestorShellComponent {
     { label: 'Dashboard', icon: 'pi pi-home', route: '/gestor/dashboard' },
     { label: 'Colegios y Grupos', icon: 'pi pi-building', route: '/gestor/colegios' },
     { label: 'Pines', icon: 'pi pi-ticket', route: '/gestor/pines' },
+    { label: 'Usuarios', icon: 'pi pi-users', route: '/gestor/usuarios' },
   ];
 
   pageTitle(): string {

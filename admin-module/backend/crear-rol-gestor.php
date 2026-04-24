@@ -69,9 +69,10 @@ $allows = [
     'gradereport/overview:view',
     'gradereport/user:view',
 
-    // Usuarios
+    // Usuarios — ver y editar perfiles de la org para soporte de primer nivel
     'moodle/user:viewdetails',
     'moodle/user:viewhiddendetails',
+    'moodle/user:editprofile',
 
     // Grupos (ver todos los grupos de su org)
     'moodle/site:accessallgroups',

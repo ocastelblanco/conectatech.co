@@ -439,4 +439,99 @@ class GestorService
 
         return $csv;
     }
+
+    /**
+     * Lista los usuarios matriculados en cursos de la organización del gestor.
+     * Alcance: categoría Moodle de la org y sus subcategorías.
+     * Máximo 200 resultados.
+     */
+    public function listarUsuarios(array $ctGestor, ?string $search): array
+    {
+        global $DB;
+
+        $catId   = (int)$ctGestor['moodle_category_id'];
+        $catPath = '%/' . $catId . '/%';
+
+        $params = ['catid' => $catId, 'catpath' => $catPath];
+        $where  = '(cc.id = :catid OR cc.path LIKE :catpath)';
+
+        if ($search !== null && strlen($search) >= 3) {
+            $like = '%' . $DB->sql_like_escape($search) . '%';
+            $where .= ' AND (' .
+                $DB->sql_like('u.firstname', ':s1', false) . ' OR ' .
+                $DB->sql_like('u.lastname',  ':s2', false) . ' OR ' .
+                $DB->sql_like('u.email',     ':s3', false) . ' OR ' .
+                $DB->sql_like('u.username',  ':s4', false) .
+            ')';
+            $params['s1'] = $like;
+            $params['s2'] = $like;
+            $params['s3'] = $like;
+            $params['s4'] = $like;
+        }
+
+        $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
+                                u.username, u.lastlogin, u.suspended
+                  FROM {user} u
+                  JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.status = 0
+                  JOIN {enrol}            e  ON e.id = ue.enrolid AND e.status = 0
+                  JOIN {course}           c  ON c.id = e.courseid
+                  JOIN {course_categories} cc ON cc.id = c.category
+                 WHERE u.deleted = 0
+                   AND u.id != 1
+                   AND {$where}
+              ORDER BY u.lastname, u.firstname";
+
+        $rows = $DB->get_records_sql($sql, $params, 0, 200);
+
+        return array_values(array_map(fn($u) => [
+            'id'        => (int)$u->id,
+            'firstname' => $u->firstname,
+            'lastname'  => $u->lastname,
+            'email'     => $u->email,
+            'username'  => $u->username,
+            'lastlogin' => (int)$u->lastlogin,
+            'suspended' => (bool)$u->suspended,
+        ], $rows));
+    }
+
+    /**
+     * Restablece la contraseña de un usuario, verificando que pertenece a la org del gestor.
+     *
+     * @throws Exception Si el usuario no pertenece a la org, es admin, o la contraseña es inválida.
+     */
+    public function resetearPassword(array $ctGestor, int $userId, string $newPassword): void
+    {
+        global $CFG, $DB;
+
+        if (strlen($newPassword) < 8) {
+            throw new Exception('La contraseña debe tener al menos 8 caracteres.');
+        }
+        if ($userId <= 1) {
+            throw new Exception('Usuario no válido.');
+        }
+        if (is_siteadmin($userId)) {
+            throw new Exception('No se puede modificar este usuario.');
+        }
+
+        $catId   = (int)$ctGestor['moodle_category_id'];
+        $catPath = '%/' . $catId . '/%';
+        $pertenece = $DB->record_exists_sql(
+            "SELECT 1
+               FROM {user_enrolments} ue
+               JOIN {enrol}            e  ON e.id = ue.enrolid AND e.status = 0
+               JOIN {course}           c  ON c.id = e.courseid
+               JOIN {course_categories} cc ON cc.id = c.category
+              WHERE ue.userid = :uid
+                AND ue.status = 0
+                AND (cc.id = :catid OR cc.path LIKE :catpath)",
+            ['uid' => $userId, 'catid' => $catId, 'catpath' => $catPath]
+        );
+
+        if (!$pertenece) {
+            throw new Exception('El usuario no pertenece a tu organización.');
+        }
+
+        require_once($CFG->dirroot . '/user/lib.php');
+        user_update_user(['id' => $userId, 'password' => $newPassword], true, false);
+    }
 }

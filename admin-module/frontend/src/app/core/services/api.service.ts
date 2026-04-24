@@ -153,6 +153,15 @@ export class ApiService {
   crearGestorGrupo(body: { colegio_id?: number; name: string }): Observable<any> {
     return this.http.post(`${API_BASE}/gestor/grupos`, body);
   }
+  getGestorUsuarios(search?: string): Observable<any> {
+    let p = new HttpParams();
+    if (search) p = p.set('search', search);
+    return this.http.get(`${API_BASE}/gestor/usuarios`, { params: p });
+  }
+  resetearPasswordGestor(userId: number, password: string): Observable<any> {
+    return this.http.post(`${API_BASE}/gestor/usuarios/${userId}/reset-password`, { password });
+  }
+
   getGestorPinesLista(params?: { status?: string; group_id?: number; course_id?: number }): Observable<any> {
     let p = new HttpParams();
     if (params?.status)    p = p.set('status',    params.status);

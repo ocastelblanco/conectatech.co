@@ -129,3 +129,22 @@ function handleDescargarPines(): void
     header('Content-Length: ' . strlen($csv));
     echo $csv;
 }
+
+function handleListarUsuarios(): void
+{
+    global $ctGestor;
+    $search = trim($_GET['search'] ?? '');
+    $data   = (new GestorService())->listarUsuarios($ctGestor, $search !== '' ? $search : null);
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true, 'data' => $data]);
+}
+
+function handleResetearPassword(int $userId): void
+{
+    global $ctGestor;
+    $body     = readJsonBody();
+    $password = trim($body['password'] ?? '');
+    (new GestorService())->resetearPassword($ctGestor, $userId, $password);
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true]);
+}
