@@ -6,6 +6,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 
@@ -14,6 +15,10 @@ interface Grupo {
   name: string;
   colegio_id: number;
   moodle_group_id: number | null;
+  teachers_active: number;
+  teachers_assigned: number;
+  students_active: number;
+  students_assigned: number;
 }
 
 interface Colegio {
@@ -26,7 +31,7 @@ interface Colegio {
 @Component({
   selector: 'cnt-gestor-colegios',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonModule, TableModule, DialogModule, InputTextModule, ToastModule, TooltipModule],
+  imports: [FormsModule, ButtonModule, TableModule, DialogModule, InputTextModule, ToastModule, TooltipModule, TagModule],
   providers: [MessageService],
   templateUrl: './gestor-colegios.component.html',
 })
@@ -45,7 +50,19 @@ export class GestorColegiosComponent implements OnInit {
   readonly nuevoGrupo    = signal('');
   readonly colegioActivo = signal<Colegio | null>(null);
 
-  expandedRows: Record<string, boolean> = {};
+  readonly expandedRows = signal<Record<string, boolean>>({});
+
+  onRowExpand(event: any): void {
+    this.expandedRows.update(r => ({ ...r, [event.data.id]: true }));
+  }
+
+  onRowCollapse(event: any): void {
+    this.expandedRows.update(r => {
+      const next = { ...r };
+      delete next[event.data.id];
+      return next;
+    });
+  }
 
   ngOnInit(): void { this.cargar(); }
 

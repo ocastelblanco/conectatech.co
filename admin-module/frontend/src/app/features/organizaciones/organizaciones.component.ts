@@ -41,7 +41,7 @@ export class OrganizacionesComponent implements OnInit {
   // Row expansion: gestores loaded lazily per org
   readonly gestoresMap  = signal<Record<number, any[]>>({});
   readonly loadingIds   = signal<number[]>([]);
-  expandedRows: Record<string, boolean> = {};
+  readonly expandedRows = signal<Record<string, boolean>>({});
 
   ngOnInit(): void {
     this.api.getOrganizaciones().subscribe({
@@ -68,6 +68,7 @@ export class OrganizacionesComponent implements OnInit {
 
   onRowExpand(event: any): void {
     const org = event.data;
+    this.expandedRows.update(r => ({ ...r, [org.id]: true }));
     if (this.gestoresMap()[org.id] !== undefined) return;
 
     this.loadingIds.update(ids => [...ids, org.id]);
@@ -82,6 +83,14 @@ export class OrganizacionesComponent implements OnInit {
         this.loadingIds.update(ids => ids.filter(id => id !== org.id));
         this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los gestores' });
       }
+    });
+  }
+
+  onRowCollapse(event: any): void {
+    this.expandedRows.update(r => {
+      const next = { ...r };
+      delete next[event.data.id];
+      return next;
     });
   }
 
@@ -257,7 +266,7 @@ export class OrganizacionesComponent implements OnInit {
       next: (r: any) => {
         this.orgs.set(r.data ?? r.organizaciones ?? []);
         this.gestoresMap.set({});
-        this.expandedRows = {};
+        this.expandedRows.set({});
       },
       error: () => { }
     });

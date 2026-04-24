@@ -21,7 +21,9 @@
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
     <p-table [value]="colegios()"
              dataKey="id"
-             [expandedRowKeys]="expandedRows"
+             [expandedRowKeys]="expandedRows()"
+             (onRowExpand)="onRowExpand($event)"
+             (onRowCollapse)="onRowCollapse($event)"
              class="text-sm">
       <ng-template #header>
         <tr>
@@ -62,7 +64,7 @@
           </td>
         </tr>
       </ng-template>
-      <ng-template #expansion
+      <ng-template #expandedrow
                    let-colegio>
         <tr>
           <td colspan="4"
@@ -73,18 +75,32 @@
             </div>
             } @else {
             <table class="w-full">
+              <thead>
+                <tr class="bg-gray-100/80">
+                  <th class="text-left px-12 py-2 text-xs font-medium text-gray-500">Grupo</th>
+                  <th class="text-left px-4 py-2 text-xs font-medium text-gray-500">Profesores</th>
+                  <th class="text-left px-4 py-2 text-xs font-medium text-gray-500">Estudiantes</th>
+                </tr>
+              </thead>
               <tbody>
                 @for (grupo of colegio.grupos; track grupo.id) {
                 <tr class="border-t border-gray-100">
-                  <td class="px-12 py-2.5 w-full">
+                  <td class="px-12 py-2.5">
                     <div class="flex items-center gap-2">
                       <i class="pi pi-users text-gray-400 text-xs"></i>
                       <span class="text-sm text-gray-700">{{ grupo.name }}</span>
-                      @if (grupo.moodle_group_id) {
-                      <span class="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                        Moodle #{{ grupo.moodle_group_id }}
-                      </span>
-                      }
+                    </div>
+                  </td>
+                  <td class="px-4 py-2.5">
+                    <div class="flex gap-1 flex-wrap">
+                      <p-tag [value]="grupo.teachers_assigned + ' asig.'" severity="warn" />
+                      <p-tag [value]="grupo.teachers_active + ' act.'" severity="success" />
+                    </div>
+                  </td>
+                  <td class="px-4 py-2.5">
+                    <div class="flex gap-1 flex-wrap">
+                      <p-tag [value]="grupo.students_assigned + ' asig.'" severity="warn" />
+                      <p-tag [value]="grupo.students_active + ' act.'" severity="success" />
                     </div>
                   </td>
                 </tr>

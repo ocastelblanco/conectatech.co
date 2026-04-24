@@ -26,8 +26,9 @@
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
     <p-table [value]="orgs()"
              dataKey="id"
-             [expandedRowKeys]="expandedRows"
+             [expandedRowKeys]="expandedRows()"
              (onRowExpand)="onRowExpand($event)"
+             (onRowCollapse)="onRowCollapse($event)"
              class="text-sm">
       <ng-template #header>
         <tr>
@@ -103,7 +104,7 @@
         </tr>
       </ng-template>
 
-      <ng-template #expansion
+      <ng-template #expandedrow
                    let-org>
         <tr>
           <td colspan="6"

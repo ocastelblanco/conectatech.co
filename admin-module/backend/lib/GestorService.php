@@ -167,11 +167,40 @@ class GestorService
             'name ASC'
         );
 
+        if (empty($grupos)) {
+            return [];
+        }
+
+        // Conteos de pines por grupo (assigned + active), agrupados por rol
+        $groupIds = array_keys($grupos);
+        [$inSql, $params] = $DB->get_in_or_equal($groupIds);
+        $rows = $DB->get_records_sql(
+            "SELECT CONCAT(group_id, '_', role, '_', status) AS rkey,
+                    group_id, role, status, COUNT(*) AS cnt
+               FROM {ct_pin}
+              WHERE group_id $inSql
+                AND status IN ('assigned', 'active')
+           GROUP BY group_id, role, status",
+            $params
+        );
+
+        // Mapa: [group_id][tipo: teacher|student][status] = count
+        $counts = [];
+        foreach ($rows as $row) {
+            $gid  = (int)$row->group_id;
+            $tipo = in_array($row->role, ['teacher', 'editingteacher'], true) ? 'teacher' : 'student';
+            $counts[$gid][$tipo][$row->status] = (int)$row->cnt;
+        }
+
         return array_values(array_map(fn($g) => [
-            'id'              => (int)$g->id,
-            'name'            => $g->name,
-            'colegio_id'      => (int)$colegioId,
-            'moodle_group_id' => $g->moodle_group_id ? (int)$g->moodle_group_id : null,
+            'id'                => (int)$g->id,
+            'name'              => $g->name,
+            'colegio_id'        => (int)$colegioId,
+            'moodle_group_id'   => $g->moodle_group_id ? (int)$g->moodle_group_id : null,
+            'teachers_active'   => $counts[$g->id]['teacher']['active']   ?? 0,
+            'teachers_assigned' => $counts[$g->id]['teacher']['assigned'] ?? 0,
+            'students_active'   => $counts[$g->id]['student']['active']   ?? 0,
+            'students_assigned' => $counts[$g->id]['student']['assigned'] ?? 0,
         ], $grupos));
     }
 
