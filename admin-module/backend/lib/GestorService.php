@@ -506,7 +506,7 @@ class GestorService
         }
 
         // Query 2 — cursos, grupos y colegios para esos usuarios
-        [$inSql, $inParams] = $DB->get_in_or_equal(array_keys($users));
+        [$inSql, $inParams] = $DB->get_in_or_equal(array_keys($users), SQL_PARAMS_NAMED, 'uid');
         $enrichParams = array_merge(
             $inParams,
             ['catid' => $catId, 'catpath' => $catPath, 'orgid' => $orgId]
