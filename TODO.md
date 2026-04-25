@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-21 (rev. 4)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-25 (rev. 6)
 
 ---
 
@@ -20,179 +20,74 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Revisión sistema de pines: vigencia por duración
+## Tarea 1 — [FEATURE] Notificaciones por correo
 
-**Origen:** PRD §6 (Prioridad 1 — cliente activo) · Rama: `revison-gestion-pines`
+**Origen:** PRD §6 (Alta) · Prerequisito completado: sistema de correos AWS con SES + SMTP Moodle
 
-**Problema:** El modelo actual usa una fecha absoluta de expiración (`expires_at`) en el paquete de pines. Esto significa que todos los pines vencen en la misma fecha sin importar cuándo los activa el usuario. El cliente necesita que la vigencia cuente desde el momento de activación.
-
-**Qué se hizo:**
-- Esquema BD: `ct_pin_package.expires_at` → `duration_days` (93 | 182 | 365)
-- `ct_pin.expires_at` calculado al momento de activación: `activated_at + duration_days * 86400`
-- `ActivacionService::activarPin()` calcula `timeend = time() + duration_days * 86400`
-- Frontend: datepicker reemplazado por select (3/6/12 meses) en formulario de creación
-- Vista gestor: columna "Vigencia" muestra "Hasta dd/MM/yyyy" para pines activos, duración para los demás
-
-**Pendiente en esta rama:**
-- Ejecutar `migrar-pines-v2.php` en el servidor (limpia tablas y aplica ALTER TABLE)
-- Ejecutar `crear-rol-gestor.php` para crear el rol `ct_gestor` en Moodle
-- Deploy del backend y frontend al servidor
-- Pruebas end-to-end con flujo completo: crear paquete → asignar → activar → verificar `timeend`
-
-**Definición de done:**
-- [ ] `migrar-pines-v2.php` ejecutado en producción sin errores
-- [ ] `crear-rol-gestor.php` ejecutado — rol `ct_gestor` visible en Moodle Admin > Roles
-- [ ] Frontend desplegado — selector de duración funciona en `/pines`
-- [ ] Nuevo gestor activado con rol `ct_gestor` (no teacher)
-- [ ] Pin activado → `user_enrolments.timeend` = tiempo de activación + N días
-
----
-
-## Tarea 2 — [FEATURE] Revisión sistema de pines: rol gestor en Moodle
-
-**Origen:** PRD §6 (Prioridad 1 — cliente activo) · Misma rama: `revison-gestion-pines`
-
-**Problema:** El gestor actual recibe rol `teacher` en Moodle (puede editar contenido de cursos). Debe ser un rol de solo lectura: ver contenidos, participantes y calificaciones, pero no editar nada.
-
-**Qué se hizo:**
-- `crear-rol-gestor.php`: script CLI que crea rol `ct_gestor` con permisos ALLOW solo de lectura
-- `ActivacionService::activarGestor()`: asigna `ct_gestor` en lugar de `teacher` a nivel de categoría
-
-**Pendiente:** Ejecutar scripts en el servidor (ver Tarea 1).
-
----
-
-<!-- PAUSADAS — reanudar cuando se complete la revisión de pines -->
-
-## [PAUSADA] Sección 0 de cursos finales
-
-**Origen:** PRD §6 (roadmap Alta prioridad) · ADR-005 (deuda técnica intencional documentada)
-
-**Problema:** Al desplegar un árbol curricular, los cursos finales en Moodle se crean con la sección 0 vacía (sin portada ni bienvenida). Los estudiantes ven un curso sin contexto introductorio.
+**Problema:** Actualmente no hay comunicación automática por correo en los dos eventos clave del negocio: cuando el administrador crea un paquete de pines para una organización (el gestor no se entera) y cuando un usuario activa su pin (no recibe confirmación).
 
 **Qué hacer:**
 
-### Paso 1 — Extender el modelo de datos del árbol
+### Notificación 1 — Gestor: nuevo paquete disponible
+En `PinesService::crearPaquete()`, después de insertar el paquete en BD:
+- Buscar todos los gestores activos de esa organización (`ct_gestor.moodle_userid`)
+- Enviar email con `email_to_user()` de Moodle indicando cantidad de pines, rol y que pueden verlos en `/gestor/pines`
 
-En el JSON del árbol (`backend/data/arboles/{id}.json`), cada nodo de tipo "curso-final" debe poder tener un campo opcional `seccion0`:
+### Notificación 2 — Usuario: pin activado exitosamente
+En `ActivacionService::activarPin()`, después de matricular al usuario:
+- Obtener el usuario Moodle (`$DB->get_record('user', ['id' => $userId])`)
+- Enviar email de confirmación con nombre del curso y fecha de vigencia (`expires_at`)
 
-```json
-{
-  "id": "...",
-  "tipo": "curso-final",
-  "nombre": "Nombre del curso",
-  "seccion0": {
-    "titulo": "Bienvenida al curso",
-    "contenido": "HTML o Markdown con el contenido de la portada"
-  }
-}
-```
-
-### Paso 2 — UI en el editor de árboles
-
-En `admin-module/frontend/src/app/features/arboles/arbol-editor.component.ts` (y su template):
-- Al seleccionar un nodo de tipo "curso-final", mostrar un panel lateral o modal con campos para editar `seccion0.titulo` y `seccion0.contenido`
-- El campo de contenido puede ser un `<textarea>` con soporte Markdown básico (no requiere editor rico por ahora)
-- El botón "Guardar árbol" ya existente persiste el cambio vía `PUT /admin-api/arboles/{id}`
-
-### Paso 3 — Deploy: crear sección 0 en Moodle
-
-En `admin-module/backend/lib/ArbolCurricularService.php`, en el método que despliega el árbol:
-- Después de crear el curso final en Moodle, verificar si el nodo tiene `seccion0`
-- Si existe: actualizar la sección 0 con el `summary` correspondiente
-
-```php
-if (!empty($nodo['seccion0'])) {
-    $section = course_create_section($course->id, 0);
-    $DB->update_record('course_sections', [
-        'id'            => $section->id,
-        'name'          => $nodo['seccion0']['titulo'] ?? '',
-        'summary'       => $nodo['seccion0']['contenido'] ?? '',
-        'summaryformat' => FORMAT_HTML,
-    ]);
-}
-```
-
-**Archivos a modificar:**
-1. `admin-module/frontend/src/app/features/arboles/arbol-editor.component.ts` (+ template HTML)
-2. `admin-module/backend/lib/ArbolCurricularService.php`
-3. `admin-module/api/handlers/arboles.php` (si necesita ajustes en el endpoint de despliegue)
-
-**Definición de done:**
-- [ ] El editor de árboles muestra campos para título y contenido de la sección 0 al seleccionar un nodo "curso-final"
-- [ ] Al guardar el árbol, los datos de `seccion0` se persisten en el JSON del servidor
-- [ ] Al desplegar el árbol, la sección 0 de los cursos finales en Moodle tiene el contenido definido
-- [ ] Los cursos finales sin `seccion0` definida se despliegan igual que antes (sin regresión)
-- [ ] Probado en el servidor de producción con un árbol real
-
----
-
-## [PAUSADA] Tarea — [FEATURE] Reporte de progreso de estudiantes
-
-**Origen:** PRD §6 (roadmap Alta prioridad) · No iniciado
-
-**Problema:** El administrador y el gestor no tienen visibilidad del avance de los estudiantes: cuántos completaron el curso, cuáles están activos, cuáles no han empezado.
-
-**Qué hacer:**
-
-### Paso 1 — Endpoint backend
-
-En `admin-module/api/handlers/reportes.php`, agregar el endpoint:
-
-```
-GET /admin-api/reportes/progreso?org_id={id}&course_id={id}
-```
-
-Respuesta:
-```json
-{
-  "curso": "Nombre del curso",
-  "total_matriculados": 45,
-  "completados": 12,
-  "en_progreso": 28,
-  "sin_iniciar": 5,
-  "estudiantes": [
-    {
-      "nombre": "Nombre Apellido",
-      "cedula": "1001234567",
-      "completado": false,
-      "ultimo_acceso": "2026-04-10T14:23:00Z",
-      "progreso_pct": 65
-    }
-  ]
-}
-```
-
-Usar tablas Moodle: `mdl_user_enrolments`, `mdl_course_completions`, `mdl_user_lastaccess`.
-
-### Paso 2 — Vista en el panel admin
-
-Crear `admin-module/frontend/src/app/features/reportes/progreso/progreso.component.ts`:
-- Tabla con filtros por organización y curso
-- Columnas: nombre, cédula, completado (✓/✗), último acceso, progreso %
-- Exportar a CSV (botón simple, `Blob` + `URL.createObjectURL`)
-
-Agregar ruta en `app.routes.ts`:
-```typescript
-{
-  path: 'reportes/progreso',
-  loadComponent: () => import('./features/reportes/progreso/progreso.component')
-    .then(m => m.ProgresoComponent)
-}
-```
+### Implementación
+Crear `admin-module/backend/lib/EmailService.php` con métodos estáticos que usan `email_to_user()` de Moodle. Envolver cada llamada en `try-catch` para que el fallo de email nunca rompa el flujo principal.
 
 **Archivos a modificar / crear:**
-1. `admin-module/api/handlers/reportes.php` (ampliar con nuevo endpoint)
-2. `admin-module/frontend/src/app/features/reportes/progreso/progreso.component.ts` (nuevo)
-3. `admin-module/frontend/src/app/app.routes.ts` (agregar ruta)
+1. `admin-module/backend/lib/EmailService.php` — **Nuevo**
+2. `admin-module/backend/lib/PinesService.php` — llamar `EmailService::notificarPaqueteCreado()`
+3. `admin-module/backend/lib/ActivacionService.php` — llamar `EmailService::notificarPinActivado()`
 
 **Definición de done:**
-- [ ] `GET /admin-api/reportes/progreso?org_id=X&course_id=Y` retorna datos reales de Moodle
-- [ ] La vista muestra la tabla con los datos de progreso
-- [ ] El filtro por organización funciona (carga los cursos de esa org)
-- [ ] El botón de exportar CSV genera un archivo descargable
-- [ ] La ruta `/reportes/progreso` es accesible desde el sidebar del panel admin
-- [ ] Probado con datos reales de producción
+- [ ] Al crear un paquete, el/los gestor(es) de la org reciben un email en su correo Moodle
+- [ ] Al activar un pin, el usuario recibe email de confirmación con nombre del curso y vigencia
+- [ ] Si el envío falla (p.ej. sandbox SES), la operación principal (crear paquete / activar pin) sigue funcionando sin error
+
+---
+
+## Tarea 2 — [INFRA] Actualizar Moodle a la versión 5.2.x
+
+**Origen:** PRD §6 (Alta) · Referencia: [Nuevas features 5.2](https://docs.moodle.org/502/en/New_features)
+
+**Problema:** La instancia actual corre Moodle 5.1.3 (Build: 20260216). Hay que valorar la actualización a 5.2.x preservando la integridad de los datos y las funcionalidades personalizadas (plugin `ct_*`, tablas `mdl_ct_*`, rol `ct_gestor`, API REST propia).
+
+**Qué hacer:**
+
+### Paso 1 — Evaluación (antes de tocar el servidor)
+- Revisar las [release notes de Moodle 5.2](https://docs.moodle.org/502/en/New_features) y el [upgrade guide](https://docs.moodle.org/dev/Upgrading)
+- Verificar compatibilidad de PHP requerida para 5.2.x (actualmente PHP 8.4 en EC2)
+- Identificar si alguna API o tabla Moodle que usamos fue modificada o deprecada en 5.2
+- Revisar si los permisos `ct_gestor` (especialmente `moodle/user:editprofile`) se comportan igual
+
+### Paso 2 — Backup previo
+- Backup completo de la BD Moodle antes de cualquier cambio
+- Confirmar que el backup de archivos está al día
+
+### Paso 3 — Actualización en servidor
+- Descargar Moodle 5.2.x en el servidor
+- Reemplazar los archivos core (preservando `config.php` y plugins en `local/`)
+- Ejecutar `admin/cli/upgrade.php --non-interactive`
+- Ejecutar `admin/cli/purge_caches.php`
+- Verificar que las tablas `mdl_ct_*` y el rol `ct_gestor` siguen intactos
+
+**Archivos a modificar:** ninguno en el repo (la actualización es solo en el servidor).
+
+**Definición de done:**
+- [ ] Backup de BD confirmado antes de iniciar
+- [ ] `admin/cli/upgrade.php` finaliza sin errores
+- [ ] `https://conectatech.co` carga correctamente en 5.2.x
+- [ ] El panel admin (`admin.conectatech.co`) funciona sin regresiones
+- [ ] Rol `ct_gestor` con sus 22 capabilities sigue intacto
+- [ ] Las tablas `mdl_ct_*` no tienen cambios de esquema inesperados
+- [ ] La API REST propia (`/admin-api/*`) responde correctamente
 
 ---
 
@@ -204,6 +99,8 @@ Agregar ruta en `app.routes.ts`:
 | 2026-04-14 | [DOCS] Sistema de documentación | PRD.md, tech-specs.md, CLAUDE.md actualizado (OWASP + git flow), MEMORY.md, TODO.md |
 | 2026-04-15 | [FEATURE] Previsualizador de contenido Markdown | Endpoint `POST /admin-api/markdown/preview`, árbol `p-tree` con drag & drop, dropzone, layout en dos filas (520px / 640px), reconstrucción de contenido en tiempo real |
 | 2026-04-17 | [FIX] Árbol de preview y PobladorService | `items_ordered` en MarkdownParser para orden correcto de nodos; `hiddenTitle` derivado de `semantic-blocks.json`; `TreeDragDropService` en providers (fix drag-and-drop); dropzone a la izquierda, card destino condicional; `eliminarPlaceholdersVacios()` en PobladorService |
+| 2026-04-25 | [FEATURE] Revisión sistema de pines + portal gestor | Vigencia por duración (3/6/12 meses desde activación), rol `ct_gestor` con 22 capabilities, portal gestor: colegios/grupos, pines, usuarios con edición de perfil y restablecimiento de contraseña, filtros por colegio/grupo/curso |
+| 2026-04-25 | [INFRA] Sistema de correos AWS | SES dominio+DKIM+MX, Lambda forwarder nodejs24.x con FORWARD_MAP, rule set SES, trigger S3→Lambda, Moodle SMTP configurado, 3 alarmas CloudWatch |
 
 ---
 
@@ -232,25 +129,7 @@ Agregar ruta en `app.routes.ts`:
 
 **Resultado:** Tarea 1 = Sección 0 de cursos finales (Alta, ADR-005). Tarea 2 = Reportes de progreso (Alta, siguiente feature de mayor valor).
 
-### 2026-04-21 — Revisión 4 (Revisión sistema de pines — cliente activo)
-
-**Cambios en esta sesión:**
-- Solicitud de cliente: vigencia de pines por duración desde activación (3/6/12 meses)
-- Nuevo rol Moodle `ct_gestor` (solo lectura) en lugar de `teacher`
-- Rama `revison-gestion-pines` creada para todos los cambios de los próximos días
-
-**Comparación PRD vs MEMORY:**
-- Revisión sistema de pines: ⏳ en progreso (rama activa)
-- Tareas anteriores pausadas mientras dure la revisión de pines
-
-**Resultado:** Tarea 1 = Deploy y pruebas de vigencia por duración. Tarea 2 = Deploy y pruebas de rol `ct_gestor`.
-
 ### 2026-04-17 — Revisión 3 (Fixes del previsualizador completados)
-
-**Cambios en esta sesión:**
-- Fixes de calidad sobre el previsualizador: orden de nodos (`items_ordered`), `hiddenTitle` desde config, drag-and-drop, layout, placeholders en PobladorService
-- Limpieza manual de secciones «sucias» en cursos MA-6 y MA-7 (artefactos del timeout anterior)
-- PR mergeada a main
 
 **Comparación PRD vs MEMORY:**
 - Previsualizador y sus fixes: ✅ en producción
@@ -258,3 +137,42 @@ Agregar ruta en `app.routes.ts`:
 - Pendientes de Alta prioridad (PRD §6): Sección 0 de cursos finales, Reportes de progreso
 
 **Resultado:** Sin cambio de prioridad — Tarea 1 = Sección 0 de cursos finales. Tarea 2 = Reportes de progreso.
+
+### 2026-04-21 — Revisión 4 (Revisión sistema de pines — cliente activo)
+
+**Cambios en esta sesión:**
+- Solicitud de cliente: vigencia de pines por duración desde activación (3/6/12 meses)
+- Nuevo rol Moodle `ct_gestor` (solo lectura + soporte a usuarios) en lugar de `teacher`
+- Portal gestor extendido: colegios/grupos, pines, usuarios con edición de perfil y reset de contraseña
+
+**Resultado:** PR #5 mergeada. Todo completo.
+
+### 2026-04-25 — Revisión 5 (nuevas prioridades del cliente — sistema de correos)
+
+**Comparación PRD vs MEMORY:**
+- ✅ Revisión sistema de pines: completado (PR #5)
+- ✅ Previsualizador Markdown: completado
+- 🆕 **Sistema de correos AWS**: nuevo, Alta prioridad — plan detallado en `docs/email/plan-trabajo-conectatech.md`
+- 🆕 **Actualizar Moodle a 5.2.x**: nuevo, Alta prioridad
+- 🆕 **Notificaciones por correo**: Alta prioridad, depende del sistema de correos
+- ⏸ Sección 0 de cursos finales: se desplaza
+- ⏸ Reportes de progreso: se desplaza
+
+**Resultado:** Tarea 1 = Sistema de correos AWS Fases 1-2-3 (infra completa, independiente). Tarea 2 = Actualización Moodle 5.2.x (independiente, Alta prioridad). Notificaciones por correo entra al TODO en la próxima revisión, una vez el sistema de correos esté en producción.
+
+### 2026-04-25 — Revisión 6 (sistema de correos completado)
+
+**Cambios en esta sesión:**
+- ✅ Sistema de correos AWS completado: SES + DKIM + MX + Lambda forwarder + Moodle SMTP
+- Inbound routing probado y funcionando (`conectatech-email-forwarder` procesando y reenviando)
+- 3 alarmas CloudWatch activas (Lambda errors, bounce rate, complaint rate)
+- Pendiente: salida del sandbox SES (Fase 4, aprobación humana 24–48h) y confirmación `ajumoto@gmail.com`
+
+**Comparación PRD vs MEMORY:**
+- ✅ Sistema de correos AWS: completado
+- 🎯 **Notificaciones por correo**: Alta prioridad, prerequisito satisfecho
+- ⏳ Actualizar Moodle 5.2.x: Alta prioridad, independiente
+- ⏸ Sección 0 de cursos finales: pausada
+- ⏸ Reportes de progreso: pausada
+
+**Resultado:** Tarea 1 = Notificaciones por correo (2 eventos: paquete creado → gestor; pin activado → usuario). Tarea 2 = Actualización Moodle 5.2.x (independiente, sin bloqueos).

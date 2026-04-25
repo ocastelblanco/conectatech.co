@@ -30,7 +30,7 @@
 | **Público secundario** | Estudiantes de las organizaciones suscritas |
 | **Idioma de la plataforma** | Español colombiano |
 | **URLs de producción** | `https://conectatech.co` (LMS) · `https://admin.conectatech.co` (panel admin) · `https://assets.conectatech.co` (recursos) · `https://api.conectatech.co` (API pública de recursos) |
-| **Propietario técnico** | IdeasMaestras — [Oliver Castelblanco](https://ocastelblanco.com) |
+| **Propietario técnico** | ConectaTech — [Oliver Castelblanco](https://ocastelblanco.com) |
 
 **Visión en una oración:** ConectaTech.co es una plataforma educativa que permite a colegios colombianos ofrecer a sus estudiantes cursos digitales de alta calidad mediante un modelo de acceso por pines, gestionado por un representante institucional.
 
@@ -44,12 +44,12 @@ Los colegios colombianos no cuentan con infraestructura tecnológica propia para
 
 ### La solución
 
-ConectaTech.co centraliza la gestión en una plataforma Moodle administrada por IdeasMaestras. Los colegios compran **paquetes de acceso** (cursos + cupos) y los distribuyen a sus estudiantes mediante **pines de activación**. Un **gestor** (representante del colegio) administra la asignación de pines sin necesidad de conocimientos técnicos.
+ConectaTech.co centraliza la gestión en una plataforma Moodle administrada por ConectaTech. Los colegios compran **paquetes de acceso** (cursos + cupos) y los distribuyen a sus estudiantes mediante **pines de activación**. Un **gestor** (representante del colegio) administra la asignación de pines sin necesidad de conocimientos técnicos.
 
 ### Flujo general del negocio
 
 ```
-IdeasMaestras crea contenido (Markdown → Moodle)
+ConectaTech crea contenido (Markdown → Moodle)
         ↓
 Se crean paquetes de cursos por organización
         ↓
@@ -68,7 +68,7 @@ El estudiante accede a los cursos en conectatech.co
 
 | Perfil | Quién es | Qué necesita | Accede desde |
 |---|---|---|---|
-| **Administrador** | Equipo IdeasMaestras (1 persona) | Crear y publicar contenido, gestionar organizaciones, monitorear el sistema | Panel admin (`admin.conectatech.co`) |
+| **Administrador** | Equipo ConectaTech (1 persona) | Crear y publicar contenido, gestionar organizaciones, monitorear el sistema | Panel admin (`admin.conectatech.co`) |
 | **Gestor** | Representante del colegio o institución educativa | Ver y asignar pines a estudiantes, consultar grupos, ver reportes de uso | Portal gestor en el panel admin |
 | **Estudiante** | Alumno del colegio suscrito | Activar su pin, acceder a sus cursos, completar actividades | LMS (`conectatech.co`) |
 | **IA / agente** | Claude Code u otro agente IA | Leer contexto completo del proyecto para implementar o documentar sin preguntas adicionales | Este repositorio |
@@ -80,7 +80,7 @@ El estudiante accede a los cursos en conectatech.co
 | Objetivo | Indicador de éxito | Estado |
 |---|---|---|
 | Publicar contenido educativo estructurado en Moodle desde documentos Markdown | El pipeline Markdown → Moodle procesa un documento y crea secciones, subsecciones, cuestionarios y actividades sin intervención manual | ✅ Implementado |
-| Permitir que colegios compren y gestionen accesos sin intervención técnica del administrador | El gestor puede asignar pines desde su portal sin asistencia de IdeasMaestras | ✅ Implementado |
+| Permitir que colegios compren y gestionen accesos sin intervención técnica del administrador | El gestor puede asignar pines desde su portal sin asistencia de ConectaTech | ✅ Implementado |
 | Facilitar la activación de cuentas para estudiantes nuevos | El estudiante activa su pin desde una URL pública y queda matriculado automáticamente | ✅ Implementado |
 | Construir y mantener árboles curriculares que definen la estructura de cursos | El administrador puede crear, editar y desplegar árboles curriculares desde el panel | ✅ Implementado (parcialmente — sección 0 de cursos finales pendiente) |
 | Centralizar la gestión de archivos PDF y recursos digitales | El administrador sube PDFs y los vincula a cursos; el visor se muestra embebido en Moodle | ✅ Implementado |
@@ -217,13 +217,15 @@ Página pública (`/activar`) donde un estudiante ingresa su pin y:
 
 | Funcionalidad | Descripción | Prioridad |
 |---|---|---|
-| **Revisión del sistema de pines** *(en progreso — cliente activo)* | Vigencia por duración desde activación (3/6/12 meses), rol Moodle exclusivo `ct_gestor` (solo lectura: contenidos, participantes, calificaciones), ajustes de UX en flujos de asignación y activación | **Prioridad 1** |
-| **Previsualizador de contenido Markdown** | Componente de árbol visual (`p-tree` de PrimeNG) que muestra la estructura del Markdown antes de cargarlo en Moodle: secciones (H1), subsecciones (H2) y cuestionarios, con íconos por tipo de recurso Moodle (`Área de texto y medios`, `Cuestionario`, etc.). Permite reordenar los nodos con drag & drop antes de ejecutar el pipeline. | Alta |
+| ~~**Revisión del sistema de pines**~~ ✅ | ~~Vigencia por duración desde activación (3/6/12 meses), rol Moodle exclusivo `ct_gestor`, ajustes de UX en flujos de asignación y activación~~ | ~~Prioridad 1~~ |
+| ~~**Previsualizador de contenido Markdown**~~ ✅ | ~~Componente de árbol visual (`p-tree` de PrimeNG) con drag & drop antes de ejecutar el pipeline~~ | ~~Alta~~ |
+| **Implementación de Sistema de correos AWS** | Implementar el sistema del documento [plan-trabajo-conectatech.md](docs/email/plan-trabajo-conectatech.md) y en la carpeta [docs/email/](docs/email/) en general. | Alta |
+| **Notificaciones por correo** | Enviar correo al gestor cuando se crea un paquete para su organización; al estudiante cuando se activa su pin | Alta |
+| **Actualizar Moodle a la versión 5.2.x** | Migrar la plataforma actual a la versión más reciente de Moodle, valorando cuidadosamente las acciones que se deben tomar, para conservar la integridad de la información y, especialmente, las funcionalidades que hemos construído. Revisar las [nuevas features](https://docs.moodle.org/502/en/New_features). | Alta |
 | **Sección 0 de cursos finales** | Al desplegar un árbol curricular, cada curso final debe tener contenido de portada/bienvenida. El panel admin necesita una UI para definir ese contenido por curso dentro del editor de árboles. | Alta |
 | **Reportes de progreso** | Dashboard con métricas de avance de estudiantes por organización: completitud de cursos, calificaciones promedio, actividad reciente | Alta |
 | **Tipos de pregunta adicionales** | El pipeline Markdown soporta actualmente solo opción múltiple y ensayo. Pendiente: verdadero/falso, emparejamiento, respuesta corta, numérica | Media |
 | **Renovación y reutilización de pines** | Flujo para que el administrador recupere pines "usados" de cursos completados y los reasigne a nuevos estudiantes | Media |
-| **Notificaciones por correo** | Enviar correo al gestor cuando se crea un paquete para su organización; al estudiante cuando se activa su pin | Media |
 | **Importación de PDFs masiva** | Subir múltiples PDFs desde el panel y vincularlos automáticamente a secciones de Moodle usando metadatos del archivo | Media |
 | **Autenticación del gestor con token JWT** | Reemplazar el flujo actual basado en credenciales Moodle + cookies por tokens JWT independientes para mayor seguridad y escalabilidad | Baja |
 | **Soporte multitenancy real** | Aislar los datos de diferentes organizaciones a nivel de base de datos (hoy están en la misma instancia Moodle) | Baja |
