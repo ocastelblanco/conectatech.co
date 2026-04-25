@@ -1,0 +1,7 @@
+{
+  "name": "conectatech-email-forwarder",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Reenvía correos entrantes @conectatech.co al Gmail correspondiente via AWS SES",
+  "main": "index.mjs"
+}
