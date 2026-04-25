@@ -447,14 +447,14 @@ class GestorService
      */
     public function listarUsuarios(array $ctGestor, ?string $search): array
     {
-        global $DB;
+        global $DB, $USER;
 
         $catId   = (int)$ctGestor['moodle_category_id'];
         $orgId   = (int)$ctGestor['organization_id'];
         $catPath = '%/' . $catId . '/%';
 
-        // Query 1 — IDs distintos (con filtro de búsqueda opcional, límite 200)
-        $params = ['catid' => $catId, 'catpath' => $catPath];
+        // Query 1 — IDs distintos; excluye al propio gestor autenticado
+        $params = ['catid' => $catId, 'catpath' => $catPath, 'curuser' => (int)$USER->id];
         $where  = '(cc.id = :catid OR cc.path LIKE :catpath)';
 
         if ($search !== null && strlen($search) >= 3) {
@@ -479,7 +479,7 @@ class GestorService
                JOIN {enrol}             e  ON e.id = ue.enrolid AND e.status = 0
                JOIN {course}            c  ON c.id = e.courseid
                JOIN {course_categories} cc ON cc.id = c.category
-              WHERE u.deleted = 0 AND u.id != 1 AND {$where}
+              WHERE u.deleted = 0 AND u.id != 1 AND u.id != :curuser AND {$where}
            ORDER BY u.lastname, u.firstname",
             $params, 0, 200
         );
@@ -499,6 +499,7 @@ class GestorService
                 'username'  => $u->username,
                 'lastlogin' => (int)$u->lastlogin,
                 'suspended' => (bool)$u->suspended,
+                'role'      => '',
                 'cursos'    => [],
                 'grupos'    => [],
                 'colegios'  => [],
@@ -516,7 +517,8 @@ class GestorService
             "SELECT u.id          AS user_id,
                     c.id          AS course_id,  c.fullname AS course_name,
                     g.id          AS group_id,   g.name     AS group_name,
-                    ctc.id        AS colegio_id, ctc.name   AS colegio_name
+                    ctc.id        AS colegio_id, ctc.name   AS colegio_name,
+                    r.shortname   AS role_shortname
                FROM {user} u
                JOIN {user_enrolments}  ue  ON ue.userid = u.id AND ue.status = 0
                JOIN {enrol}             e  ON e.id = ue.enrolid AND e.status = 0
@@ -527,6 +529,10 @@ class GestorService
                LEFT JOIN {ct_group}       ctg ON ctg.moodle_group_id = g.id
                                               AND ctg.organization_id = :orgid
                LEFT JOIN {ct_colegio}     ctc ON ctc.id = ctg.colegio_id
+               LEFT JOIN {context}          ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
+               LEFT JOIN {role_assignments} ra  ON ra.userid = u.id AND ra.contextid = ctx.id
+               LEFT JOIN {role}             r   ON r.id = ra.roleid
+                                              AND r.shortname IN ('student', 'teacher', 'editingteacher')
               WHERE u.id {$inSql}
                 AND (cc.id = :catid OR cc.path LIKE :catpath)
            ORDER BY u.id, c.fullname, g.name",
@@ -549,7 +555,12 @@ class GestorService
             if ($row->group_id) {
                 $key = "g{$row->group_id}";
                 if (empty($seen[$uid][$key])) {
-                    $users[$uid]['grupos'][] = ['id' => (int)$row->group_id, 'name' => $row->group_name];
+                    // El nombre Moodle es "{colegio} - {grupo}"; extraemos solo la parte del grupo
+                    $groupName = $row->group_name;
+                    if (($pos = strpos($groupName, ' - ')) !== false) {
+                        $groupName = substr($groupName, $pos + 3);
+                    }
+                    $users[$uid]['grupos'][] = ['id' => (int)$row->group_id, 'name' => $groupName];
                     $seen[$uid][$key] = true;
                 }
             }
@@ -558,6 +569,14 @@ class GestorService
                 if (empty($seen[$uid][$key])) {
                     $users[$uid]['colegios'][] = ['id' => (int)$row->colegio_id, 'name' => $row->colegio_name];
                     $seen[$uid][$key] = true;
+                }
+            }
+            // Rol: teacher/editingteacher tiene precedencia sobre student
+            if (!empty($row->role_shortname)) {
+                $current = $users[$uid]['role'];
+                $incoming = $row->role_shortname === 'editingteacher' ? 'teacher' : $row->role_shortname;
+                if ($current === '' || ($current === 'student' && $incoming === 'teacher')) {
+                    $users[$uid]['role'] = $incoming;
                 }
             }
         }

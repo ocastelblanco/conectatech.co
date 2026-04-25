@@ -58,6 +58,7 @@
           <th>Nombre</th>
           <th>Documento</th>
           <th>Email</th>
+          <th>Rol</th>
           <th>Colegio</th>
           <th>Grupo</th>
           <th>Curso</th>
@@ -71,30 +72,37 @@
             <div class="flex items-center gap-2">
               <span class="font-medium text-cnt-midnight">{{ u.firstname }} {{ u.lastname }}</span>
               @if (u.suspended) {
-              <p-tag value="suspendido" severity="danger" />
+              <p-tag value="suspendido" severity="danger" [style]="{'font-size':'0.75rem'}" />
               }
             </div>
           </td>
           <td class="font-mono text-xs text-gray-500">{{ u.username }}</td>
           <td class="text-xs text-gray-500">{{ u.email }}</td>
           <td>
+            @if (u.role === 'teacher') {
+            <p-tag value="Profesor" severity="success" [style]="{'font-size':'0.75rem'}" />
+            } @else if (u.role === 'student') {
+            <p-tag value="Estudiante" severity="info" [style]="{'font-size':'0.75rem'}" />
+            }
+          </td>
+          <td>
             <div class="flex gap-1 flex-wrap">
               @for (c of u.colegios; track c.id) {
-              <p-tag [value]="c.name" severity="secondary" />
+              <p-tag [value]="c.name" severity="secondary" [style]="{'font-size':'0.75rem'}" />
               }
             </div>
           </td>
           <td>
             <div class="flex gap-1 flex-wrap">
               @for (g of u.grupos; track g.id) {
-              <p-tag [value]="g.name" severity="info" />
+              <p-tag [value]="g.name" severity="info" [style]="{'font-size':'0.75rem'}" />
               }
             </div>
           </td>
           <td>
             <div class="flex gap-1 flex-wrap">
               @for (c of u.cursos; track c.id) {
-              <p-tag [value]="c.name" severity="warn" />
+              <p-tag [value]="c.name" severity="warn" [style]="{'font-size':'0.75rem'}" />
               }
             </div>
           </td>
@@ -121,7 +129,7 @@
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="8"
+          <td colspan="9"
               class="text-center text-gray-400 py-10">
             <i class="pi pi-users text-3xl mb-2 block"></i>
             @if (searchInput().length > 0 || cursoSeleccionado() || grupoSeleccionado() || colegioSeleccionado()) {
