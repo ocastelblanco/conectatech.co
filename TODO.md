@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-25 (rev. 5)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-25 (rev. 6)
 
 ---
 
@@ -20,45 +20,36 @@
 
 ---
 
-## Tarea 1 — [INFRA] Sistema de correos AWS — Fases 1, 2 y 3
+## Tarea 1 — [FEATURE] Notificaciones por correo
 
-**Origen:** PRD §6 (Alta — cliente activo) · Plan detallado: `docs/email/plan-trabajo-conectatech.md`
+**Origen:** PRD §6 (Alta) · Prerequisito completado: sistema de correos AWS con SES + SMTP Moodle
 
-**Problema:** El dominio `conectatech.co` no tiene infraestructura de correo. Moodle usa `PHP mail()` por defecto (sin SMTP configurado). No hay reenvío de correos entrantes a Gmail. El sistema de correos es prerequisito para las notificaciones automáticas.
+**Problema:** Actualmente no hay comunicación automática por correo en los dos eventos clave del negocio: cuando el administrador crea un paquete de pines para una organización (el gestor no se entera) y cuando un usuario activa su pin (no recibe confirmación).
 
 **Qué hacer:**
 
-### Fase 1 — Verificación DNS + SES (≈30 min + espera propagación)
-- Verificar dominio `conectatech.co` en SES → obtener VerificationToken
-- Crear TXT `_amazonses.conectatech.co` en Route 53 zona `Z0767805255ZNR9CRNWLH`
-- Habilitar DKIM → 3 CNAMEs `<token>._domainkey.conectatech.co`
-- Crear registro MX: `conectatech.co MX 10 inbound-smtp.us-east-1.amazonaws.com`
-- Verificar emails `no-reply@conectatech.co` y `forwarder@conectatech.co` en SES
+### Notificación 1 — Gestor: nuevo paquete disponible
+En `PinesService::crearPaquete()`, después de insertar el paquete en BD:
+- Buscar todos los gestores activos de esa organización (`ct_gestor.moodle_userid`)
+- Enviar email con `email_to_user()` de Moodle indicando cantidad de pines, rol y que pueden verlos en `/gestor/pines`
 
-### Fase 2 — Infraestructura Inbound (≈45 min, en paralelo con espera DNS)
-- S3: crear bucket `conectatech-ses-incoming-emails` con bucket policy para SES
-- IAM: crear rol `conectatech-email-forwarder-role` (Lambda trust + S3 GetObject + SES SendRawEmail)
-- Lambda: escribir `index.mjs` (Node.js 24.x) con FORWARD_MAP de `docs/email/redireccion-emails.md` → desplegar como `conectatech-email-forwarder`
-- SES: crear rule set `conectatech-rules`, activarlo, crear regla `forward-to-gmail`
-- S3 trigger: `s3:ObjectCreated:*` en prefix `incoming/` → invoca Lambda
+### Notificación 2 — Usuario: pin activado exitosamente
+En `ActivacionService::activarPin()`, después de matricular al usuario:
+- Obtener el usuario Moodle (`$DB->get_record('user', ['id' => $userId])`)
+- Enviar email de confirmación con nombre del curso y fecha de vigencia (`expires_at`)
 
-### Fase 3 — Moodle SMTP (≈20 min, requiere dominio verificado + credenciales humanas)
-- ⚠️ **Bloqueo humano**: SMTP credentials deben generarse en SES Console → proporcionarlas al agente en tiempo de ejecución (no se guardan en el repo)
-- Configurar Moodle via CLI: `smtphosts`, `smtpuser`, `smtppass`, `noreplyaddress = no-reply@conectatech.co`, `smtpsecure = tls`
+### Implementación
+Crear `admin-module/backend/lib/EmailService.php` con métodos estáticos que usan `email_to_user()` de Moodle. Envolver cada llamada en `try-catch` para que el fallo de email nunca rompa el flujo principal.
 
-**El agente se detiene aquí.** Fase 4 (salida del sandbox) requiere aprobación humana de AWS (24–48h). Fase 5 (pruebas y monitoreo) se ejecuta después.
-
-**Archivos a crear:**
-- `lambda/email-forwarder/index.mjs`
-- `lambda/email-forwarder/package.json`
+**Archivos a modificar / crear:**
+1. `admin-module/backend/lib/EmailService.php` — **Nuevo**
+2. `admin-module/backend/lib/PinesService.php` — llamar `EmailService::notificarPaqueteCreado()`
+3. `admin-module/backend/lib/ActivacionService.php` — llamar `EmailService::notificarPinActivado()`
 
 **Definición de done:**
-- [ ] `aws ses get-identity-verification-attributes` → `VerificationStatus: Success` para `conectatech.co`
-- [ ] `dig MX conectatech.co` resuelve a `inbound-smtp.us-east-1.amazonaws.com`
-- [ ] Lambda `conectatech-email-forwarder` en estado `Active`
-- [ ] Rule set `conectatech-rules` activo en SES
-- [ ] Trigger S3 → Lambda configurado y verificado
-- [ ] Moodle configurado con SMTP SES (validar con correo de prueba desde Admin → Servidor)
+- [ ] Al crear un paquete, el/los gestor(es) de la org reciben un email en su correo Moodle
+- [ ] Al activar un pin, el usuario recibe email de confirmación con nombre del curso y vigencia
+- [ ] Si el envío falla (p.ej. sandbox SES), la operación principal (crear paquete / activar pin) sigue funcionando sin error
 
 ---
 
@@ -109,6 +100,7 @@
 | 2026-04-15 | [FEATURE] Previsualizador de contenido Markdown | Endpoint `POST /admin-api/markdown/preview`, árbol `p-tree` con drag & drop, dropzone, layout en dos filas (520px / 640px), reconstrucción de contenido en tiempo real |
 | 2026-04-17 | [FIX] Árbol de preview y PobladorService | `items_ordered` en MarkdownParser para orden correcto de nodos; `hiddenTitle` derivado de `semantic-blocks.json`; `TreeDragDropService` en providers (fix drag-and-drop); dropzone a la izquierda, card destino condicional; `eliminarPlaceholdersVacios()` en PobladorService |
 | 2026-04-25 | [FEATURE] Revisión sistema de pines + portal gestor | Vigencia por duración (3/6/12 meses desde activación), rol `ct_gestor` con 22 capabilities, portal gestor: colegios/grupos, pines, usuarios con edición de perfil y restablecimiento de contraseña, filtros por colegio/grupo/curso |
+| 2026-04-25 | [INFRA] Sistema de correos AWS | SES dominio+DKIM+MX, Lambda forwarder nodejs24.x con FORWARD_MAP, rule set SES, trigger S3→Lambda, Moodle SMTP configurado, 3 alarmas CloudWatch |
 
 ---
 
@@ -155,7 +147,7 @@
 
 **Resultado:** PR #5 mergeada. Todo completo.
 
-### 2026-04-25 — Revisión 5 (nuevas prioridades del cliente)
+### 2026-04-25 — Revisión 5 (nuevas prioridades del cliente — sistema de correos)
 
 **Comparación PRD vs MEMORY:**
 - ✅ Revisión sistema de pines: completado (PR #5)
@@ -167,3 +159,20 @@
 - ⏸ Reportes de progreso: se desplaza
 
 **Resultado:** Tarea 1 = Sistema de correos AWS Fases 1-2-3 (infra completa, independiente). Tarea 2 = Actualización Moodle 5.2.x (independiente, Alta prioridad). Notificaciones por correo entra al TODO en la próxima revisión, una vez el sistema de correos esté en producción.
+
+### 2026-04-25 — Revisión 6 (sistema de correos completado)
+
+**Cambios en esta sesión:**
+- ✅ Sistema de correos AWS completado: SES + DKIM + MX + Lambda forwarder + Moodle SMTP
+- Inbound routing probado y funcionando (`conectatech-email-forwarder` procesando y reenviando)
+- 3 alarmas CloudWatch activas (Lambda errors, bounce rate, complaint rate)
+- Pendiente: salida del sandbox SES (Fase 4, aprobación humana 24–48h) y confirmación `ajumoto@gmail.com`
+
+**Comparación PRD vs MEMORY:**
+- ✅ Sistema de correos AWS: completado
+- 🎯 **Notificaciones por correo**: Alta prioridad, prerequisito satisfecho
+- ⏳ Actualizar Moodle 5.2.x: Alta prioridad, independiente
+- ⏸ Sección 0 de cursos finales: pausada
+- ⏸ Reportes de progreso: pausada
+
+**Resultado:** Tarea 1 = Notificaciones por correo (2 eventos: paquete creado → gestor; pin activado → usuario). Tarea 2 = Actualización Moodle 5.2.x (independiente, sin bloqueos).
