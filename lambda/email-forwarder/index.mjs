@@ -1,10 +1,9 @@
 /**
  * conectatech-email-forwarder — Node.js 24.x
  *
- * Lee el correo entrante desde S3, reemplaza el From por forwarder@conectatech.co
- * y reenvía al Gmail correspondiente según FORWARD_MAP.
- *
- * Activado por: S3 ObjectCreated en prefix incoming/ → SES receipt rule
+ * Lee el correo entrante desde S3, elimina las cabeceras DKIM-Signature
+ * del original (SES añade las suyas al reenviar), reemplaza el From por
+ * forwarder@conectatech.co y reenvía al Gmail correspondiente.
  */
 
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
@@ -16,13 +15,12 @@ const ses = new SESClient({ region: 'us-east-1' });
 const BUCKET            = 'conectatech-ses-incoming-emails';
 const FORWARDER_ADDRESS = 'forwarder@conectatech.co';
 
-// Mapa de redirección (dominio en minúsculas). Catch-all al final.
 const FORWARD_MAP = [
   { match: 'info@conectatech.co',                dest: 'somos.conectatech@gmail.com' },
   { match: 'digital@conectatech.co',             dest: 'ocastelblanco@gmail.com'     },
   { match: 'ana.mora@conectatech.co',            dest: 'ajumoto@gmail.com'           },
   { match: 'oliver.castelblanco@conectatech.co', dest: 'ocastelblanco@gmail.com'     },
-  { match: '@conectatech.co',                    dest: 'somos.conectatech@gmail.com' }, // catch-all
+  { match: '@conectatech.co',                    dest: 'somos.conectatech@gmail.com' },
 ];
 
 function resolveDestination(recipients) {
@@ -34,7 +32,7 @@ function resolveDestination(recipients) {
       }
     }
   }
-  return FORWARD_MAP.at(-1).dest; // fallback: catch-all
+  return FORWARD_MAP.at(-1).dest;
 }
 
 function streamToBuffer(stream) {
@@ -46,13 +44,42 @@ function streamToBuffer(stream) {
   });
 }
 
+// Cabeceras que deben eliminarse antes de reenviar:
+// - DKIM-Signature: el reenvío invalida la firma; SES añade la suya
+// - Return-Path: contiene la dirección de rebote del remitente original
+//   (e.g. ...@amazonses.com) que en sandbox SES verifica y rechaza
+const STRIP_HEADERS = ['DKIM-Signature', 'Return-Path'];
+
+function stripProblematicHeaders(rawEmail) {
+  const sepMatch = rawEmail.match(/\r?\n\r?\n/);
+  if (!sepMatch) return rawEmail;
+
+  const headersPart = rawEmail.slice(0, sepMatch.index);
+  const bodyPart    = rawEmail.slice(sepMatch.index);
+
+  const lines    = headersPart.split(/\r?\n/);
+  const filtered = [];
+  let skipping   = false;
+
+  for (const line of lines) {
+    const isStrippedHeader = STRIP_HEADERS.some(h => new RegExp(`^${h}:`, 'i').test(line));
+    if (isStrippedHeader) {
+      skipping = true;
+      continue;
+    }
+    if (skipping && /^[ \t]/.test(line)) {
+      continue;
+    }
+    skipping = false;
+    filtered.push(line);
+  }
+
+  return filtered.join('\n') + bodyPart;
+}
+
 function rewriteFrom(rawEmail, originalFrom) {
-  // Reemplaza la cabecera From para pasar la validación DKIM/SPF del remitente
   const forwarderFrom = `"${originalFrom}" <${FORWARDER_ADDRESS}>`;
-  return rawEmail.replace(
-    /^From:.*$/im,
-    `From: ${forwarderFrom}`
-  );
+  return rawEmail.replace(/^From:.*$/im, `From: ${forwarderFrom}`);
 }
 
 export const handler = async (event) => {
@@ -65,12 +92,11 @@ export const handler = async (event) => {
   const key = decodeURIComponent(s3Record.object.key.replace(/\+/g, ' '));
   console.log(`Procesando correo: s3://${BUCKET}/${key}`);
 
-  // 1. Obtener el correo raw de S3
-  const s3Obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+  const s3Obj    = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
   const rawBuffer = await streamToBuffer(s3Obj.Body);
   const rawEmail  = rawBuffer.toString('utf-8');
 
-  // 2. Extraer destinatarios originales del encabezado To/CC
+  // Extraer destinatarios @conectatech.co
   const toMatch  = rawEmail.match(/^To:\s*(.+)$/im);
   const toHeader = toMatch ? toMatch[1] : '';
   const recipients = toHeader
@@ -79,19 +105,17 @@ export const handler = async (event) => {
     .filter(r => r.includes('@conectatech.co'));
 
   if (recipients.length === 0) {
-    console.warn('No se encontraron destinatarios @conectatech.co — usando catch-all');
+    console.warn('Sin destinatarios @conectatech.co — usando catch-all');
     recipients.push('info@conectatech.co');
   }
 
-  // 3. Extraer From original para mantenerlo como referencia en el reenvío
-  const fromMatch = rawEmail.match(/^From:\s*(.+)$/im);
+  const fromMatch    = rawEmail.match(/^From:\s*(.+)$/im);
   const originalFrom = fromMatch ? fromMatch[1].trim() : 'unknown';
 
-  // 4. Resolver destino y reescribir From
-  const destination = resolveDestination(recipients);
-  const rewrittenEmail = rewriteFrom(rawEmail, originalFrom);
+  const destination   = resolveDestination(recipients);
+  const cleanedEmail  = stripProblematicHeaders(rawEmail);
+  const rewrittenEmail = rewriteFrom(cleanedEmail, originalFrom);
 
-  // 5. Reenviar via SES
   await ses.send(new SendRawEmailCommand({
     Source:       FORWARDER_ADDRESS,
     Destinations: [destination],
