@@ -30,7 +30,16 @@
               [ngModel]="filtroStatus()"
               (ngModelChange)="filtroStatus.set($event); cargarPines()" />
 
-    <p-select [options]="grupos()"
+    <p-select [options]="colegios()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Colegio"
+              [showClear]="true"
+              class="w-44"
+              [ngModel]="filtroColegioId()"
+              (ngModelChange)="filtroColegioId.set($event); filtroGrupoId.set(null); cargarPines()" />
+
+    <p-select [options]="gruposFiltroOptions()"
               optionLabel="name"
               optionValue="id"
               placeholder="Grupo"
@@ -102,10 +111,15 @@
                    [severity]="getStatusSeverity(pin.status)" /></td>
           <td class="text-sm text-gray-600">{{ pin.group_name ?? '—' }}</td>
           <td class="text-sm text-gray-600">{{ pin.course_name ?? '—' }}</td>
-          <td class="text-xs"
-              [class.text-red-500]="pin.expires_at * 1000 < now"
-              [class.text-gray-500]="pin.expires_at * 1000 >= now">
-            {{ pin.expires_at * 1000 | date:'dd/MM/yyyy' }}
+          <td class="text-xs">
+            @if (pin.status === 'active' && pin.expires_at) {
+              <span [class.text-red-500]="pin.expires_at * 1000 < now"
+                    [class.text-gray-500]="pin.expires_at * 1000 >= now">
+                Hasta {{ pin.expires_at * 1000 | date:'dd/MM/yyyy' }}
+              </span>
+            } @else {
+              <span class="text-gray-400">{{ getDurationLabel(pin.duration_days) }}</span>
+            }
           </td>
           <td class="text-xs text-gray-400">
             {{ pin.activated_at ? (pin.activated_at * 1000 | date:'dd/MM/yy') : '—' }}
@@ -142,8 +156,21 @@
     </p>
 
     <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700">Colegio</label>
+      <p-select [options]="colegios()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Filtrar por colegio (opcional)"
+                [showClear]="true"
+                class="w-full"
+                appendTo="body"
+                [ngModel]="asignarColegioId()"
+                (ngModelChange)="asignarColegioId.set($event); asignarGrupoId.set(null)" />
+    </div>
+
+    <div class="flex flex-col gap-1">
       <label class="text-sm font-medium text-gray-700">Grupo</label>
-      <p-select [options]="grupos()"
+      <p-select [options]="gruposAsignarOptions()"
                 optionLabel="name"
                 optionValue="id"
                 placeholder="Seleccionar grupo"

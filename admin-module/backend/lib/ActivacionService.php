@@ -51,8 +51,9 @@ class ActivacionService
         // ── 2. Buscar en ct_pin ───────────────────────────────────────────────
         $sql = "SELECT p.id, p.hash, p.role, p.status, p.group_id,
                        p.moodle_course_id, p.activated_by, p.activated_at,
+                       p.expires_at   AS expires_at,
                        pkg.id         AS package_id,
-                       pkg.expires_at AS expires_at,
+                       pkg.duration_days,
                        c.fullname     AS course_name,
                        g.name         AS group_name,
                        o.name         AS org_name
@@ -81,15 +82,16 @@ class ActivacionService
         return [
             'type' => 'regular',
             'pin'  => [
-                'id'          => (int)$pin->id,
-                'hash'        => $pin->hash,
-                'role'        => $pin->role,
-                'status'      => $pin->status,
-                'expires_at'  => (int)$pin->expires_at,
-                'group_name'  => $pin->group_name,
-                'course_id'   => $pin->moodle_course_id ? (int)$pin->moodle_course_id : null,
-                'course_name' => $pin->course_name,
-                'org_name'    => $pin->org_name,
+                'id'            => (int)$pin->id,
+                'hash'          => $pin->hash,
+                'role'          => $pin->role,
+                'status'        => $pin->status,
+                'duration_days' => (int)$pin->duration_days,
+                'expires_at'    => $pin->expires_at ? (int)$pin->expires_at : null,
+                'group_name'    => $pin->group_name,
+                'course_id'     => $pin->moodle_course_id ? (int)$pin->moodle_course_id : null,
+                'course_name'   => $pin->course_name,
+                'org_name'      => $pin->org_name,
             ],
         ];
     }
@@ -138,14 +140,15 @@ class ActivacionService
             'mnethostid' => $CFG->mnet_localhost_id,
         ], true, false);
 
-        // Asignar rol teacher a nivel de categoría (herencia de contexto)
-        $teacherRoleId = $DB->get_field('role', 'id', ['shortname' => 'teacher'], MUST_EXIST);
+        // Asignar rol ct_gestor a nivel de categoría (herencia de contexto)
+        $gestorRoleId = $DB->get_field('role', 'id', ['shortname' => 'ct_gestor'], MUST_EXIST);
         $org    = $DB->get_record('ct_organization', ['id' => $pin->organization_id], '*', MUST_EXIST);
         $catCtx = context_coursecat::instance($org->moodle_category_id);
-        role_assign($teacherRoleId, $userId, $catCtx->id);
+        role_assign($gestorRoleId, $userId, $catCtx->id);
 
-        // Matricular explícitamente como teacher en TODOS los cursos del árbol
+        // Matricular explícitamente con rol ct_gestor en TODOS los cursos del árbol
         // de la categoría (incluyendo subcategorías recursivamente).
+        // Esto garantiza acceso a calificaciones, que requiere contexto de curso.
         $enrol      = enrol_get_plugin('manual');
         $courseIds  = $this->getAllCourseIdsInCategory((int)$org->moodle_category_id);
         foreach ($courseIds as $courseId) {
@@ -155,7 +158,7 @@ class ActivacionService
                 'status'   => ENROL_INSTANCE_ENABLED,
             ]);
             if ($instance) {
-                $enrol->enrol_user($instance, $userId, $teacherRoleId);
+                $enrol->enrol_user($instance, $userId, $gestorRoleId);
             }
         }
 
@@ -245,8 +248,9 @@ class ActivacionService
         $pin = $DB->get_record('ct_pin', ['hash' => $hash], '*', MUST_EXIST);
 
         // Verificar que el pin es activable
+        $pinExpiresAt = $pin->expires_at ? (int)$pin->expires_at : 0;
         $activable = ($pin->status === 'assigned')
-            || ($pin->status === 'active' && (int)$pin->expires_at <= time());
+            || ($pin->status === 'active' && $pinExpiresAt <= time());
 
         if (!$activable) {
             throw new InvalidArgumentException('Este pin no está en un estado activable.');
@@ -262,9 +266,18 @@ class ActivacionService
         if (empty($ctGroup->moodle_group_id)) {
             require_once $CFG->dirroot . '/group/lib.php';
 
+            // Componer nombre Moodle: "{colegio} - {grupo}" (si tiene colegio asignado)
+            $moodleGroupName = $ctGroup->name;
+            if (!empty($ctGroup->colegio_id)) {
+                $colegio = $DB->get_record('ct_colegio', ['id' => (int)$ctGroup->colegio_id]);
+                if ($colegio) {
+                    $moodleGroupName = $colegio->name . ' - ' . $ctGroup->name;
+                }
+            }
+
             $moodleGroupId = groups_create_group((object)[
                 'courseid' => $pin->moodle_course_id,
-                'name'     => $ctGroup->name,
+                'name'     => $moodleGroupName,
             ]);
 
             $DB->update_record('ct_group', (object)[
@@ -280,8 +293,12 @@ class ActivacionService
         // Resolver el rol de Moodle según el shortname del pin
         $roleId = $DB->get_field('role', 'id', ['shortname' => $pin->role], MUST_EXIST);
 
-        // Matricular al usuario con enrol_manual
+        // Calcular timeend: ahora + duración del paquete en días
         $pkg      = $DB->get_record('ct_pin_package', ['id' => $pin->package_id], '*', MUST_EXIST);
+        $now      = time();
+        $timeend  = $now + ((int)$pkg->duration_days * 86400);
+
+        // Matricular al usuario con enrol_manual
         $enrol    = enrol_get_plugin('manual');
         $instance = $DB->get_record('enrol', [
             'courseid' => $pin->moodle_course_id,
@@ -289,7 +306,7 @@ class ActivacionService
             'status'   => ENROL_INSTANCE_ENABLED,
         ], '*', MUST_EXIST);
 
-        $enrol->enrol_user($instance, $moodleUserId, $roleId, 0, $pkg->expires_at);
+        $enrol->enrol_user($instance, $moodleUserId, $roleId, 0, $timeend);
 
         // Añadir al grupo
         if (!function_exists('groups_add_member')) {
@@ -297,20 +314,33 @@ class ActivacionService
         }
         groups_add_member($moodleGroupId, $moodleUserId);
 
-        // Actualizar el estado del pin
+        // Configurar el curso con grupos separados forzados (idempotente)
+        $course = $DB->get_record('course', ['id' => (int)$pin->moodle_course_id], '*', MUST_EXIST);
+        if ((int)$course->groupmode !== SEPARATEGROUPS || !(int)$course->groupmodeforce) {
+            $DB->update_record('course', (object)[
+                'id'             => $course->id,
+                'groupmode'      => SEPARATEGROUPS,
+                'groupmodeforce' => 1,
+            ]);
+            rebuild_course_cache((int)$pin->moodle_course_id);
+        }
+
+        // Actualizar el estado del pin con la fecha de expiración calculada
         $DB->update_record('ct_pin', (object)[
             'id'           => $pin->id,
             'status'       => 'active',
             'activated_by' => $moodleUserId,
-            'activated_at' => time(),
+            'activated_at' => $now,
+            'expires_at'   => $timeend,
         ]);
 
         return [
-            'ok'         => true,
-            'course_id'  => (int)$pin->moodle_course_id,
-            'course_url' => $CFG->wwwroot . '/course/view.php?id=' . $pin->moodle_course_id,
-            'group_name' => $ctGroup->name,
-            'expires_at' => (int)$pkg->expires_at,
+            'ok'            => true,
+            'course_id'     => (int)$pin->moodle_course_id,
+            'course_url'    => $CFG->wwwroot . '/course/view.php?id=' . $pin->moodle_course_id,
+            'group_name'    => $ctGroup->name,
+            'expires_at'    => $timeend,
+            'duration_days' => (int)$pkg->duration_days,
         ];
     }
 

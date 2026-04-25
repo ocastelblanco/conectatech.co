@@ -1,4 +1,5 @@
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, signal, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -26,10 +27,11 @@ function cedulaValidator(control: AbstractControl): ValidationErrors | null {
   providers: [MessageService],
   templateUrl: './activar.component.html',
 })
-export class ActivarComponent {
+export class ActivarComponent implements OnInit {
   private readonly api   = inject(ApiService);
   private readonly toast = inject(MessageService);
   private readonly fb    = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
 
   // Estado
   readonly paso       = signal<Paso>('inicio');
@@ -61,6 +63,13 @@ export class ActivarComponent {
     username:  ['', [Validators.required, cedulaValidator]],
     password:  ['', [Validators.required, Validators.minLength(8)]],
   });
+
+  ngOnInit(): void {
+    const hash = this.route.snapshot.paramMap.get('hash');
+    if (hash) {
+      this.hashInput.set(hash);
+    }
+  }
 
   // ── Paso 1: resolver pin ────────────────────────────────────────────────────
 
@@ -190,8 +199,16 @@ export class ActivarComponent {
     return map[role] ?? role;
   }
 
-  formatDate(ts: number): string {
+  formatDate(ts: number | null | undefined): string {
+    if (!ts) return '';
     return new Date(ts * 1000).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+
+  formatValidez(pin: any): string {
+    if (!pin) return '';
+    if (pin.expires_at) return this.formatDate(pin.expires_at);
+    const meses = Math.round((pin.duration_days ?? 93) / 30.4);
+    return `${meses} mes${meses !== 1 ? 'es' : ''} a partir de la activación`;
   }
 
   fieldInvalid(form: any, field: string): boolean {

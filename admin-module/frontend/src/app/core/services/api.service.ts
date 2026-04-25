@@ -102,7 +102,7 @@ export class ApiService {
     if (orgId) params = params.set('org_id', orgId);
     return this.http.get(`${API_BASE}/paquetes`, { params });
   }
-  crearPaquete(body: { organization_id: number; teacher_role: string; expires_at: number; cantidad: number }): Observable<any> {
+  crearPaquete(body: { organization_id: number; teacher_role: string; duration_days: number; cantidad: number }): Observable<any> {
     return this.http.post(`${API_BASE}/paquetes`, body);
   }
   asignarPaquete(id: number, body: { organization_id: number }): Observable<any> {
@@ -141,12 +141,30 @@ export class ApiService {
   getGestorOrganizacion(): Observable<any> {
     return this.http.get(`${API_BASE}/gestor/organizacion`);
   }
+  getGestorColegios(): Observable<any> {
+    return this.http.get(`${API_BASE}/gestor/colegios`);
+  }
+  crearGestorColegio(body: { name: string }): Observable<any> {
+    return this.http.post(`${API_BASE}/gestor/colegios`, body);
+  }
   getGestorGrupos(): Observable<any> {
     return this.http.get(`${API_BASE}/gestor/grupos`);
   }
-  crearGestorGrupo(body: { name: string }): Observable<any> {
+  crearGestorGrupo(body: { colegio_id?: number; name: string }): Observable<any> {
     return this.http.post(`${API_BASE}/gestor/grupos`, body);
   }
+  getGestorUsuarios(search?: string): Observable<any> {
+    let p = new HttpParams();
+    if (search) p = p.set('search', search);
+    return this.http.get(`${API_BASE}/gestor/usuarios`, { params: p });
+  }
+  resetearPasswordGestor(userId: number, password: string): Observable<any> {
+    return this.http.post(`${API_BASE}/gestor/usuarios/${userId}/reset-password`, { password });
+  }
+  editarPerfilGestor(userId: number, body: { firstname: string; lastname: string; email: string }): Observable<any> {
+    return this.http.put(`${API_BASE}/gestor/usuarios/${userId}`, body);
+  }
+
   getGestorPinesLista(params?: { status?: string; group_id?: number; course_id?: number }): Observable<any> {
     let p = new HttpParams();
     if (params?.status)    p = p.set('status',    params.status);

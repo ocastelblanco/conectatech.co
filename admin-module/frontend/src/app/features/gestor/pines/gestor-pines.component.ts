@@ -25,24 +25,39 @@ export class GestorPinesComponent implements OnInit {
   readonly gestorState        = inject(GestorStateService);
 
   readonly pines       = signal<any[]>([]);
+  readonly colegios    = signal<any[]>([]);
   readonly grupos      = signal<any[]>([]);
   readonly loading     = signal(true);
   readonly saving      = signal(false);
   readonly descargando = signal(false);
 
   // Filtros
-  readonly filtroStatus   = signal<string | null>(null);
-  readonly filtroGrupoId  = signal<number | null>(null);
-  readonly filtroCursoId  = signal<number | null>(null);
+  readonly filtroStatus    = signal<string | null>(null);
+  readonly filtroColegioId = signal<number | null>(null);
+  readonly filtroGrupoId   = signal<number | null>(null);
+  readonly filtroCursoId   = signal<number | null>(null);
 
   // Selección para asignación masiva
   readonly seleccionados = signal<any[]>([]);
   readonly dialogAsignar = signal(false);
 
   // Formulario de asignación
-  readonly asignarGrupoId  = signal<number | null>(null);
-  readonly asignarCursoId  = signal<number | null>(null);
-  readonly asignarRol      = signal<string>('student');
+  readonly asignarColegioId = signal<number | null>(null);
+  readonly asignarGrupoId   = signal<number | null>(null);
+  readonly asignarCursoId   = signal<number | null>(null);
+  readonly asignarRol       = signal<string>('student');
+
+  readonly gruposFiltroOptions = computed(() => {
+    const id = this.filtroColegioId();
+    if (!id) return this.grupos();
+    return (this.colegios().find(c => c.id === id)?.grupos ?? []) as any[];
+  });
+
+  readonly gruposAsignarOptions = computed(() => {
+    const id = this.asignarColegioId();
+    if (!id) return this.grupos();
+    return (this.colegios().find(c => c.id === id)?.grupos ?? []) as any[];
+  });
 
   readonly now = Date.now();
 
@@ -75,8 +90,16 @@ export class GestorPinesComponent implements OnInit {
   readonly cursos = computed(() => this.gestorState.org()?.courses ?? []);
 
   ngOnInit(): void {
+    this.cargarColegios();
     this.cargarGrupos();
     this.cargarPines();
+  }
+
+  private cargarColegios(): void {
+    this.api.getGestorColegios().subscribe({
+      next: (r: any) => this.colegios.set(r.data ?? []),
+      error: () => {}
+    });
   }
 
   private cargarGrupos(): void {
@@ -104,6 +127,7 @@ export class GestorPinesComponent implements OnInit {
       this.toast.add({ severity: 'warn', summary: 'Aviso', detail: 'Selecciona al menos un pin' });
       return;
     }
+    this.asignarColegioId.set(null);
     this.asignarGrupoId.set(null);
     this.asignarCursoId.set(null);
     this.asignarRol.set('student');
@@ -176,5 +200,10 @@ export class GestorPinesComponent implements OnInit {
   getRolLabel(role: string): string {
     const map: Record<string, string> = { student: 'Estudiante', teacher: 'Profesor', editingteacher: 'Prof. Editor' };
     return map[role] ?? role;
+  }
+
+  getDurationLabel(days: number): string {
+    const map: Record<number, string> = { 93: '3 meses', 182: '6 meses', 365: '12 meses' };
+    return map[days] ?? `${days} días`;
   }
 }

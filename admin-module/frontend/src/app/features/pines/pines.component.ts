@@ -6,7 +6,6 @@ import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { DatePickerModule } from 'primeng/datepicker';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
@@ -21,7 +20,7 @@ import { ApiService } from '../../core/services/api.service';
   imports: [
     DatePipe, FormsModule,
     ButtonModule, TableModule, DialogModule, InputTextModule,
-    SelectModule, DatePickerModule, ToastModule, ConfirmDialogModule,
+    SelectModule, ToastModule, ConfirmDialogModule,
     TagModule, TooltipModule,
   ],
   templateUrl: './pines.component.html',
@@ -39,13 +38,17 @@ export class PinesComponent implements OnInit {
   readonly nuevoPaquete   = signal<{
     organization_id: number;
     teacher_role: string;
-    expires_at: Date | null;
+    duration_days: number;
     cantidad: number;
-  }>({ organization_id: 0, teacher_role: 'teacher', expires_at: null, cantidad: 10 });
+  }>({ organization_id: 0, teacher_role: 'teacher', duration_days: 93, cantidad: 10 });
   readonly asignandoPaquete = signal<any | null>(null);
   readonly asignarOrgId     = signal<number | null>(null);
 
-  readonly tomorrow = new Date(Date.now() + 86400 * 1000);
+  readonly duraciones = [
+    { label: '3 meses (93 días)',   value: 93  },
+    { label: '6 meses (182 días)',  value: 182 },
+    { label: '12 meses (365 días)', value: 365 },
+  ];
 
   readonly rolesProfesor = [
     { label: 'Profesor editor', value: 'editingteacher' },
@@ -83,19 +86,19 @@ export class PinesComponent implements OnInit {
 
   crearPaquete(): void {
     const p = this.nuevoPaquete();
-    if (!p.organization_id || !p.expires_at) return;
+    if (!p.organization_id || !p.duration_days) return;
     this.saving.set(true);
     const body = {
       organization_id: p.organization_id,
-      teacher_role: p.teacher_role,
-      expires_at: Math.floor(p.expires_at.getTime() / 1000),
-      cantidad: p.cantidad,
+      teacher_role:    p.teacher_role,
+      duration_days:   p.duration_days,
+      cantidad:        p.cantidad,
     };
     this.api.crearPaquete(body).subscribe({
       next: () => {
         this.saving.set(false);
         this.creandoPaquete.set(false);
-        this.nuevoPaquete.set({ organization_id: 0, teacher_role: 'teacher', expires_at: null, cantidad: 10 });
+        this.nuevoPaquete.set({ organization_id: 0, teacher_role: 'teacher', duration_days: 93, cantidad: 10 });
         this.toast.add({ severity: 'success', summary: 'Creado', detail: 'Paquete creado exitosamente' });
         this.cargarPaquetes();
       },
@@ -139,19 +142,17 @@ export class PinesComponent implements OnInit {
     this.nuevoPaquete.update(p => ({ ...p, teacher_role: rol }));
   }
 
-  updateNuevoPaqueteFecha(fecha: Date | null): void {
-    this.nuevoPaquete.update(p => ({ ...p, expires_at: fecha }));
+  updateNuevoPaqueteDuracion(dias: number): void {
+    this.nuevoPaquete.update(p => ({ ...p, duration_days: dias }));
   }
 
   updateNuevoPaqueteCantidad(cantidad: number): void {
     this.nuevoPaquete.update(p => ({ ...p, cantidad }));
   }
 
-  getPinExpirClass(ts: number): string {
-    const now = Date.now() / 1000;
-    if (ts < now)                     return 'text-red-600 font-semibold';
-    if (ts < now + 7 * 86400)         return 'text-orange-500 font-semibold';
-    return 'text-gray-600';
+  getDurationLabel(days: number): string {
+    const map: Record<number, string> = { 93: '3 meses', 182: '6 meses', 365: '12 meses' };
+    return map[days] ?? `${days} días`;
   }
 
   getRolSeverity(rol: string): 'danger' | 'warn' | 'info' {

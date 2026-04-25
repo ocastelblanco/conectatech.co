@@ -15,18 +15,18 @@ function handleCrearPaquete(): void
     global $USER;
 
     $body        = readJsonBody();
-    $orgId       = isset($body['organization_id']) ? (int)$body['organization_id'] : 0;
-    $teacherRole = trim($body['teacher_role'] ?? '');
-    $expiresAt   = isset($body['expires_at'])   ? (int)$body['expires_at']   : 0;
-    $cantidad    = isset($body['cantidad'])      ? (int)$body['cantidad']     : 0;
+    $orgId        = isset($body['organization_id']) ? (int)$body['organization_id'] : 0;
+    $teacherRole  = trim($body['teacher_role'] ?? '');
+    $durationDays = isset($body['duration_days']) ? (int)$body['duration_days'] : 0;
+    $cantidad     = isset($body['cantidad'])      ? (int)$body['cantidad']      : 0;
 
-    if ($orgId === 0)       badRequest('El campo organization_id es obligatorio.');
-    if ($teacherRole === '') badRequest('El campo teacher_role es obligatorio.');
-    if ($expiresAt === 0)   badRequest('El campo expires_at es obligatorio (unix timestamp).');
-    if ($cantidad === 0)    badRequest('El campo cantidad es obligatorio.');
+    if ($orgId === 0)        badRequest('El campo organization_id es obligatorio.');
+    if ($teacherRole === '')  badRequest('El campo teacher_role es obligatorio.');
+    if ($durationDays === 0)  badRequest('El campo duration_days es obligatorio (93, 182 o 365).');
+    if ($cantidad === 0)      badRequest('El campo cantidad es obligatorio.');
 
     $svc    = new PinesService();
-    $result = $svc->crearPaquete($orgId, $teacherRole, $expiresAt, $cantidad, (int)$USER->id);
+    $result = $svc->crearPaquete($orgId, $teacherRole, $durationDays, $cantidad, (int)$USER->id);
     while (ob_get_level() > 0) { ob_end_clean(); }
     http_response_code(201);
     echo json_encode(['ok' => true, 'data' => $result]);

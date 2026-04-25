@@ -22,11 +22,13 @@ class PinesService
      * El rol de cada pin se fija en 'student' por defecto; el gestor puede
      * cambiarlo al asignarlos (excepto el teacher_role del paquete, que es
      * el rol máximo permitido para pines de tipo profesor).
+     * $durationDays define la vigencia de la matrícula desde el momento de
+     * activación: 93 = 3 meses, 182 = 6 meses, 365 = 12 meses.
      */
     public function crearPaquete(
         int    $orgId,
         string $teacherRole,
-        int    $expiresAt,
+        int    $durationDays,
         int    $cantidad,
         int    $adminUserId
     ): array {
@@ -42,14 +44,14 @@ class PinesService
             throw new InvalidArgumentException('La cantidad debe estar entre 1 y 1000.');
         }
 
-        if ($expiresAt <= time()) {
-            throw new InvalidArgumentException('La fecha de expiración debe ser futura.');
+        if (!in_array($durationDays, [93, 182, 365], true)) {
+            throw new InvalidArgumentException("duration_days debe ser 93, 182 o 365.");
         }
 
         $pkgId = $DB->insert_record('ct_pin_package', (object)[
             'organization_id' => $orgId,
             'teacher_role'    => $teacherRole,
-            'expires_at'      => $expiresAt,
+            'duration_days'   => $durationDays,
             'created_by'      => $adminUserId,
             'created_at'      => time(),
         ]);
@@ -72,7 +74,7 @@ class PinesService
             'id'              => (int)$pkgId,
             'organization_id' => $orgId,
             'teacher_role'    => $teacherRole,
-            'expires_at'      => $expiresAt,
+            'duration_days'   => $durationDays,
             'cantidad'        => $cantidad,
         ];
     }
@@ -96,7 +98,7 @@ class PinesService
                 'organization_id'   => (int)$pkg->organization_id,
                 'organization_name' => $org ? $org->name : null,
                 'teacher_role'      => $pkg->teacher_role,
-                'expires_at'        => (int)$pkg->expires_at,
+                'duration_days'     => (int)$pkg->duration_days,
                 'created_at'        => (int)$pkg->created_at,
                 'pins'              => $this->getPinCountsByPackage((int)$pkg->id),
             ];
@@ -156,8 +158,8 @@ class PinesService
             $params['orgid'] = $orgId;
         }
 
-        $sql = "SELECT p.id, p.hash, p.role, p.status, p.activated_at,
-                       pkg.id AS pkg_id, pkg.teacher_role, pkg.expires_at,
+        $sql = "SELECT p.id, p.hash, p.role, p.status, p.activated_at, p.expires_at,
+                       pkg.id AS pkg_id, pkg.teacher_role, pkg.duration_days,
                        org.name AS org_name,
                        c.fullname AS course_name,
                        g.name AS group_name,
@@ -180,11 +182,12 @@ class PinesService
                 'hash'               => $row->hash,
                 'role'               => $row->role,
                 'status'             => $row->status,
-                'expires_at'         => (int)$row->expires_at,
+                'expires_at'         => $row->expires_at ? (int)$row->expires_at : null,
                 'activated_at'       => $row->activated_at ? (int)$row->activated_at : null,
                 'activated_username' => $row->activated_username,
                 'package_id'         => (int)$row->pkg_id,
                 'teacher_role'       => $row->teacher_role,
+                'duration_days'      => (int)$row->duration_days,
                 'organization_name'  => $row->org_name,
                 'course_name'        => $row->course_name,
                 'group_name'         => $row->group_name,

@@ -294,11 +294,11 @@ class OrganizacionService
             }
         }
 
-        // Revocar rol en el contexto de la categoría
+        // Revocar rol ct_gestor en el contexto de la categoría
         $catCtx = context_coursecat::instance($moodleCategoryId);
-        $teacherRoleId = $DB->get_field('role', 'id', ['shortname' => 'teacher']);
-        if ($teacherRoleId) {
-            role_unassign($teacherRoleId, $moodleUserId, $catCtx->id);
+        $gestorRoleId = $DB->get_field('role', 'id', ['shortname' => 'ct_gestor']);
+        if ($gestorRoleId) {
+            role_unassign($gestorRoleId, $moodleUserId, $catCtx->id);
         }
 
         // Soft-delete del usuario Moodle
