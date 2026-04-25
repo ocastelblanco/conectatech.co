@@ -33,3 +33,4 @@ docs/.obsidian/
 
 # Worktrees
 .claude/worktrees/
+lambda/email-forwarder/function.zip
