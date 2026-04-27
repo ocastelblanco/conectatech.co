@@ -70,6 +70,10 @@ class PinesService
             ]);
         }
 
+        // Notificar a gestores de la organización (no bloqueante)
+        require_once __DIR__ . '/EmailService.php';
+        EmailService::notificarPaqueteCreado($orgId, $cantidad, $teacherRole);
+
         return [
             'id'              => (int)$pkgId,
             'organization_id' => $orgId,

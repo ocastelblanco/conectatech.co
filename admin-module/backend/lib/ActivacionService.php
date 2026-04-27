@@ -334,6 +334,10 @@ class ActivacionService
             'expires_at'   => $timeend,
         ]);
 
+        // Notificar al usuario sobre la activación exitosa (no bloqueante)
+        require_once __DIR__ . '/EmailService.php';
+        EmailService::notificarPinActivado($moodleUserId, $course->fullname, $timeend);
+
         return [
             'ok'            => true,
             'course_id'     => (int)$pin->moodle_course_id,

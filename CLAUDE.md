@@ -6,7 +6,7 @@
 
 ## Descripción del proyecto
 
-**ConectaTech.co** es una plataforma educativa B2B para colegios colombianos construida sobre Moodle 5.1.3. El panel de administración (Angular 21) permite al equipo de IdeasMaestras gestionar contenido, organizaciones, pines de acceso y matrículas. Los estudiantes acceden a sus cursos directamente en el LMS.
+**ConectaTech.co** es una plataforma educativa B2B para colegios colombianos construida sobre Moodle 5.1.3. El panel de administración (Angular 21) permite al equipo de ConectaTech gestionar contenido, organizaciones, pines de acceso y matrículas. Los estudiantes acceden a sus cursos directamente en el LMS.
 
 Leer PRD.md para contexto de negocio. Leer tech-specs.md para arquitectura técnica completa. Leer MEMORY.md al inicio de cada sesión para restaurar el estado del proyecto.
 
