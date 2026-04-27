@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EmailService — notificaciones transaccionales via Moodle (SMTP → AWS SES).
  *
@@ -8,9 +9,55 @@
  */
 class EmailService
 {
+    private const MONTHS_ES = [
+        1  => 'enero',
+        2  => 'febrero',
+        3  => 'marzo',
+        4  => 'abril',
+        5  => 'mayo',
+        6  => 'junio',
+        7  => 'julio',
+        8  => 'agosto',
+        9  => 'septiembre',
+        10 => 'octubre',
+        11 => 'noviembre',
+        12 => 'diciembre',
+    ];
+
     private static function noreply(): object
     {
         return \core_user::get_noreply_user();
+    }
+
+    private static function descripcionTipoPaquete(string $teacherRole): string
+    {
+        if ($teacherRole === 'editingteacher') {
+            return 'profesores editores';
+        }
+        return 'profesores';
+    }
+
+    private static function formatearFechaEs(int $timestamp): string
+    {
+        if (class_exists('\IntlDateFormatter')) {
+            $formatter = new \IntlDateFormatter(
+                'es_ES',
+                \IntlDateFormatter::LONG,
+                \IntlDateFormatter::NONE,
+                date_default_timezone_get(),
+                \IntlDateFormatter::GREGORIAN,
+                "d 'de' MMMM 'de' y"
+            );
+            $fecha = $formatter->format($timestamp);
+            if ($fecha !== false) {
+                return mb_strtolower($fecha, 'UTF-8');
+            }
+        }
+
+        $dia = date('d', $timestamp);
+        $mes = self::MONTHS_ES[(int)date('n', $timestamp)] ?? date('F', $timestamp);
+        $anio = date('Y', $timestamp);
+        return "{$dia} de {$mes} de {$anio}";
     }
 
     /**
@@ -28,7 +75,7 @@ class EmailService
             );
             if (empty($gestores)) return;
 
-            $para    = $teacherRole === 'student' ? 'estudiantes' : 'profesores';
+            $para    = self::descripcionTipoPaquete($teacherRole);
             $noreply = self::noreply();
 
             foreach ($gestores as $gestor) {
@@ -56,14 +103,14 @@ class EmailService
             $usuario = $DB->get_record('user', ['id' => $userId, 'deleted' => 0]);
             if (!$usuario) return;
 
-            $fechaVigencia = date('d \d\e F \d\e Y', $expiresAt);
+            $fechaVigencia = self::formatearFechaEs($expiresAt);
             $noreply       = self::noreply();
 
             $asunto = "Tu acceso a \"{$courseName}\" ha sido activado";
             $texto  = "Hola {$usuario->firstname},\n\n"
                 . "Tu acceso al curso \"{$courseName}\" ha sido activado exitosamente.\n\n"
                 . "Vigencia: hasta el {$fechaVigencia}.\n\n"
-                . "Ingresa aquí: https://conectatech.co\n\n"
+                . "Ingresa aquí: https://conectatech.co/login\n\n"
                 . "Saludos,\n"
                 . "El equipo de ConectaTech";
             email_to_user($usuario, $noreply, $asunto, $texto);

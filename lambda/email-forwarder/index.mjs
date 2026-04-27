@@ -50,14 +50,18 @@ function streamToBuffer(stream) {
 //   (e.g. ...@amazonses.com) que en sandbox SES verifica y rechaza
 const STRIP_HEADERS = ['DKIM-Signature', 'Return-Path'];
 
+function normalizeToCrlf(rawEmail) {
+  return rawEmail.replace(/\r?\n/g, '\r\n');
+}
+
 function stripProblematicHeaders(rawEmail) {
-  const sepMatch = rawEmail.match(/\r?\n\r?\n/);
+  const sepMatch = rawEmail.match(/\r\n\r\n/);
   if (!sepMatch) return rawEmail;
 
   const headersPart = rawEmail.slice(0, sepMatch.index);
   const bodyPart    = rawEmail.slice(sepMatch.index);
 
-  const lines    = headersPart.split(/\r?\n/);
+  const lines    = headersPart.split('\r\n');
   const filtered = [];
   let skipping   = false;
 
@@ -74,7 +78,7 @@ function stripProblematicHeaders(rawEmail) {
     filtered.push(line);
   }
 
-  return filtered.join('\n') + bodyPart;
+  return filtered.join('\r\n') + bodyPart;
 }
 
 function rewriteFrom(rawEmail, originalFrom) {
@@ -94,7 +98,7 @@ export const handler = async (event) => {
 
   const s3Obj    = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
   const rawBuffer = await streamToBuffer(s3Obj.Body);
-  const rawEmail  = rawBuffer.toString('utf-8');
+  const rawEmail  = normalizeToCrlf(rawBuffer.toString('utf-8'));
 
   // Extraer destinatarios @conectatech.co
   const toMatch  = rawEmail.match(/^To:\s*(.+)$/im);
