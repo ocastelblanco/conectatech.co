@@ -547,7 +547,7 @@ No hay archivo `.env` explícito. La configuración vive en:
 |---|---|---|---|
 | **Público** | Cualquier visitante | Ninguna | — |
 | **Gestor** | Representante de organización | Cookie `MoodleSession` + consulta a `ct_gestor` | `GestorAuth::verificar()` — consulta BD |
-| **Administrador** | Equipo IdeasMaestras | Cookie `MoodleSession` + `is_siteadmin()` | `auth.php` — llama API Moodle |
+| **Administrador** | Equipo ConectaTech | Cookie `MoodleSession` + `is_siteadmin()` | `auth.php` — llama API Moodle |
 
 ### 8.2 CORS
 

@@ -68,12 +68,11 @@ Configuración a implementar en el `FORWARD_MAP` de la Lambda (fuente: `redirecc
 
 | Dirección entrante | Destino Gmail |
 |---|---|
-| `info@conectatech.co` | `ideasmaestrasltda@gmail.com` |
-| `admin@conectatech.co` | `ocastelblanco@gmail.com` |
-| `ventas@conectatech.co` | `ajumoto@gmail.com` |
+| `info@conectatech.co` | `somos.conectatech@gmail.com` |
+| `digital@conectatech.co` | `ocastelblanco@gmail.com` |
 | `ana.mora@conectatech.co` | `ajumoto@gmail.com` |
 | `oliver.castelblanco@conectatech.co` | `ocastelblanco@gmail.com` |
-| `@conectatech.co` (catch-all) | `ideasmaestrasltda@gmail.com` |
+| `@conectatech.co` (catch-all) | `somos.conectatech@gmail.com` |
 
 ---
 
@@ -84,7 +83,7 @@ Mientras la cuenta esté en sandbox (`Max24HourSend = 200`):
 - **Solo se puede enviar correos a direcciones verificadas en SES.**
 - El reenvío de Lambda fallará silenciosamente si el Gmail de destino no está verificado.
 - **Para las pruebas en sandbox**, hay que verificar los 3 Gmail de destino como identidades en SES:
-  - `ideasmaestrasltda@gmail.com`
+  - `somos.conectatech@gmail.com`
   - `ocastelblanco@gmail.com`
   - `ajumoto@gmail.com`
 
@@ -228,9 +227,9 @@ La solicitud de salida del sandbox (Fase 4) requiere intervención humana y apro
 | # | Acción | Responsable | Detalle |
 |---|--------|-------------|---------|
 | 5.1 | Prueba outbound Moodle | Agente/Humano | Moodle → Admin → Correo de prueba → verificar llegada (no spam) |
-| 5.2 | Prueba inbound `info@` | Humano | Enviar a `info@conectatech.co` → verificar en `ideasmaestrasltda@gmail.com` |
-| 5.3 | Prueba inbound `admin@` | Humano | Enviar a `admin@conectatech.co` → verificar en `ocastelblanco@gmail.com` |
-| 5.4 | Prueba catch-all | Humano | Enviar a `xyz@conectatech.co` → verificar en `ideasmaestrasltda@gmail.com` |
+| 5.2 | Prueba inbound `info@` | Humano | Enviar a `info@conectatech.co` → verificar en `somos.conectatech@gmail.com` |
+| 5.3 | Prueba inbound `digital@` | Humano | Enviar a `digital@conectatech.co` → verificar en `ocastelblanco@gmail.com` |
+| 5.4 | Prueba catch-all | Humano | Enviar a `xyz@conectatech.co` → verificar en `somos.conectatech@gmail.com` |
 | 5.5 | Verificar headers | Humano | Gmail → "Mostrar original" → SPF pass, DKIM pass, no spam |
 | 5.6 | Alarma Lambda errors | Agente | CloudWatch: `conectatech-email-forwarder Errors > 0` → SNS → `ocastelblanco@gmail.com` |
 | 5.7 | Alarma SES bounces | Agente | CloudWatch: métrica `Bounce` SES > 5% |
@@ -337,7 +336,7 @@ scripts/email/                     (por crear)
 ### Fase 5 — Pruebas y Monitoreo
 - [ ] Prueba outbound exitosa
 - [ ] Prueba inbound `info@` exitosa
-- [ ] Prueba inbound `admin@` exitosa
+- [ ] Prueba inbound `digital@` exitosa
 - [ ] Prueba catch-all exitosa
 - [ ] Headers SPF/DKIM verificados
 - [ ] Alarmas CloudWatch configuradas
