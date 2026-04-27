@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-25 (rev. 6)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-27 (rev. 7)
 
 ---
 
@@ -20,40 +20,7 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Notificaciones por correo
-
-**Origen:** PRD §6 (Alta) · Prerequisito completado: sistema de correos AWS con SES + SMTP Moodle
-
-**Problema:** Actualmente no hay comunicación automática por correo en los dos eventos clave del negocio: cuando el administrador crea un paquete de pines para una organización (el gestor no se entera) y cuando un usuario activa su pin (no recibe confirmación).
-
-**Qué hacer:**
-
-### Notificación 1 — Gestor: nuevo paquete disponible
-En `PinesService::crearPaquete()`, después de insertar el paquete en BD:
-- Buscar todos los gestores activos de esa organización (`ct_gestor.moodle_userid`)
-- Enviar email con `email_to_user()` de Moodle indicando cantidad de pines, rol y que pueden verlos en `/gestor/pines`
-
-### Notificación 2 — Usuario: pin activado exitosamente
-En `ActivacionService::activarPin()`, después de matricular al usuario:
-- Obtener el usuario Moodle (`$DB->get_record('user', ['id' => $userId])`)
-- Enviar email de confirmación con nombre del curso y fecha de vigencia (`expires_at`)
-
-### Implementación
-Crear `admin-module/backend/lib/EmailService.php` con métodos estáticos que usan `email_to_user()` de Moodle. Envolver cada llamada en `try-catch` para que el fallo de email nunca rompa el flujo principal.
-
-**Archivos a modificar / crear:**
-1. `admin-module/backend/lib/EmailService.php` — **Nuevo**
-2. `admin-module/backend/lib/PinesService.php` — llamar `EmailService::notificarPaqueteCreado()`
-3. `admin-module/backend/lib/ActivacionService.php` — llamar `EmailService::notificarPinActivado()`
-
-**Definición de done:**
-- [ ] Al crear un paquete, el/los gestor(es) de la org reciben un email en su correo Moodle
-- [ ] Al activar un pin, el usuario recibe email de confirmación con nombre del curso y vigencia
-- [ ] Si el envío falla (p.ej. sandbox SES), la operación principal (crear paquete / activar pin) sigue funcionando sin error
-
----
-
-## Tarea 2 — [INFRA] Actualizar Moodle a la versión 5.2.x
+## Tarea 1 — [INFRA] Actualizar Moodle a la versión 5.2.x
 
 **Origen:** PRD §6 (Alta) · Referencia: [Nuevas features 5.2](https://docs.moodle.org/502/en/New_features)
 
@@ -91,6 +58,33 @@ Crear `admin-module/backend/lib/EmailService.php` con métodos estáticos que us
 
 ---
 
+## Tarea 2 — [FEATURE] Sección 0 de cursos finales
+
+**Origen:** PRD §6 (Alta) · ADR-005 · Deuda técnica desde despliegue inicial de árboles curriculares
+
+**Problema:** Al desplegar un árbol curricular, los cursos finales se crean sin contenido en su sección 0 (portada/bienvenida). Los estudiantes que acceden al curso ven una sección vacía. El editor de árboles en el panel admin no tiene UI para definir ese contenido por curso.
+
+**Qué hacer:**
+
+### Paso 1 — Editor de árboles: campo de sección 0 por curso final
+En el editor de árboles curriculares (`admin-module/frontend`), agregar un campo de texto enriquecido (o Markdown) por cada nodo de tipo "curso final" que permita definir el contenido de bienvenida. Este contenido se guarda como parte del JSON del árbol.
+
+### Paso 2 — Pipeline: poblar sección 0 al desplegar
+En `PobladorService` (o el servicio equivalente de despliegue), al crear cada curso final, usar la API de Moodle para insertar el contenido de la sección 0 si el árbol lo define.
+
+**Archivos a modificar / crear:**
+1. `admin-module/frontend/src/app/features/arboles/` — UI del editor (campo por curso final)
+2. `admin-module/backend/lib/PobladorService.php` (o equivalente) — poblar sección 0 al desplegar
+3. Posiblemente el schema JSON del árbol si no tiene campo para sección 0
+
+**Definición de done:**
+- [ ] El editor de árboles muestra un campo de contenido por cada curso final
+- [ ] Al desplegar el árbol, los cursos finales tienen su sección 0 poblada con ese contenido
+- [ ] Los árboles sin contenido de sección 0 se despliegan igual que antes (retrocompatibilidad)
+- [ ] El campo es opcional; no bloquea el despliegue si está vacío
+
+---
+
 ## Historial de tareas completadas
 
 | Fecha | Tarea | Descripción breve |
@@ -101,6 +95,7 @@ Crear `admin-module/backend/lib/EmailService.php` con métodos estáticos que us
 | 2026-04-17 | [FIX] Árbol de preview y PobladorService | `items_ordered` en MarkdownParser para orden correcto de nodos; `hiddenTitle` derivado de `semantic-blocks.json`; `TreeDragDropService` en providers (fix drag-and-drop); dropzone a la izquierda, card destino condicional; `eliminarPlaceholdersVacios()` en PobladorService |
 | 2026-04-25 | [FEATURE] Revisión sistema de pines + portal gestor | Vigencia por duración (3/6/12 meses desde activación), rol `ct_gestor` con 22 capabilities, portal gestor: colegios/grupos, pines, usuarios con edición de perfil y restablecimiento de contraseña, filtros por colegio/grupo/curso |
 | 2026-04-25 | [INFRA] Sistema de correos AWS | SES dominio+DKIM+MX, Lambda forwarder nodejs24.x con FORWARD_MAP, rule set SES, trigger S3→Lambda, Moodle SMTP configurado, 3 alarmas CloudWatch |
+| 2026-04-27 | [FEATURE] Notificaciones por correo | `EmailService.php` con `notificarPaqueteCreado()` y `notificarPinActivado()`; integrado en `PinesService` y `ActivacionService`; fecha en español vía `IntlDateFormatter`; CRLF correcto en Lambda forwarder |
 
 ---
 
@@ -176,3 +171,19 @@ Crear `admin-module/backend/lib/EmailService.php` con métodos estáticos que us
 - ⏸ Reportes de progreso: pausada
 
 **Resultado:** Tarea 1 = Notificaciones por correo (2 eventos: paquete creado → gestor; pin activado → usuario). Tarea 2 = Actualización Moodle 5.2.x (independiente, sin bloqueos).
+
+### 2026-04-27 — Revisión 7 (notificaciones por correo completadas)
+
+**Cambios en esta sesión:**
+- ✅ Notificaciones por correo completadas: `EmailService.php` creado, integrado en `PinesService` y `ActivacionService`
+- ✅ Fixes adicionales: fecha de vigencia en español correcto, descripción de rol correcta, CRLF en Lambda forwarder
+- PR #6 mergeada. `main` al día, ramas limpiadas.
+
+**Comparación PRD vs MEMORY:**
+- ✅ Sistema de correos AWS: completado
+- ✅ Notificaciones por correo: completado (PR #6)
+- 🎯 **Actualizar Moodle a 5.2.x**: Alta prioridad, sin bloqueos
+- 🎯 **Sección 0 de cursos finales**: Alta prioridad, deuda técnica desde v1
+- ⏸ Reportes de progreso: pausada
+
+**Resultado:** Tarea 1 = Actualizar Moodle a 5.2.x. Tarea 2 = Sección 0 de cursos finales (retoma prioridad después de la actualización).
