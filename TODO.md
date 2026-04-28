@@ -191,3 +191,17 @@ En `admin-module/frontend`, agregar una vista bajo `/pines/reporte` (o ruta nuev
 - 🎯 **Reportes de progreso**: Alta prioridad, siguiente feature de valor
 
 **Resultado:** Tarea 1 = Sección 0 de cursos finales. Tarea 2 = Reportes de progreso.
+
+### 2026-04-28 — Revisión 9 (Boost Union + estilos login)
+
+**Cambios en esta sesión:**
+- ✅ Boost Union actualizado v5.1-r8 → v5.1-r10; SCSS recompilando correctamente (1.27 MB)
+- ✅ Fix SCSS Moodle 5.2: `$white`, `$black`, `$logincontainer-shadow` añadidos al `scsspre` con `!default`
+- ✅ Fix selector login: `.login-form, .card` → `#theme_boost_union-loginform` (el contenedor visual real)
+- ✅ `moodle_old` eliminado del servidor (746 MB liberados)
+- ✅ PRs #7 y #8 fusionadas y ramas limpiadas
+
+**Comparación PRD vs MEMORY:**
+- Sin cambio de prioridades — todo lo de esta sesión fue infra/fix
+
+**Resultado:** Sin cambio — Tarea 1 = Sección 0 de cursos finales. Tarea 2 = Reportes de progreso.
