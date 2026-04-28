@@ -353,13 +353,25 @@ a {
 // logo decorativo, etc.). Aquí reforzamos el estilo del formulario.
 // ----------------------------------------------------------------------------
 
+.login-wrapper-center {
+	.login-container,
+	#page-login-index {
+		margin: auto;
+	}
+}
+
 .login-container,
 #page-login-index {
-	#theme_boost_union-loginform {
+	.loginform {
 		border-radius: $border-radius-lg;
 		box-shadow: 0 8px 32px rgba($conecta-midnight, 0.12);
 		border: none;
 		padding: 1.5rem;
+	}
+	#theme_boost_union-loginform + div {
+		margin-top: 1.5rem;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.btn-primary {
@@ -387,6 +399,11 @@ a {
 		&:focus {
 			border-color: $conecta-tech-blue;
 			box-shadow: 0 0 0 3px rgba($conecta-tech-blue, 0.15);
+		}
+	}
+	#login-method-guest {
+		.login-heading {
+			font-size: 1.15rem;
 		}
 	}
 }
