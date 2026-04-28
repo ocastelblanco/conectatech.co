@@ -9,6 +9,17 @@
 // ============================================================================
 
 // ----------------------------------------------------------------------------
+// 0. VARIABLES BOOTSTRAP REQUERIDAS TEMPRANAMENTE
+// ----------------------------------------------------------------------------
+// Moodle 5.2 cambia el orden de compilación SCSS: algunos callbacks de
+// Boost Union usan $white/$black antes de que Bootstrap las defina.
+// Las declaramos aquí con !default para que Bootstrap pueda sobreescribirlas.
+// ----------------------------------------------------------------------------
+$white: #fff !default;
+$black: #000 !default;
+$logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.scss pero nunca definido
+
+// ----------------------------------------------------------------------------
 // 1. TIPOGRAFÍAS — @font-face
 // ----------------------------------------------------------------------------
 // Los archivos .woff2 están en tu bucket público de S3.
