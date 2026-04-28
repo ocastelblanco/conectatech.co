@@ -1,6 +1,6 @@
 # MEMORY.md — ConectaTech.co
 > Documento de rehidratación de sesión · Leer al inicio de cada sesión
-> Última actualización: 2026-04-14
+> Última actualización: 2026-04-27
 
 ---
 
@@ -9,14 +9,151 @@
 | Atributo | Valor |
 |---|---|
 | **Versión frontend** | 1.2.0 (`admin-module/frontend/package.json`) |
-| **Moodle** | 5.1.3 |
+| **Moodle** | 5.2 (Build: 20260420) |
 | **URL producción LMS** | `https://conectatech.co` |
 | **URL panel admin** | `https://admin.conectatech.co` |
 | **URL CDN** | `https://assets.conectatech.co` |
 | **URL API pública** | `https://api.conectatech.co` |
 | **URL API interna** | `https://conectatech.co/admin-api/` |
 | **Rama principal** | `main` |
-| **Última sesión relevante** | 2026-04-14 — fixes pipeline Markdown + creación sistema de documentación |
+| **Última sesión relevante** | 2026-04-27 — Moodle 5.1.3 → 5.2, Boost Union SCSS fix |
+
+---
+
+## 1b. Filesystem de Moodle en el servidor (descubierto 2026-04-27)
+
+> Esta sección evita tener que re-explorar el servidor para entender la estructura.
+
+### Raíz de Moodle: `/var/www/html/moodle/`
+
+```
+/var/www/html/moodle/           ← Raíz de instalación (NO es el DocumentRoot)
+├── config.php                  ← Credenciales de BD (en raíz, fuera de web)
+├── admin/cli/                  ← Scripts CLI (upgrade.php, purge_caches.php, etc.)
+│   └── upgrade.php             ← Ruta CLI: /var/www/html/moodle/admin/cli/upgrade.php (SIN /public/)
+├── lib/setup.php               ← Bootstrap de arranque (carga public/lib/setup.php)
+├── vendor/                     ← Dependencias Composer (en raíz, NO en public/)
+├── local/                      ← Symlink/directorio local (no-web)
+└── public/                     ← DocumentRoot real (Apache apunta aquí)
+    ├── version.php             ← Versión de Moodle
+    ├── index.php
+    ├── config.php              ← Alias/symlink al config.php de raíz
+    ├── admin/                  ← Admin web de Moodle
+    ├── lib/                    ← Librerías web de Moodle
+    │   └── classes/output/     ← Nueva clase \core\output\theme_config (Moodle 5.2)
+    ├── theme/
+    │   └── boost_union/        ← Tema Boost Union (externo, instalado manualmente)
+    ├── question/type/          ← Tipos de pregunta (qtype_*)
+    └── local/                  ← Plugins locales (web-accessible)
+```
+
+### Datos de Moodle: `/moodledata/`
+
+```
+/moodledata/                                ← $CFG->dataroot
+└── localcache/
+    └── theme/
+        └── [themerev]/                     ← Número de revisión del tema (Unix timestamp)
+            └── boost_union/
+                └── css/
+                    └── all_[rev].css       ← CSS compilado (1.27 MB = SCSS propio compilado)
+                                            ← (1.9 MB = fallback precompilado del tema)
+```
+
+**Indicador rápido:** Si el CSS de `boost_union` mide ~1.9 MB → está sirviendo el fallback (SCSS no compiló). Si mide ~1.27 MB → SCSS compilado correctamente.
+
+### Base de datos (RDS — NO es localhost)
+
+```
+Host: conectatech-prod-db-20260217043350287600000001.cuz8c66mcaes.us-east-1.rds.amazonaws.com
+Usuario: moodleadmin
+BD: moodle
+Prefijo de tablas: mdl_  (nuestras tablas: mdl_ct_organization, mdl_ct_pin, etc.)
+```
+
+**IMPORTANTE:** `mysql -u root` falla (no hay MySQL local). Usar siempre:
+```bash
+mysql -h conectatech-prod-db-20260217043350287600000001.cuz8c66mcaes.us-east-1.rds.amazonaws.com \
+  -u moodleadmin -p[pass] moodle -e "..."
+```
+
+Para obtener la contraseña sin hardcodearla:
+```bash
+sudo -u apache php -r "
+  define('CLI_SCRIPT', true);
+  define('ABORT_AFTER_CONFIG', true);
+  require('/var/www/html/moodle/config.php');
+  echo \$CFG->dbpass . PHP_EOL;
+" 2>/dev/null
+```
+
+---
+
+## 1c. Plugins externos activados en Moodle (2026-04-27)
+
+### Boost Union — Tema activo
+
+| Atributo | Valor |
+|---|---|
+| **Versión** | v5.1-r10 (build 2025100620) |
+| **Ruta en servidor** | `/var/www/html/moodle/public/theme/boost_union/` |
+| **Estado** | Activo (`mdl_config.theme = 'boost_union'`) |
+| **brandcolor** | `#1D2B36` (azul medianoche — sobrescribe `$primary` de Bootstrap) |
+| **navbarcolor** | `light` |
+| **loginformtransparency** | `no` |
+| **logincontainerwidth** | `500px` |
+
+**Raw SCSS:** Guardado en `mdl_config_plugins` (`plugin = 'theme_boost_union'`):
+- `scsspre` → contenido de `snippets/conectatech-pre.scss` (variables + @font-face)
+- `scss` → contenido de `snippets/conectatech-post.scss` (reglas CSS)
+
+**Snippets en repo:** `snippets/conectatech-pre.scss` y `snippets/conectatech-post.scss`
+
+**NOTA:** Cuando reinstales Boost Union o lo reconfiguros, debes pegar el contenido de los snippets en Boost Union → Apariencia → SCSS. El servidor ya tiene los valores en BD pero la UI te permite editarlos.
+
+### local_conectatech — DESINSTALADO
+
+Plugin local personalizado que existía solo en el servidor (nunca commitido al repo). Desinstalado el 2026-04-27 con `uninstall_plugins.php --purge-missing`. No hay rastro en repo ni en BD. Fue reemplazado por **Smart Menu** de Boost Union.
+
+---
+
+## 1d. Fix SCSS Boost Union + Moodle 5.2 (ADR-009)
+
+**Problema:** Tras el upgrade a Moodle 5.2, el Raw SCSS dejó de aplicarse. El tema servía el CSS precompilado (1.9 MB) sin los estilos de ConectaTech.
+
+**Causa raíz:** Moodle 5.2 cambió la arquitectura de compilación SCSS (`\core\output\theme_config` en `lib/classes/output/theme_config.php`). Ahora llama automáticamente al callback del tema padre (Boost) Y al del hijo (Boost Union) — Moodle 5.1 solo llamaba al hijo. Boost Union v5.1 no estaba diseñado para este doble callback, causando que variables de Bootstrap se usaran antes de ser definidas → excepción → fallback al CSS precompilado.
+
+**Errores específicos corregidos:**
+
+| Variable | Error | Origen |
+|---|---|---|
+| `$white`, `$black` | `Undefined variable $white: line: 1284` | Boost Union generaba CSS de login que usa `$white` antes de que Bootstrap la defina |
+| `$logincontainer-shadow` | `Undefined variable $logincontainer-shadow: line: 2207` | Bug de Boost Union v5.1: usada en `post.scss:1786` pero **nunca definida** en lib.php ni en ningún SCSS |
+
+**Fix aplicado:** Añadir al campo `scsspre` (y al snippet `conectatech-pre.scss`) estas líneas al inicio, **antes** de nuestras declaraciones:
+
+```scss
+$white: #fff !default;
+$black: #000 !default;
+$logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.scss pero nunca definido
+```
+
+**Verificación:** CSS compilado mide ~1.27 MB (no 1.9 MB). Checklist:
+```python
+# En el CSS compilado deben estar:
+'ff7f50' in css          # btn-primary coral ✅
+'1d2b36' in css          # drawer midnight ✅
+'--conecta-midnight' in css  # CSS custom properties ✅
+'montserrat' in css.lower()  # @font-face ✅
+```
+
+**Si el SCSS vuelve a fallar en el futuro:**
+1. Habilitar debug: `UPDATE mdl_config SET value='32767' WHERE name='debug'`
+2. Acceder a `https://conectatech.co/theme/styles.php/boost_union/[themerev]/all`
+3. El error aparece en el log PHP-FPM o en la respuesta
+4. Deshabilitar debug: `UPDATE mdl_config SET value='0' WHERE name='debug'`
+
+**NOTA:** Si aparece un nuevo `Undefined variable $xxx`, agregar `$xxx: [valor] !default;` al `scsspre` y al snippet del repo. Esta es la solución estable hasta que Boost Union publique una versión v5.2.
 
 ---
 
@@ -104,6 +241,21 @@
 - **Decisión:** Truncar `question.name` a 255 chars y llamar `$DB->force_transaction_rollback()` en catch blocks del pipeline
 - **Razón:** Un error de BD (p.ej. VARCHAR overflow) dentro de `save_question()` activa `$DB->force_rollback = true` en la transacción delegada, bloqueando TODAS las operaciones de BD siguientes de forma silenciosa. El pipeline reportaba "ok" pero no creaba las secciones subsiguientes.
 - **Consecuencias:** El pipeline es ahora defensivo: trunca nombres, limpia el estado de transacción roto. Cualquier nueva operación que use transacciones delegadas de Moodle debe incluir un catch con `$DB->force_transaction_rollback()`.
+
+### ADR-009 — Upgrade de Moodle: directorio limpio, no overlay
+- **Fecha:** 2026-04-27
+- **Estado:** Implementado
+- **Decisión:** Para upgrades de versión mayor de Moodle, usar el método de directorio limpio: renombrar el directorio actual a `moodle_old`, instalar la nueva versión en un directorio vacío, copiar solo `config.php` manualmente.
+- **Razón:** El método de `cp -a` (overlay) deja archivos huérfanos de la versión anterior en el directorio. Moodle detecta la mezcla de versiones y aborta el upgrade. Además, archivos removidos en la nueva versión (como `qtype_random`) pueden causar errores de inicialización (Moodle 5.2 llama `debugging()` sobre `qtype_random` antes de que `moodlelib.php` esté cargado).
+- **Consecuencias:** El proceso de upgrade requiere más pasos pero es confiable. El directorio `moodle_old` puede eliminarse una semana después de confirmar que todo funciona.
+
+### ADR-010 — Boost Union SCSS y compatibilidad con Moodle 5.2
+- **Fecha:** 2026-04-27
+- **Estado:** Implementado (workaround hasta versión v5.2 de Boost Union)
+- **Decisión:** Añadir al campo `scsspre` de Boost Union las variables Bootstrap que Moodle 5.2 necesita antes de que Bootstrap las defina, usando `!default` para no interferir con Bootstrap.
+- **Razón:** Moodle 5.2 cambió la arquitectura de compilación SCSS — ahora llama callbacks de padre E hijo automáticamente. Boost Union v5.1 fue diseñado asumiendo que solo se llamaría el callback del hijo, causando que variables de Bootstrap (`$white`, `$black`) y una variable propia no definida (`$logincontainer-shadow`) sean usadas antes de existir. La compilación falla silenciosamente y Moodle sirve el CSS precompilado del tema (sin estilos personalizados).
+- **Variables a añadir (documentadas en `snippets/conectatech-pre.scss`):** `$white: #fff !default`, `$black: #000 !default`, `$logincontainer-shadow: none !default`.
+- **Consecuencias:** Si en el futuro se instala una versión de Boost Union compatible con Moodle 5.2, estas definiciones son inofensivas por el `!default`. Si aparecen nuevos errores del mismo tipo, agregar la variable faltante a `scsspre` y al snippet del repo.
 
 ### ADR-008 — Git flow: hotfixes directos a main, feature branches para lo demás
 - **Fecha:** 2026-04-14
@@ -251,6 +403,13 @@ ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
 | Moodle redirige al instalar en DocumentRoot | Moodle 5.1+ usa `moodle/public` como DocumentRoot, no `moodle/` | `DocumentRoot /var/www/html/moodle/public` en el VirtualHost |
 | La API de Moodle imprime HTML en la respuesta JSON | Moodle puede imprimir HTML en algunos flujos de inicialización | `ob_start()` al inicio de `index.php`; `ob_end_clean()` antes del JSON |
 | Los árboles curriculares se pierden en restore del servidor | Los JSONs de `backend/data/arboles/` no están en git | Hacer backup manual del directorio `data/` antes de operaciones de riesgo |
+| **Upgrade Moodle con `cp -a` overlay causa "mixed versions"** | `cp -a` no borra archivos del directorio destino que no existen en el origen — quedan archivos de la versión anterior | Renombrar directorio a `moodle_old`, crear directorio nuevo limpio desde el archive, copiar solo `config.php` |
+| **`qtype_random` huérfano causa `Undefined function core\debugging()`** | Moodle 5.2 eliminó `qtype_random` pero al hacer upgrade con `cp -a`, el directorio sobrevive. Moodle 5.2 llama `debugging()` antes de que `moodlelib.php` cargue | `sudo rm -rf /var/www/html/moodle/public/question/type/random/` antes de correr `upgrade.php` |
+| **GitHub archive de Moodle NO incluye `vendor/`** | El `.tar.gz` de `github.com/moodle/moodle/archive/v5.2.0.tar.gz` es solo el código fuente, sin dependencias Composer | Correr `composer install --no-dev --optimize-autoloader` en el directorio extraído antes del swap |
+| **Boost Union SCSS falla silenciosamente en Moodle 5.2** | Moodle 5.2 llama doble callback (padre + hijo), Boost Union v5.1 usa `$white`/`$logincontainer-shadow` antes de que existan | Añadir variables faltantes al `scsspre` con `!default`. Ver sección 1d. |
+| **`mysql -u root` falla en EC2** | La BD es RDS, no hay MySQL local | `mysql -h [rds-endpoint] -u moodleadmin -p[pass] moodle -e "..."` |
+| **CSS de Boost Union mide 1.9 MB → estilos propios NO se aplican** | La compilación SCSS falló y Moodle sirve el CSS precompilado de fallback del tema | Ver sección 1d para diagnóstico y fix |
+| **`sudo -u apache php /tmp/script.php` falla con exit 255 via SSH** | El archivo en `/tmp/` pertenece a `ec2-user` y apache no puede leerlo, o la conexión SSH se corta | Copiar el script con `rsync` y darle permisos antes de ejecutar, o usar `mysql` CLI directamente |
 
 ---
 
@@ -271,23 +430,30 @@ ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
 
 ## 9. Contexto de la última sesión
 
-**Fecha:** 2026-04-14
+**Fecha:** 2026-04-27
 
 **Qué se hizo:**
 
-1. **Fix crítico en el pipeline Markdown → Moodle:** Se diagnosticó que un título de pregunta con más de 255 caracteres causaba un `dml_write_exception` dentro de la transacción delegada de Moodle, activando `$DB->force_rollback = true` y bloqueando silenciosamente todas las operaciones de BD siguientes. El pipeline reportaba "ok" pero solo creaba 6 de 11 secciones.
+1. **Upgrade Moodle 5.1.3 → 5.2 (Build: 20260420)**
+   - Plugin `local_conectatech` desinstalado del servidor con `uninstall_plugins.php --purge-missing` (nunca estuvo en el repo)
+   - Backup BD: `/tmp/moodle-backup-20260427-2333.sql` (34 MB en servidor EC2)
+   - Backup archivos Moodle 5.1.3: `/tmp/moodle-511-backup.tar.gz` (76 MB)
+   - Directorio `moodle_old`: `/var/www/html/moodle_old/` (puede eliminarse ya)
+   - Moodle 5.2 descargado de GitHub, `composer install --no-dev` para vendor/
+   - Errores encontrados y resueltos: overlay "mixed versions", `qtype_random` huérfano
+   - `upgrade.php` completó 830+ plugins sin errores en ~5 min
+   - Tablas `mdl_ct_*` y rol `ct_gestor` (22 capabilities) intactos
 
-   Fixes implementados en `MoodleContentBuilder.php`:
-   - Truncar `question.name` a 255 chars con `mb_substr()`
-   - Soporte para `variante: adjunto` en preguntas ensayo (responseformat='noinline', attachments=-1)
-   - `finalizeCourse()` usa `MAX(section)` de `course_sections`
-   - `$DB->force_transaction_rollback()` defensivo en catch de `processSubsection`
-   - `resetCourse()` actualiza `numsections = 0` antes de eliminar secciones
-   - Reemplazar `fwrite(STDERR, ...)` por `error_log()` en 3 catch blocks
+2. **Boost Union actualizado e instalado en Moodle 5.2**
+   - Boost Union copiado de `moodle_old` a nuevo Moodle, registrado con `upgrade.php`
+   - Actualizado de v5.1-r8 a v5.1-r10 (la última versión disponible)
+   - Tema activo: confirmado en BD (`theme = 'boost_union'`)
 
-   Fix en `MarkdownService.php`:
-   - Cambiar `$builder->finalizeCourse(count($sections))` por `$builder->finalizeCourse()` (sin parámetro)
+3. **Fix SCSS Boost Union + Moodle 5.2**
+   - Problema: CSS compilado medía 1.9 MB (fallback precompilado sin estilos propios)
+   - Diagnóstico: Moodle 5.2 cambia el pipeline de callbacks SCSS → variables `$white`, `$black`, `$logincontainer-shadow` usadas antes de definirse → excepción silenciosa → fallback
+   - Fix: `$white: #fff !default`, `$black: #000 !default`, `$logincontainer-shadow: none !default` añadidos al `scsspre` en BD y a `snippets/conectatech-pre.scss` en repo
+   - CSS compilado: 1.27 MB, con todos los estilos propios (coral, midnight, Montserrat, etc.)
+   - PRs: #7 (docs Moodle 5.2), #8 (fix SCSS compat)
 
-2. **Sistema de documentación:** Creación completa del circuito de documentos (PRD.md, tech-specs.md, CLAUDE.md actualizado, MEMORY.md, TODO.md) siguiendo el protocolo de `docs/instrucciones-inicio.md`.
-
-**Próxima tarea sugerida:** Ver TODO.md — Tarea 1: sección 0 de cursos finales.
+**Próxima tarea sugerida:** Ver TODO.md — Tarea 1: Sección 0 de cursos finales.
