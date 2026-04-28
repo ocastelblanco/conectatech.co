@@ -67,7 +67,7 @@
 
 | Componente | Tecnología | Versión | Propósito |
 |---|---|---|---|
-| LMS | Moodle | 5.1.3 | Plataforma educativa; gestión de cursos, actividades, usuarios |
+| LMS | Moodle | 5.2 (Build: 20260420) | Plataforma educativa; gestión de cursos, actividades, usuarios |
 | Frontend admin | Angular | 21.2.x | SPA del panel de administración |
 | UI components | PrimeNG + PrimeIcons | 21.1.x / 7.0.x | Componentes UI del panel |
 | UI themes | @primeuix/themes (Aura) | 2.0.x | Tema base, personalizado con preset ConectaTech |

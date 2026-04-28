@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-27 (rev. 7)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-27 (rev. 8)
 
 ---
 
@@ -20,45 +20,7 @@
 
 ---
 
-## Tarea 1 — [INFRA] Actualizar Moodle a la versión 5.2.x
-
-**Origen:** PRD §6 (Alta) · Referencia: [Nuevas features 5.2](https://docs.moodle.org/502/en/New_features)
-
-**Problema:** La instancia actual corre Moodle 5.1.3 (Build: 20260216). Hay que valorar la actualización a 5.2.x preservando la integridad de los datos y las funcionalidades personalizadas (plugin `ct_*`, tablas `mdl_ct_*`, rol `ct_gestor`, API REST propia).
-
-**Qué hacer:**
-
-### Paso 1 — Evaluación (antes de tocar el servidor)
-- Revisar las [release notes de Moodle 5.2](https://docs.moodle.org/502/en/New_features) y el [upgrade guide](https://docs.moodle.org/dev/Upgrading)
-- Verificar compatibilidad de PHP requerida para 5.2.x (actualmente PHP 8.4 en EC2)
-- Identificar si alguna API o tabla Moodle que usamos fue modificada o deprecada en 5.2
-- Revisar si los permisos `ct_gestor` (especialmente `moodle/user:editprofile`) se comportan igual
-
-### Paso 2 — Backup previo
-- Backup completo de la BD Moodle antes de cualquier cambio
-- Confirmar que el backup de archivos está al día
-
-### Paso 3 — Actualización en servidor
-- Descargar Moodle 5.2.x en el servidor
-- Reemplazar los archivos core (preservando `config.php` y plugins en `local/`)
-- Ejecutar `admin/cli/upgrade.php --non-interactive`
-- Ejecutar `admin/cli/purge_caches.php`
-- Verificar que las tablas `mdl_ct_*` y el rol `ct_gestor` siguen intactos
-
-**Archivos a modificar:** ninguno en el repo (la actualización es solo en el servidor).
-
-**Definición de done:**
-- [ ] Backup de BD confirmado antes de iniciar
-- [ ] `admin/cli/upgrade.php` finaliza sin errores
-- [ ] `https://conectatech.co` carga correctamente en 5.2.x
-- [ ] El panel admin (`admin.conectatech.co`) funciona sin regresiones
-- [ ] Rol `ct_gestor` con sus 22 capabilities sigue intacto
-- [ ] Las tablas `mdl_ct_*` no tienen cambios de esquema inesperados
-- [ ] La API REST propia (`/admin-api/*`) responde correctamente
-
----
-
-## Tarea 2 — [FEATURE] Sección 0 de cursos finales
+## Tarea 1 — [FEATURE] Sección 0 de cursos finales
 
 **Origen:** PRD §6 (Alta) · ADR-005 · Deuda técnica desde despliegue inicial de árboles curriculares
 
@@ -85,6 +47,32 @@ En `PobladorService` (o el servicio equivalente de despliegue), al crear cada cu
 
 ---
 
+## Tarea 2 — [FEATURE] Reportes de progreso
+
+**Origen:** PRD §6 (Alta)
+
+**Problema:** No existe forma de ver el progreso de los estudiantes dentro del panel admin. Los gestores y el equipo ConectaTech no pueden saber qué estudiantes han completado cursos o actividades, ni generar reportes para los colegios.
+
+**Qué hacer:**
+
+### Paso 1 — Endpoint de progreso por paquete/pin
+En `handlers/reportes.php`, agregar un endpoint que consulte `mdl_course_completions` y devuelva el progreso por paquete: estudiantes matriculados, completados, en progreso, por organización/colegio.
+
+### Paso 2 — Vista de reporte en el panel admin
+En `admin-module/frontend`, agregar una vista bajo `/pines/reporte` (o ruta nueva) que muestre el progreso en una tabla con filtros por organización, paquete y estado de completitud.
+
+**Archivos a modificar / crear:**
+1. `admin-module/api/handlers/reportes.php` — nuevo endpoint de progreso
+2. `admin-module/frontend/src/app/features/pines/pines-reporte/` — componente de reporte
+
+**Definición de done:**
+- [ ] El endpoint devuelve progreso por paquete consultando `mdl_course_completions`
+- [ ] La vista muestra tabla con estudiantes y su estado por curso
+- [ ] Filtros por organización y paquete funcionan
+- [ ] Los datos son consistentes con los que se ven en Moodle directamente
+
+---
+
 ## Historial de tareas completadas
 
 | Fecha | Tarea | Descripción breve |
@@ -96,6 +84,7 @@ En `PobladorService` (o el servicio equivalente de despliegue), al crear cada cu
 | 2026-04-25 | [FEATURE] Revisión sistema de pines + portal gestor | Vigencia por duración (3/6/12 meses desde activación), rol `ct_gestor` con 22 capabilities, portal gestor: colegios/grupos, pines, usuarios con edición de perfil y restablecimiento de contraseña, filtros por colegio/grupo/curso |
 | 2026-04-25 | [INFRA] Sistema de correos AWS | SES dominio+DKIM+MX, Lambda forwarder nodejs24.x con FORWARD_MAP, rule set SES, trigger S3→Lambda, Moodle SMTP configurado, 3 alarmas CloudWatch |
 | 2026-04-27 | [FEATURE] Notificaciones por correo | `EmailService.php` con `notificarPaqueteCreado()` y `notificarPinActivado()`; integrado en `PinesService` y `ActivacionService`; fecha en español vía `IntlDateFormatter`; CRLF correcto en Lambda forwarder |
+| 2026-04-27 | [INFRA] Actualización Moodle 5.1.3 → 5.2 | Plugin `local_conectatech` desinstalado; upgrade limpio vía GitHub archive + composer install; `qtype_random` huérfano eliminado; todas las tablas `mdl_ct_*` y rol `ct_gestor` (22 capabilities) intactos |
 
 ---
 
@@ -187,3 +176,18 @@ En `PobladorService` (o el servicio equivalente de despliegue), al crear cada cu
 - ⏸ Reportes de progreso: pausada
 
 **Resultado:** Tarea 1 = Actualizar Moodle a 5.2.x. Tarea 2 = Sección 0 de cursos finales (retoma prioridad después de la actualización).
+
+### 2026-04-27 — Revisión 8 (Moodle 5.2 upgrade completado)
+
+**Cambios en esta sesión:**
+- ✅ Plugin `local_conectatech` desinstalado del servidor (nunca estuvo en el repo)
+- ✅ Moodle actualizado de 5.1.3 → 5.2 (Build: 20260420) — upgrade limpio con directorio fresco
+- ✅ Todas las tablas `mdl_ct_*` intactas; rol `ct_gestor` con 22 capabilities; API REST operativa
+- 🐛 Gotcha documentado: `cp -a` overlay deja archivos huérfanos de versiones anteriores (`qtype_random`); el método correcto para upgrades mayores es directorio limpio + mover `config.php`
+
+**Comparación PRD vs MEMORY:**
+- ✅ Actualización Moodle 5.2: completada
+- 🎯 **Sección 0 de cursos finales**: Alta prioridad, deuda técnica desde v1
+- 🎯 **Reportes de progreso**: Alta prioridad, siguiente feature de valor
+
+**Resultado:** Tarea 1 = Sección 0 de cursos finales. Tarea 2 = Reportes de progreso.
