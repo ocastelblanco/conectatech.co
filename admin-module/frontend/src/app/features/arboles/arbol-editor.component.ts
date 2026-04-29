@@ -13,6 +13,7 @@ import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { PanelModule } from 'primeng/panel';
 import { TreeModule } from 'primeng/tree';
 import { SharedModule } from 'primeng/api';
 import { SelectModule } from 'primeng/select';
@@ -20,6 +21,7 @@ import { CardModule } from 'primeng/card';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
+import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService, TreeNode } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
@@ -32,6 +34,7 @@ import { CreatableSelectComponent } from '../../shared/components/creatable-sele
     FormsModule,
     ButtonModule,
     InputTextModule,
+    PanelModule,
     TreeModule,
     SharedModule,
     SelectModule,
@@ -39,6 +42,7 @@ import { CreatableSelectComponent } from '../../shared/components/creatable-sele
     ToastModule,
     ConfirmDialogModule,
     DialogModule,
+    TextareaModule,
     TooltipModule,
     CreatableSelectComponent,
   ],
@@ -114,6 +118,8 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
   readonly ejResultado = signal<any>(null);
   readonly showValidar = signal(false);
   readonly showResults = signal(false);
+  readonly showPreviewSeccion0 = signal(false);
+  readonly previewHtml = signal<string>('');
 
   readonly resumenConflictos = computed(() => {
     const c = this.conflictos();
@@ -492,6 +498,29 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
       this.updateCursoField('temas', temas);
       this._draggedTemaIndex = -1;
     }
+  }
+
+  // ── Sección 0 ─────────────────────────────────────────────────────────────
+
+  generarIntroduccion(): void {
+    const curso = this.cursoActivo();
+    if (!curso || !curso.temas?.length) return;
+
+    let md = `**El curso ${curso.nombre} tiene la siguiente estructura de contenidos:**\n\n`;
+
+    for (const tema of curso.temas) {
+      md += `- ${tema.titulo}\n`;
+    }
+
+    this.updateCursoField('seccion_0', md.trimEnd());
+  }
+
+  previsualizarSeccion0(): void {
+    const curso = this.cursoActivo();
+    if (!curso?.seccion_0?.trim()) return;
+
+    this.previewHtml.set(curso.seccion_0);
+    this.showPreviewSeccion0.set(true);
   }
 
   volver(): void {

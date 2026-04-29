@@ -475,6 +475,10 @@ class ArbolCurricularService
                                 $pobladorService->poblarCurso($shortnameMoodle, $sections, $dryRun);
                             }
 
+                            if (!$dryRun && !empty($curso['seccion_0'])) {
+                                $pobladorService->poblarSeccionCero((int)$existing->id, $curso['seccion_0']);
+                            }
+
                             $entry['action'] = 'updated';
                             $summary['updated']++;
                         } else {
@@ -483,6 +487,10 @@ class ArbolCurricularService
                                 $pobladorService,
                                 $existing, $fullnameMoodle, $curso, $dryRun
                             );
+
+                            if (!$dryRun && !empty($curso['seccion_0'])) {
+                                $pobladorService->poblarSeccionCero((int)$existing->id, $curso['seccion_0']);
+                            }
 
                             $entry['action'] = 'updated';
                             $summary['updated']++;
@@ -493,6 +501,11 @@ class ArbolCurricularService
                             $cursosService, $pobladorService,
                             $shortnameMoodle, $fullnameMoodle, $categoryPath, $curso, $dryRun
                         );
+
+                        if (!$dryRun && !empty($curso['seccion_0'])) {
+                            $courseId = $DB->get_field('course', 'id', ['shortname' => $shortnameMoodle], MUST_EXIST);
+                            $pobladorService->poblarSeccionCero((int)$courseId, $curso['seccion_0']);
+                        }
 
                         $entry['action'] = 'created';
                         $summary['created']++;
