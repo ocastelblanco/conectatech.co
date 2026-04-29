@@ -107,6 +107,44 @@ class PobladorService
     }
 
     /**
+     * Puebla la sección 0 (portada/bienvenida) de un curso final con contenido
+     * Markdown convertido a HTML via markdown_to_html() nativa de Moodle.
+     *
+     * @param int    $courseId  ID del curso destino en Moodle.
+     * @param string $markdown  Contenido Markdown de la portada.
+     */
+    public function poblarSeccionCero(int $courseId, string $markdown): void
+    {
+        global $DB, $CFG;
+
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        if (empty(trim($markdown))) {
+            return;
+        }
+
+        $html = markdown_to_html(trim($markdown));
+
+        $section0 = $DB->get_record('course_sections', [
+            'course'  => $courseId,
+            'section' => 0,
+        ]);
+
+        if (!$section0) {
+            error_log("WARN poblarSeccionCero: curso {$courseId} no tiene sección 0");
+            return;
+        }
+
+        course_update_section($courseId, $section0, [
+            'name'    => 'Bienvenida',
+            'summary' => $html,
+            'visible' => 1,
+        ]);
+
+        rebuild_course_cache($courseId, true);
+    }
+
+    /**
      * Elimina secciones vacías (sin nombre, sin summary, sin módulos) que Moodle
      * genera como placeholder cuando el restore preserva un section_num > posición
      * actual del cursor en el curso destino.

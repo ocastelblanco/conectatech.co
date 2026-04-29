@@ -311,6 +311,33 @@
           </div>
         </div>
 
+        <!-- Portada / Bienvenida -->
+        <div class="border-t pt-4 mt-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-medium text-gray-700">Portada / Bienvenida (sección 0)</label>
+            <span class="text-[10px] text-gray-400">Markdown</span>
+          </div>
+          <textarea pInputTextarea
+                    class="w-full text-sm font-mono"
+                    rows="5"
+                    [ngModel]="cursoActivo()!.seccion_0"
+                    (ngModelChange)="updateCursoField('seccion_0', $event)"
+                    placeholder="Contenido de bienvenida en Markdown&#10;Aparecerá en la sección 0 del curso en Moodle"></textarea>
+          <div class="flex gap-2">
+            <p-button label="Crear introducción"
+                      icon="pi pi-file-edit"
+                      severity="secondary"
+                      size="small"
+                      (onClick)="generarIntroduccion()" />
+            <p-button label="Previsualizar"
+                      icon="pi pi-eye"
+                      severity="secondary"
+                      size="small"
+                      [disabled]="!cursoActivo()!.seccion_0?.trim()"
+                      (onClick)="previsualizarSeccion0()" />
+          </div>
+        </div>
+
         <!-- Repositorios + Temas asignados -->
         <div class="grid grid-cols-2 gap-4">
 
@@ -479,6 +506,16 @@
               severity="success"
               (onClick)="confirmarIngesta()" />
   </ng-template>
+</p-dialog>
+
+<!-- ===== DIÁLOGO: Previsualización sección 0 ===== -->
+<p-dialog header="Previsualización — Portada del curso"
+          [(visible)]="showPreviewSeccion0"
+          [modal]="true"
+          [style]="{ width: '650px' }"
+          [closable]="true">
+  <div class="prose prose-sm max-w-none"
+       [innerHTML]="previewHtml()"></div>
 </p-dialog>
 
 <!-- ===== DIÁLOGO: Resultados de ingesta ===== -->
