@@ -230,6 +230,7 @@ Página pública (`/activar`) donde un estudiante ingresa su pin y:
 | **Autenticación del gestor con token JWT** | Reemplazar el flujo actual basado en credenciales Moodle + cookies por tokens JWT independientes para mayor seguridad y escalabilidad | Baja |
 | **Soporte multitenancy real** | Aislar los datos de diferentes organizaciones a nivel de base de datos (hoy están en la misma instancia Moodle) | Baja |
 | **App móvil** | App iOS/Android para estudiantes (hoy el LMS Moodle tiene app móvil nativa, pero sin el flujo de activación personalizado) | Baja |
+| **Optimización del autoloader Composer** | Ejecutar `composer install --no-dev --classmap-authoritative` en el servidor para eliminar la advertencia de rendimiento en las comprobaciones del servidor Moodle. El `composer.json` raíz está en `/var/www/html/moodle/`. | Baja |
 
 ---
 
