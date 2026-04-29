@@ -7,7 +7,7 @@ Este documento es la referencia operativa principal para implementar el módulo 
 
 ## Contexto del proyecto
 
-- **Plataforma:** Moodle 5.1.3 en AWS EC2 (`t4g.small`, `us-east-1c`)
+- **Plataforma:** Moodle 5.2 en AWS EC2 (`t4g.small`, `us-east-1c`)
 - **IP elástica:** `54.86.113.27`
 - **Dominio principal:** `https://conectatech.co` → `/var/www/html/moodle/`
 - **Dominio admin:** `https://admin.conectatech.co` → `/var/www/html/admin/` *(por crear)*

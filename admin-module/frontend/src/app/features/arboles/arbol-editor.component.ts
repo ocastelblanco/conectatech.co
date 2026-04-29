@@ -13,6 +13,7 @@ import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { PanelModule } from 'primeng/panel';
 import { TreeModule } from 'primeng/tree';
 import { SharedModule } from 'primeng/api';
 import { SelectModule } from 'primeng/select';
@@ -33,6 +34,7 @@ import { CreatableSelectComponent } from '../../shared/components/creatable-sele
     FormsModule,
     ButtonModule,
     InputTextModule,
+    PanelModule,
     TreeModule,
     SharedModule,
     SelectModule,
@@ -498,50 +500,27 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ── Sección 0 ─────────────────────────────────────────────────────────────
+
   generarIntroduccion(): void {
     const curso = this.cursoActivo();
     if (!curso || !curso.temas?.length) return;
 
     let md = `**El curso ${curso.nombre} tiene la siguiente estructura de contenidos:**\n\n`;
+
     for (const tema of curso.temas) {
       md += `- ${tema.titulo}\n`;
     }
+
     this.updateCursoField('seccion_0', md.trimEnd());
   }
 
   previsualizarSeccion0(): void {
     const curso = this.cursoActivo();
     if (!curso?.seccion_0?.trim()) return;
-    this.previewHtml.set(this.renderSimpleMarkdown(curso.seccion_0));
+
+    this.previewHtml.set(curso.seccion_0);
     this.showPreviewSeccion0.set(true);
-  }
-
-  private renderSimpleMarkdown(md: string): string {
-    const lines = md.split('\n');
-    const out: string[] = [];
-    let inList = false;
-    for (const line of lines) {
-      const t = line.trim();
-      if (t.startsWith('- ')) {
-        if (!inList) { out.push('<ul class="list-disc pl-5 space-y-1 mb-2">'); inList = true; }
-        out.push(`<li>${this.inlineMd(t.slice(2))}</li>`);
-      } else {
-        if (inList) { out.push('</ul>'); inList = false; }
-        if (t === '') {
-          out.push('<br>');
-        } else {
-          out.push(`<p class="mb-2">${this.inlineMd(t)}</p>`);
-        }
-      }
-    }
-    if (inList) out.push('</ul>');
-    return out.join('');
-  }
-
-  private inlineMd(text: string): string {
-    return text
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>');
   }
 
   volver(): void {

@@ -218,152 +218,161 @@
         </div>
       </ng-template>
 
-      <div class="space-y-4">
-        <!-- Dos columnas: metadatos | plantilla -->
-        <div class="grid grid-cols-2 gap-4">
+      <div class="space-y-3">
 
-          <!-- Col 1: nombre / código + área -->
-          <div class="space-y-3">
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-medium text-gray-700">Nombre del curso</label>
-              <input pInputText
-                     type="text"
-                     class="w-full"
-                     [ngModel]="cursoActivo()!.nombre"
-                     (ngModelChange)="updateCursoField('nombre', $event)"
-                     placeholder="Ciencias Naturales" />
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-700">Código</label>
-                <input pInputText
-                       type="text"
-                       class="w-full font-mono"
-                       [ngModel]="cursoActivo()!.shortname"
-                       (ngModelChange)="updateCursoField('shortname', $event)"
-                       placeholder="CN" />
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1 min-w-0">
+            <p-panel header="Datos del curso">
+              <div class="space-y-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-medium text-gray-700">Nombre del curso</label>
+                  <input pInputText
+                         type="text"
+                         class="w-full"
+                         [ngModel]="cursoActivo()!.nombre"
+                         (ngModelChange)="updateCursoField('nombre', $event)"
+                         placeholder="Ciencias Naturales" />
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-gray-700">Código</label>
+                    <input pInputText
+                           type="text"
+                           class="w-full font-mono"
+                           [ngModel]="cursoActivo()!.shortname"
+                           (ngModelChange)="updateCursoField('shortname', $event)"
+                           placeholder="CN" />
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-gray-700">Área CSS</label>
+                    <cnt-creatable-select [options]="opcionesCss().areas"
+                                          [value]="cursoActivo()!.area_css ?? ''"
+                                          placeholder="ej: matematicas"
+                                          (valueChange)="updateCursoField('area_css', $event)" />
+                  </div>
+                </div>
               </div>
+            </p-panel>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p-panel header="Curso plantilla">
               <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-700">Área CSS</label>
-                <cnt-creatable-select [options]="opcionesCss().areas"
-                                      [value]="cursoActivo()!.area_css ?? ''"
-                                      placeholder="ej: matematicas"
-                                      (valueChange)="updateCursoField('area_css', $event)" />
+              @if (cursoActivo()!.templatecourse) {
+              <div
+                   class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-cnt-blue mb-1">
+                <i class="pi pi-check-circle text-xs"></i>
+                <span>{{ cursoActivo()!.templatecourse }}</span>
+                <button class="ml-auto text-gray-400 hover:text-red-400"
+                        (click)="updateCursoField('templatecourse', '')">
+                  <i class="pi pi-times text-xs"></i>
+                </button>
               </div>
-            </div>
-          </div>
-
-          <!-- Col 2: plantilla -->
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium text-gray-700">Curso plantilla</label>
-          @if (cursoActivo()!.templatecourse) {
-          <div
-               class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-cnt-blue mb-1">
-            <i class="pi pi-check-circle text-xs"></i>
-            <span>{{ cursoActivo()!.templatecourse }}</span>
-            <button class="ml-auto text-gray-400 hover:text-red-400"
-                    (click)="updateCursoField('templatecourse', '')">
-              <i class="pi pi-times text-xs"></i>
-            </button>
-          </div>
-          }
-          <div class="border border-gray-200 rounded-lg overflow-auto max-h-48">
-            @if (plantillasTree().length === 0) {
-            <p class="text-xs text-gray-400 text-center py-4">Cargando plantillas...</p>
-            } @else {
-            <p-tree [value]="plantillasTree()"
-                    selectionMode="single"
-                    (onNodeSelect)="onPlantillaSelect($event)"
-                    class="border-none text-sm p-1">
-              <ng-template pTemplate="default"
-                           let-node>
-                @if (node.leaf) {
-                <span class="text-gray-800 text-xs">
-                  {{ node.label }} <small class="text-gray-400 font-mono">({{ node.data.shortname }})</small>
-                </span>
+              }
+              <div class="border border-gray-200 rounded-lg overflow-auto max-h-48">
+                @if (plantillasTree().length === 0) {
+                <p class="text-xs text-gray-400 text-center py-4">Cargando plantillas...</p>
                 } @else {
-                <span class="text-xs font-semibold text-gray-600">{{ node.label }}</span>
+                <p-tree [value]="plantillasTree()"
+                        selectionMode="single"
+                        (onNodeSelect)="onPlantillaSelect($event)"
+                        class="border-none text-sm p-1">
+                  <ng-template pTemplate="default"
+                               let-node>
+                    @if (node.leaf) {
+                    <span class="text-gray-800 text-xs">
+                      {{ node.label }} <small class="text-gray-400 font-mono">({{ node.data.shortname }})</small>
+                    </span>
+                    } @else {
+                    <span class="text-xs font-semibold text-gray-600">{{ node.label }}</span>
+                    }
+                  </ng-template>
+                </p-tree>
                 }
-              </ng-template>
-            </p-tree>
-            }
-          </div>
-          </div><!-- /col 2 -->
-        </div><!-- /grid cols-2 -->
-
-        <!-- Fechas -->
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium text-gray-700">Fecha inicio</label>
-            <input pInputText
-                   type="date"
-                   class="w-full"
-                   [ngModel]="cursoActivo()!.startdate"
-                   (ngModelChange)="updateCursoField('startdate', $event)" />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium text-gray-700">Fecha fin</label>
-            <input pInputText
-                   type="date"
-                   class="w-full"
-                   [ngModel]="cursoActivo()!.enddate"
-                   (ngModelChange)="updateCursoField('enddate', $event)" />
+              </div>
+              </div>
+            </p-panel>
           </div>
         </div>
 
-        <!-- Portada / Bienvenida -->
-        <div class="border-t pt-4 mt-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <label class="text-sm font-medium text-gray-700">Portada / Bienvenida (sección 0)</label>
-            <span class="text-[10px] text-gray-400">Markdown</span>
+        <!-- 3. Vigencia del curso -->
+        <p-panel header="Vigencia del curso">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-gray-700">Fecha inicio</label>
+              <input pInputText
+                     type="date"
+                     class="w-full"
+                     [ngModel]="cursoActivo()!.startdate"
+                     (ngModelChange)="updateCursoField('startdate', $event)" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-gray-700">Fecha fin</label>
+              <input pInputText
+                     type="date"
+                     class="w-full"
+                     [ngModel]="cursoActivo()!.enddate"
+                     (ngModelChange)="updateCursoField('enddate', $event)" />
+            </div>
           </div>
-          <textarea pInputTextarea
-                    class="w-full text-sm font-mono"
-                    rows="5"
+        </p-panel>
+
+        <!-- 4. Portada / Bienvenida -->
+        <p-panel>
+          <ng-template pTemplate="header">
+            <div class="flex items-center justify-between w-full">
+              <span class="font-semibold text-gray-700 text-sm">Portada / Bienvenida</span>
+              <div class="flex gap-2">
+                <p-button label="Crear introducción"
+                          icon="pi pi-file-edit"
+                          severity="secondary"
+                          size="small"
+                          (onClick)="generarIntroduccion()" />
+                <p-button label="Previsualizar"
+                          icon="pi pi-eye"
+                          severity="secondary"
+                          size="small"
+                          [disabled]="!cursoActivo()!.seccion_0?.trim()"
+                          (onClick)="previsualizarSeccion0()" />
+              </div>
+            </div>
+          </ng-template>
+          <textarea
+                    class="w-full text-sm font-mono border border-gray-200 rounded-lg p-2 resize-y"
+                    rows="4"
                     [ngModel]="cursoActivo()!.seccion_0"
                     (ngModelChange)="updateCursoField('seccion_0', $event)"
                     placeholder="Contenido de bienvenida en Markdown&#10;Aparecerá en la sección 0 del curso en Moodle"></textarea>
-          <div class="flex gap-2">
-            <p-button label="Crear introducción"
-                      icon="pi pi-file-edit"
-                      severity="secondary"
-                      size="small"
-                      (onClick)="generarIntroduccion()" />
-            <p-button label="Previsualizar"
-                      icon="pi pi-eye"
-                      severity="secondary"
-                      size="small"
-                      [disabled]="!cursoActivo()!.seccion_0?.trim()"
-                      (onClick)="previsualizarSeccion0()" />
-          </div>
-        </div>
+        </p-panel>
 
-        <!-- Repositorios + Temas asignados -->
-        <div class="grid grid-cols-2 gap-4">
+        <!-- 5. Asignación de temas -->
+        <p-panel header="Asignación de temas">
+          <div class="grid grid-cols-2 gap-4">
 
-          <!-- REPOSITORIOS (izquierda) — divs simples para DnD nativo -->
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium text-gray-700">Repositorios</label>
-            <div class="border border-gray-200 rounded-lg overflow-auto min-h-[160px] max-h-64 p-2">
-              @if (repositorios().length === 0) {
-              <p class="text-xs text-gray-400 text-center py-6">Cargando repositorios...</p>
-              }
-              @for (repo of repositorios(); track repo.nombre) {
-              <div class="mb-2">
-                <p class="text-xs font-bold text-gray-600 mb-1">{{ repo.nombre }}</p>
-                @for (area of repo.areas; track area.nombre) {
-                <div class="ml-2 mb-1">
-                  <p class="text-xs font-semibold text-gray-500 mb-1">{{ area.nombre }}</p>
-                  @for (curso of area.cursos; track curso.shortname) {
+            <!-- REPOSITORIOS -->
+            <div class="flex flex-col gap-1">
+              <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Repositorios</span>
+              <div class="border border-gray-200 rounded-lg overflow-auto min-h-[160px] max-h-64 p-2">
+                @if (repositorios().length === 0) {
+                <p class="text-xs text-gray-400 text-center py-6">Cargando repositorios...</p>
+                }
+                @for (repo of repositorios(); track repo.nombre) {
+                <div class="mb-2">
+                  <p class="text-xs font-bold text-gray-600 mb-1">{{ repo.nombre }}</p>
+                  @for (area of repo.areas; track area.nombre) {
                   <div class="ml-2 mb-1">
-                    <p class="text-xs text-gray-400 italic mb-0.5 truncate">{{ curso.fullname }}</p>
-                    @for (sec of curso.secciones; track sec.num) {
-                    <div draggable="true"
-                         class="ml-2 py-1 px-2 text-xs text-gray-700 hover:bg-blue-50 hover:text-cnt-blue cursor-grab rounded flex items-center gap-1 select-none"
-                         (dragstart)="onRepoDragStart($event, { repo_shortname: curso.shortname, section_num: sec.num, titulo: sec.titulo })">
-                      <i class="pi pi-minus text-gray-300 flex-shrink-0"
-                         style="font-size:0.55rem"></i>
-                      <span class="truncate">{{ sec.titulo }}</span>
+                    <p class="text-xs font-semibold text-gray-500 mb-1">{{ area.nombre }}</p>
+                    @for (curso of area.cursos; track curso.shortname) {
+                    <div class="ml-2 mb-1">
+                      <p class="text-xs text-gray-400 italic mb-0.5 truncate">{{ curso.fullname }}</p>
+                      @for (sec of curso.secciones; track sec.num) {
+                      <div draggable="true"
+                           class="ml-2 py-1 px-2 text-xs text-gray-700 hover:bg-blue-50 hover:text-cnt-blue cursor-grab rounded flex items-center gap-1 select-none"
+                           (dragstart)="onRepoDragStart($event, { repo_shortname: curso.shortname, section_num: sec.num, titulo: sec.titulo })">
+                        <i class="pi pi-minus text-gray-300 flex-shrink-0"
+                           style="font-size:0.55rem"></i>
+                        <span class="truncate">{{ sec.titulo }}</span>
+                      </div>
+                      }
                     </div>
                     }
                   </div>
@@ -371,54 +380,62 @@
                 </div>
                 }
               </div>
-              }
             </div>
-          </div>
 
-          <!-- TEMAS ASIGNADOS (derecha) -->
-          <div class="flex flex-col gap-1">
-            <div class="flex items-center justify-between">
-              <label class="text-sm font-medium text-gray-700">Temas asignados</label>
-              <span class="text-xs text-gray-400">{{ cursoActivo()!.temas?.length ?? 0 }} temas</span>
-            </div>
-            <div class="border border-dashed rounded-lg min-h-[160px] flex flex-col overflow-hidden transition-colors"
-                 [class]="dragOverIndex() === -2 ? 'border-cnt-blue bg-blue-50' : 'border-gray-200 bg-white'"
-                 (dragover)="onTemasDragOver($event, -2)"
-                 (drop)="onTemasDropAtIndex($event, -1)">
-              @if (!cursoActivo()!.temas || cursoActivo()!.temas.length === 0) {
-              <div class="flex flex-col items-center justify-center flex-1 text-gray-300 py-8">
-                <i class="pi pi-arrow-left text-xl mb-2"></i>
-                <p class="text-xs text-center">Arrastra temas desde<br>los repositorios</p>
+            <!-- TEMAS ASIGNADOS -->
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Temas asignados</span>
+                <span class="text-xs text-gray-400">{{ cursoActivo()!.temas?.length ?? 0 }} temas</span>
               </div>
-              }
-              @for (tema of cursoActivo()!.temas; track $index; let i = $index) {
-              <div draggable="true"
-                   class="flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 last:border-b-0 cursor-grab hover:bg-gray-50"
-                   [class.border-t-2]="dragOverIndex() === i"
-                   [class.border-t-cnt-blue]="dragOverIndex() === i"
-                   [class.bg-blue-50]="dragOverIndex() === i"
-                   (dragstart)="onTemasDragStart($event, i)"
-                   (dragover)="onTemasDragOver($event, i)"
-                   (drop)="onTemasDropAtIndex($event, i)">
-                <i class="pi pi-bars text-gray-300 flex-shrink-0"></i>
-                <span class="flex-1 truncate text-gray-700">{{ tema.titulo ?? tema }}</span>
-                <p-button icon="pi pi-times"
-                          size="small"
-                          severity="danger"
-                          [text]="true"
-                          (onClick)="removeTema(tema)" />
+              <div class="border border-dashed rounded-lg min-h-[160px] flex flex-col overflow-hidden transition-colors"
+                   [class]="dragOverIndex() === -2 ? 'border-cnt-blue bg-blue-50' : 'border-gray-200 bg-white'"
+                   (dragover)="onTemasDragOver($event, -2)"
+                   (drop)="onTemasDropAtIndex($event, -1)">
+                @if (!cursoActivo()!.temas || cursoActivo()!.temas.length === 0) {
+                <div class="flex flex-col items-center justify-center flex-1 text-gray-300 py-8">
+                  <i class="pi pi-arrow-left text-xl mb-2"></i>
+                  <p class="text-xs text-center">Arrastra temas desde<br>los repositorios</p>
+                </div>
+                }
+                @for (tema of cursoActivo()!.temas; track $index; let i = $index) {
+                <div draggable="true"
+                     class="flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 last:border-b-0 cursor-grab hover:bg-gray-50"
+                     [class.border-t-2]="dragOverIndex() === i"
+                     [class.border-t-cnt-blue]="dragOverIndex() === i"
+                     [class.bg-blue-50]="dragOverIndex() === i"
+                     (dragstart)="onTemasDragStart($event, i)"
+                     (dragover)="onTemasDragOver($event, i)"
+                     (drop)="onTemasDropAtIndex($event, i)">
+                  <i class="pi pi-bars text-gray-300 flex-shrink-0"></i>
+                  <span class="flex-1 truncate text-gray-700">{{ tema.titulo ?? tema }}</span>
+                  <p-button icon="pi pi-times"
+                            size="small"
+                            severity="danger"
+                            [text]="true"
+                            (onClick)="removeTema(tema)" />
+                </div>
+                }
               </div>
-              }
             </div>
-          </div>
 
-        </div>
+          </div>
+        </p-panel>
+
       </div>
     </p-card>
     }
   </div>
-
 </div>
+
+<!-- ===== DIÁLOGO: Previsualización de sección 0 ===== -->
+<p-dialog header="Previsualización — Portada del curso"
+          [(visible)]="showPreviewSeccion0"
+          [modal]="true"
+          [style]="{ width: '650px' }"
+          [closable]="true">
+  <pre class="text-sm text-gray-700 font-mono whitespace-pre-wrap bg-gray-50 rounded-lg p-4 border border-gray-100 max-h-96 overflow-y-auto">{{ previewHtml() }}</pre>
+</p-dialog>
 
 <!-- ===== DIÁLOGO: Validación / confirmación ===== -->
 <p-dialog header="Validar ingesta"
@@ -506,16 +523,6 @@
               severity="success"
               (onClick)="confirmarIngesta()" />
   </ng-template>
-</p-dialog>
-
-<!-- ===== DIÁLOGO: Previsualización sección 0 ===== -->
-<p-dialog header="Previsualización — Portada del curso"
-          [(visible)]="showPreviewSeccion0"
-          [modal]="true"
-          [style]="{ width: '650px' }"
-          [closable]="true">
-  <div class="prose prose-sm max-w-none"
-       [innerHTML]="previewHtml()"></div>
 </p-dialog>
 
 <!-- ===== DIÁLOGO: Resultados de ingesta ===== -->
