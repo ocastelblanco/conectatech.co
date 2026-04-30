@@ -434,7 +434,8 @@
           [modal]="true"
           [style]="{ width: '650px' }"
           [closable]="true">
-  <pre class="text-sm text-gray-700 font-mono whitespace-pre-wrap bg-gray-50 rounded-lg p-4 border border-gray-100 max-h-96 overflow-y-auto">{{ previewHtml() }}</pre>
+  <div class="text-sm text-gray-700 bg-gray-50 rounded-lg p-4 border border-gray-100 max-h-96 overflow-y-auto"
+       [innerHTML]="previewHtml()"></div>
 </p-dialog>
 
 <!-- ===== DIÁLOGO: Validación / confirmación ===== -->
