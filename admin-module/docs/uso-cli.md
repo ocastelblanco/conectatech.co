@@ -16,13 +16,13 @@
 ### 1. Cargar los archivos Markdown a la carpeta `/tmp` del servidor.
 
 ```bash
-scp -i ~/.ssh/ClaveIM.pem archivo.md ec2-user@54.86.113.27:/tmp/
+scp -i ~/.ssh/ClaveCT.pem archivo.md ec2-user@54.86.113.27:/tmp/
 ```
 
 ### 2. Ingresar al servidor con SSH.
 
 ```bash
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 ```
 
 ### 3. Como usuario `apache` ejecutar el script correspondiente
@@ -196,16 +196,16 @@ sudo -u apache php /var/www/html/admin/backend/poblar-cursos.php \
 
 ```bash
 # En la máquina local: desplegar archivos al servidor
-scp -i ~/.ssh/ClaveIM.pem \
+scp -i ~/.ssh/ClaveCT.pem \
     admin-module/backend/crear-cursos.php \
     admin-module/backend/poblar-cursos.php \
     ec2-user@54.86.113.27:/tmp/
 
-scp -i ~/.ssh/ClaveIM.pem \
+scp -i ~/.ssh/ClaveCT.pem \
     admin-module/backend/lib/MoodleSectionCloner.php \
     ec2-user@54.86.113.27:/tmp/
 
-scp -i ~/.ssh/ClaveIM.pem \
+scp -i ~/.ssh/ClaveCT.pem \
     admin-module/backend/config/cursos-finales.csv \
     admin-module/backend/config/poblamiento.json \
     ec2-user@54.86.113.27:/tmp/
@@ -302,12 +302,12 @@ sudo -u apache php /var/www/html/admin/backend/matricular.php \
 ### Despliegue
 
 ```bash
-scp -i ~/.ssh/ClaveIM.pem \
+scp -i ~/.ssh/ClaveCT.pem \
     admin-module/backend/matricular.php \
     admin-module/backend/config/matriculas.csv \
     ec2-user@54.86.113.27:/tmp/
 
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 "
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 "
     sudo cp /tmp/matricular.php /var/www/html/admin/backend/
     sudo cp /tmp/matriculas.csv /var/www/html/admin/backend/config/
     sudo chown -R apache:apache /var/www/html/admin/backend/

@@ -377,13 +377,13 @@ this.http.post('/admin-api/endpoint', payload).subscribe(...)
 
 ```bash
 # Si el servidor tiene archivos en propiedad de apache y rsync da Permission denied:
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R ec2-user:ec2-user /var/www/html/admin"
 
-rsync -e "ssh -i ~/.ssh/ClaveIM.pem" -a [--delete] [--exclude=...] \
+rsync -e "ssh -i ~/.ssh/ClaveCT.pem" -a [--delete] [--exclude=...] \
   origen/ ec2-user@54.86.113.27:/var/www/html/admin/destino/
 
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R apache:apache /var/www/html/admin && sudo chmod -R 755 /var/www/html/admin"
 ```
 
@@ -398,7 +398,7 @@ ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
 | `Undefined constant "STDERR"` en la API | `fwrite(STDERR, ...)` solo funciona en CLI | Reemplazar siempre por `error_log()` |
 | rsync da "Permission denied" | Los archivos del servidor pertenecen al usuario `apache`, no a `ec2-user` | `sudo chown -R ec2-user:ec2-user /var/www/html/admin` → rsync → restaurar apache |
 | Deploy de frontend borra la API del servidor | `rsync --delete` sin `--exclude=api --exclude=backend` | Siempre incluir ambos exclude al sincronizar el frontend |
-| SSH da timeout | La IP del cliente cambió; el Security Group SSH solo permite la IP fija | Actualizar SG: revocar IP vieja, autorizar nueva con `aws ec2 revoke/authorize-security-group-ingress --profile im` |
+| SSH da timeout | La IP del cliente cambió; el Security Group SSH solo permite la IP fija | Actualizar SG: revocar IP vieja, autorizar nueva con `aws ec2 revoke/authorize-security-group-ingress --profile ct` |
 | Deep-link (ej. `/arboles`) da 404 | Las RewriteRules del SPA no están en el VirtualHost SSL | Verificar `<Directory>` del VirtualHost SSL en `admin.conectatech.co.conf`; recargar Apache |
 | Moodle redirige al instalar en DocumentRoot | Moodle 5.1+ usa `moodle/public` como DocumentRoot, no `moodle/` | `DocumentRoot /var/www/html/moodle/public` en el VirtualHost |
 | La API de Moodle imprime HTML en la respuesta JSON | Moodle puede imprimir HTML en algunos flujos de inicialización | `ob_start()` al inicio de `index.php`; `ob_end_clean()` antes del JSON |

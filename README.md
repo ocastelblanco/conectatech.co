@@ -49,10 +49,10 @@ Infraestructura de código abierto como servicio (IaC) para desplegar una plataf
 
 ```bash
 # Conectar a la instancia EC2
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 # O usar el dominio
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@conectatech.co
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@conectatech.co
 
 # Acceder a Moodle
 https://conectatech.co
@@ -210,7 +210,7 @@ cd ../scripts/
 
 ### Para Acceder al Sistema Existente
 
-- [ ] SSH key: `~/.ssh/ClaveIM.pem` (permisos 400)
+- [ ] SSH key: `~/.ssh/ClaveCT.pem` (permisos 400)
 - [ ] Credenciales Moodle (usuario: `admin`)
 - [ ] AWS CLI con profile `im` configurado
 
@@ -222,14 +222,14 @@ cd ../scripts/
 
 ```bash
 # Configurar credentials
-aws configure --profile im
+aws configure --profile ct
 # AWS Access Key ID: [tu-access-key]
 # AWS Secret Access Key: [tu-secret-key]
 # Default region: us-east-1
 # Default output format: json
 
 # Verificar configuración
-aws sts get-caller-identity --profile im
+aws sts get-caller-identity --profile ct
 ```
 
 ### Paso 2: Preparar Terraform
@@ -246,7 +246,7 @@ aws_region                  = "us-east-1"
 aws_profile                 = "im"
 
 # EC2
-key_pair_name               = "ClaveIM"
+key_pair_name               = "ClaveCT"
 instance_type               = "t4g.small"
 allowed_ssh_cidrs           = ["TU.IP.PUBLICA/32"]
 
@@ -322,7 +322,7 @@ cd ../scripts/
 
 ```bash
 # SSH a la instancia
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 # Verificar servicios
 sudo systemctl status apache2
@@ -355,10 +355,10 @@ sudo tail -f /var/www/html/moodle/var/log/moodle.log
 
 ```bash
 # Conexión directa
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 # Por dominio
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@conectatech.co
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@conectatech.co
 ```
 
 #### Gestionar Servicios
@@ -574,8 +574,8 @@ mysqldump -h $ENDPOINT -u moodleadmin -p$DBPASS \
 tar -czf backup_moodledata_${FECHA}.tar.gz /moodledata/
 
 # Transferir a S3
-aws s3 cp backup_moodle_${FECHA}.sql s3://mi-bucket-backups/ --profile im
-aws s3 cp backup_moodledata_${FECHA}.tar.gz s3://mi-bucket-backups/ --profile im
+aws s3 cp backup_moodle_${FECHA}.sql s3://mi-bucket-backups/ --profile ct
+aws s3 cp backup_moodledata_${FECHA}.tar.gz s3://mi-bucket-backups/ --profile ct
 ```
 
 #### Restaurar desde Backup
@@ -598,7 +598,7 @@ sudo chown -R apache:apache /moodledata
 
 ```bash
 # Conectar a la instancia
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 # Aplicar parches
 sudo dnf update -y
@@ -630,7 +630,7 @@ sudo -u apache php admin/cli/check_database_schema.php
 
 ```bash
 # SSH a instancia
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 # Versión de Moodle
 sudo -u apache php /var/www/html/moodle/admin/cli/plugin_manager.php
@@ -660,24 +660,24 @@ sudo -u apache php admin/cli/plugin_manager.php --upgrade-all
 
 ```bash
 # Ver todas las alarmas
-aws cloudwatch describe-alarms --profile im
+aws cloudwatch describe-alarms --profile ct
 
 # Ver alarmas en estado ALARM
 aws cloudwatch describe-alarms \
   --state-values ALARM \
-  --profile im
+  --profile ct
 
 # Ver historial de alarma específica
 aws cloudwatch describe-alarm-history \
   --alarm-name cpu-utilization-alarm \
-  --profile im
+  --profile ct
 ```
 
 #### Monitoreo de Logs
 
 ```bash
 # Ver logs recientes en CloudWatch
-aws logs tail /aws/ec2/moodle --follow --profile im
+aws logs tail /aws/ec2/moodle --follow --profile ct
 
 # O en el servidor:
 sudo journalctl -u php-fpm -f
@@ -691,18 +691,18 @@ Si usuarios crecen y performance degrada:
 ```bash
 # 1. Crear snapshot del volumen raíz (backup preventivo)
 # 2. Detener la instancia
-aws ec2 stop-instances --instance-ids i-0238341b5897b8e8f --profile im
+aws ec2 stop-instances --instance-ids i-0238341b5897b8e8f --profile ct
 
 # 3. Cambiar tipo de instancia
 # AWS Console → EC2 → Instance → Instance State → Change Instance Type
 # Seleccionar: t4g.medium o t4g.large
 
 # 4. Iniciar instancia
-aws ec2 start-instances --instance-ids i-0238341b5897b8e8f --profile im
+aws ec2 start-instances --instance-ids i-0238341b5897b8e8f --profile ct
 
 # 5. Esperar a que arranque (1-2 min)
 # 6. Conectar y verificar
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 # 7. Verificar servicios
 sudo systemctl status apache2
@@ -779,12 +779,12 @@ EOF
 # 1. Verificar que RDS está disponible
 aws rds describe-db-instances \
   --db-instance-identifier conectatech-prod-db \
-  --profile im | grep DBInstanceStatus
+  --profile ct | grep DBInstanceStatus
 
 # 2. Verificar security groups
 aws ec2 describe-security-groups \
   --group-ids sg-XXXXXXXX \
-  --profile im
+  --profile ct
 
 # 3. Desde EC2, intentar conectar a RDS
 mysql -h ENDPOINT_RDS -u moodleadmin -p moodle -e "SELECT 1;"
@@ -852,15 +852,15 @@ sudo -u apache php /var/www/html/moodle/admin/cli/purge_caches.php
 
 ```bash
 # 1. Verificar permisos de key
-ls -la ~/.ssh/ClaveIM.pem
+ls -la ~/.ssh/ClaveCT.pem
 # Debe ser: -r--------
 
-chmod 400 ~/.ssh/ClaveIM.pem
+chmod 400 ~/.ssh/ClaveCT.pem
 
 # 2. Verificar que seguridad group permite SSH
 aws ec2 describe-security-groups \
   --group-ids sg-XXXXXXXX \
-  --profile im
+  --profile ct
 
 # Debe tener regla:
 # - Protocol: TCP
@@ -870,10 +870,10 @@ aws ec2 describe-security-groups \
 # 3. Verificar IP pública de instancia
 aws ec2 describe-instances \
   --instance-ids i-0238341b5897b8e8f \
-  --profile im | grep PublicIpAddress
+  --profile ct | grep PublicIpAddress
 
 # 4. Intentar conexión con verbose
-ssh -vvv -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -vvv -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 ```
 
 ### Problema: Moodledata sin espacio (Error: No space left)

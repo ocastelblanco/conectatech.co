@@ -240,7 +240,7 @@ npm run build
 # Output: dist/frontend/browser/
 
 # 2. Deploy (excluir api/ y backend/ del servidor)
-rsync -e "ssh -i ~/.ssh/ClaveIM.pem" -a --delete \
+rsync -e "ssh -i ~/.ssh/ClaveCT.pem" -a --delete \
   --exclude=api --exclude=backend \
   dist/frontend/browser/ \
   ec2-user@54.86.113.27:/var/www/html/admin/
@@ -421,7 +421,7 @@ enunciado: Describe con tus palabras...
 | IP elástica | `54.86.113.27` |
 | OS | Amazon Linux 2023 |
 | Usuario SSH | `ec2-user` |
-| Clave SSH | `~/.ssh/ClaveIM.pem` |
+| Clave SSH | `~/.ssh/ClaveCT.pem` |
 | PHP-FPM usuario | `apache` |
 | Moodle root | `/var/www/html/moodle/` |
 | Moodle DocumentRoot | `/var/www/html/moodle/public` |
@@ -432,18 +432,18 @@ enunciado: Describe con tus palabras...
 
 **Conectar por SSH:**
 ```bash
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 ```
 
 **Si SSH da timeout:** la IP del cliente cambió. Actualizar el Security Group:
 ```bash
 # Revocar IP anterior
-aws ec2 revoke-security-group-ingress --profile im \
+aws ec2 revoke-security-group-ingress --profile ct \
   --group-id sg-039bcb1cb3a57db7f \
   --protocol tcp --port 22 --cidr <IP_VIEJA>/32
 
 # Autorizar nueva IP
-aws ec2 authorize-security-group-ingress --profile im \
+aws ec2 authorize-security-group-ingress --profile ct \
   --group-id sg-039bcb1cb3a57db7f \
   --protocol tcp --port 22 --cidr <IP_NUEVA>/32
 ```
@@ -463,13 +463,13 @@ cd admin-module/frontend && npm run build
 #    Si da "Permission denied", ver paso de cambio de propietario abajo.
 
 # 3. Sincronizar solo el build (preservar api/ y backend/)
-rsync -e "ssh -i ~/.ssh/ClaveIM.pem" -a --delete \
+rsync -e "ssh -i ~/.ssh/ClaveCT.pem" -a --delete \
   --exclude=api --exclude=backend \
   dist/frontend/browser/ \
   ec2-user@54.86.113.27:/var/www/html/admin/
 
 # 4. Restaurar permisos para Apache
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R apache:apache /var/www/html/admin && sudo chmod -R 755 /var/www/html/admin"
 ```
 
@@ -477,21 +477,21 @@ ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
 
 ```bash
 # Si rsync falla con "Permission denied" (archivos pertenecen a apache):
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R ec2-user:ec2-user /var/www/html/admin"
 
 # Sincronizar API
-rsync -e "ssh -i ~/.ssh/ClaveIM.pem" -a \
+rsync -e "ssh -i ~/.ssh/ClaveCT.pem" -a \
   admin-module/api/ \
   ec2-user@54.86.113.27:/var/www/html/admin/api/
 
 # Sincronizar backend
-rsync -e "ssh -i ~/.ssh/ClaveIM.pem" -a \
+rsync -e "ssh -i ~/.ssh/ClaveCT.pem" -a \
   admin-module/backend/ \
   ec2-user@54.86.113.27:/var/www/html/admin/backend/
 
 # Restaurar propietario para Apache
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R apache:apache /var/www/html/admin && sudo chmod -R 755 /var/www/html/admin"
 ```
 
@@ -500,7 +500,7 @@ ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
 ```bash
 cd api-service/functions/pdfs
 zip -r function.zip index.mjs package.json node_modules/
-aws lambda update-function-code --profile im \
+aws lambda update-function-code --profile ct \
   --function-name conectatech-api-pdfs \
   --zip-file fileb://function.zip
 ```
@@ -510,7 +510,7 @@ aws lambda update-function-code --profile im \
 Los scripts PHP del backend deben ejecutarse como usuario `apache` (para que Moodle reconozca la ruta del CLI):
 
 ```bash
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 sudo -u apache php /var/www/html/admin/backend/procesar-markdown.php \
   --file /ruta/al/archivo.md \
   --course shortname-del-curso
@@ -572,7 +572,7 @@ El CDN incluye `frame-ancestors https://conectatech.co https://admin.conectatech
 | Secreto / Variable | Dónde vive | Contexto |
 |---|---|---|
 | Credenciales BD MySQL | `/var/www/html/moodle/config.php` | Solo en servidor, nunca en git |
-| Clave SSH EC2 | `~/.ssh/ClaveIM.pem` | Solo en máquina local del developer |
+| Clave SSH EC2 | `~/.ssh/ClaveCT.pem` | Solo en máquina local del developer |
 | AWS credentials | `~/.aws/config` (profile `im`) | Solo en máquina local |
 | Moodle `wwwroot` | `moodle/config.php` | `https://conectatech.co` |
 | `$CFG->dirroot` | `moodle/config.php` | `/var/www/html/moodle` |

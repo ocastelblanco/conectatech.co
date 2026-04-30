@@ -102,10 +102,10 @@ Las reglas dicen: "si el archivo/directorio pedido no existe en disco, devuelve 
 cd admin-module/frontend && npm run build -- --configuration production
 rsync -a --delete \
   --exclude=api --exclude=backend \
-  -e "ssh -i ~/.ssh/ClaveIM.pem" \
+  -e "ssh -i ~/.ssh/ClaveCT.pem" \
   dist/frontend/browser/ \
   ec2-user@54.86.113.27:/var/www/html/admin/
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R apache:apache /var/www/html/admin"
 ```
 
@@ -113,19 +113,19 @@ ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
 
 ### API REST
 ```bash
-rsync -a -e "ssh -i ~/.ssh/ClaveIM.pem" \
+rsync -a -e "ssh -i ~/.ssh/ClaveCT.pem" \
   admin-module/api/ \
   ec2-user@54.86.113.27:/var/www/html/admin/api/
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R apache:apache /var/www/html/admin/api"
 ```
 
 ### Backend (scripts CLI + libs)
 ```bash
-rsync -a -e "ssh -i ~/.ssh/ClaveIM.pem" \
+rsync -a -e "ssh -i ~/.ssh/ClaveCT.pem" \
   admin-module/backend/ \
   ec2-user@54.86.113.27:/var/www/html/admin/backend/
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R apache:apache /var/www/html/admin/backend"
 ```
 

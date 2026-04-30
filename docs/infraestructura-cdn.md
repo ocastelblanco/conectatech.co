@@ -136,7 +136,7 @@ Admin app → POST /pdfs/{id}/confirm
 cd api-service/functions/pdfs
 npm install --omit=dev
 zip -r /tmp/lambda-pdf.zip .
-aws lambda update-function-code --profile im \
+aws lambda update-function-code --profile ct \
   --function-name conectatech-api-pdfs \
   --zip-file fileb:///tmp/lambda-pdf.zip
 ```

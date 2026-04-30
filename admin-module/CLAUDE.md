@@ -11,7 +11,7 @@ Este documento es la referencia operativa principal para implementar el módulo 
 - **IP elástica:** `54.86.113.27`
 - **Dominio principal:** `https://conectatech.co` → `/var/www/html/moodle/`
 - **Dominio admin:** `https://admin.conectatech.co` → `/var/www/html/admin/` *(por crear)*
-- **Acceso SSH:** `ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27`
+- **Acceso SSH:** `ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27`
 - **AWS CLI profile:** `im` (cross-account role en cuenta `648232846223`)
 - **Usuario PHP-FPM:** `apache` (Amazon Linux 2023)
 
@@ -39,7 +39,7 @@ Antes de crear cualquier archivo PHP, hay que preparar el servidor para servir `
 ### 0.1 — Crear el directorio en el servidor
 
 ```bash
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 sudo mkdir -p /var/www/html/admin
 sudo chown apache:apache /var/www/html/admin
@@ -206,17 +206,17 @@ sudo -u apache php /var/www/html/admin/backend/procesar-markdown.php \
 
 ```bash
 # Subir el markdown al servidor
-scp -i ~/.ssh/ClaveIM.pem ciencias-naturales-6-7.md \
+scp -i ~/.ssh/ClaveCT.pem ciencias-naturales-6-7.md \
     ec2-user@54.86.113.27:/tmp/
 
 # Ejecutar el script remotamente
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
     "sudo -u apache php /var/www/html/admin/backend/procesar-markdown.php \
      --file /tmp/ciencias-naturales-6-7.md \
      --course repo-cn-6-7"
 
 # Ver el reporte
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27 \
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
     "cat /var/www/html/admin/backend/report-ultimo.json"
 ```
 
@@ -264,7 +264,7 @@ Los detalles completos de diseño están en `admin-module/docs/`. Leer en este o
 ## Configuración previa en Moodle (una sola vez)
 
 ```bash
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 # 1. Aumentar maxsections a 250
 sudo -u apache php /var/www/html/moodle/admin/cli/cfg.php \

@@ -351,11 +351,11 @@ Aunque los scripts CLI no lo necesitan (acceden directamente a las APIs internas
 ```bash
 # 1. Descargar el Google Doc manualmente como .md
 # 2. Subir al servidor
-scp -i ~/.ssh/ClaveIM.pem ciencias-naturales-6-7.md \
+scp -i ~/.ssh/ClaveCT.pem ciencias-naturales-6-7.md \
     ec2-user@conectatech.co:/tmp/
 
 # 3. Ejecutar el script
-ssh -i ~/.ssh/ClaveIM.pem ec2-user@conectatech.co
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@conectatech.co
 sudo -u apache php /var/www/scripts/automation/procesar-markdown.php \
     --file /tmp/ciencias-naturales-6-7.md \
     --course repo-cn-6-7

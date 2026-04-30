@@ -115,9 +115,9 @@ La solicitud de salida del sandbox (Fase 4) requiere intervención humana y apro
 
 | # | Acción | Responsable | Detalle |
 |---|--------|-------------|---------|
-| 1.1 | Verificar dominio `conectatech.co` en SES | Agente | `aws ses verify-domain-identity --domain conectatech.co --profile im --region us-east-1` → obtener VerificationToken |
+| 1.1 | Verificar dominio `conectatech.co` en SES | Agente | `aws ses verify-domain-identity --domain conectatech.co --profile ct --region us-east-1` → obtener VerificationToken |
 | 1.2 | Crear TXT `_amazonses.conectatech.co` | Agente | Route 53, zona `Z0767805255ZNR9CRNWLH`, tipo TXT, valor = VerificationToken |
-| 1.3 | Habilitar DKIM | Agente | `aws ses verify-domain-dkim --domain conectatech.co --profile im --region us-east-1` → obtener 3 DkimTokens |
+| 1.3 | Habilitar DKIM | Agente | `aws ses verify-domain-dkim --domain conectatech.co --profile ct --region us-east-1` → obtener 3 DkimTokens |
 | 1.4 | Crear 3 CNAMEs DKIM | Agente | `<token>._domainkey.conectatech.co → <token>.dkim.amazonses.com` ×3 en Route 53 |
 | 1.5 | Crear registro MX | Agente | Route 53: `conectatech.co MX 10 inbound-smtp.us-east-1.amazonaws.com` |
 | 1.6 | Verificar email `no-reply@conectatech.co` | Agente | `aws ses verify-email-identity --email-address no-reply@conectatech.co` → confirmar enlace recibido en Gmail |
@@ -141,7 +141,7 @@ La solicitud de salida del sandbox (Fase 4) requiere intervención humana y apro
 
 | # | Acción | Responsable | Detalle |
 |---|--------|-------------|---------|
-| 2.1 | Crear bucket `conectatech-ses-incoming-emails` | Agente | `aws s3 mb s3://conectatech-ses-incoming-emails --region us-east-1 --profile im` |
+| 2.1 | Crear bucket `conectatech-ses-incoming-emails` | Agente | `aws s3 mb s3://conectatech-ses-incoming-emails --region us-east-1 --profile ct` |
 | 2.2 | Aplicar bucket policy | Agente | `Principal: ses.amazonaws.com`, `Action: s3:PutObject`, condición `AWS:SourceAccount: 648232846223` |
 
 #### 2B — Rol IAM
@@ -162,7 +162,7 @@ La solicitud de salida del sandbox (Fase 4) requiere intervención humana y apro
 
 | # | Acción | Responsable | Detalle |
 |---|--------|-------------|---------|
-| 2.7 | Crear rule set `conectatech-rules` | Agente | `aws ses create-receipt-rule-set --rule-set-name conectatech-rules --profile im --region us-east-1` |
+| 2.7 | Crear rule set `conectatech-rules` | Agente | `aws ses create-receipt-rule-set --rule-set-name conectatech-rules --profile ct --region us-east-1` |
 | 2.8 | Activar rule set | Agente | `aws ses set-active-receipt-rule-set --rule-set-name conectatech-rules` |
 | 2.9 | Crear regla `forward-to-gmail` | Agente | Recipients: `["conectatech.co"]`, acción S3 → bucket, prefix `incoming/`, ScanEnabled: true |
 
@@ -206,7 +206,7 @@ La solicitud de salida del sandbox (Fase 4) requiere intervención humana y apro
 
 | # | Acción | Responsable | Detalle |
 |---|--------|-------------|---------|
-| 4.1 | Verificar estado | Agente | `aws ses get-send-quota --profile im --region us-east-1` → confirmar `Max24HourSend = 200` |
+| 4.1 | Verificar estado | Agente | `aws ses get-send-quota --profile ct --region us-east-1` → confirmar `Max24HourSend = 200` |
 | 4.2 | Abrir solicitud | **Humano** | SES Console → Account dashboard → Request production access |
 | 4.3 | Completar formulario | **Humano** | Ver datos sugeridos abajo |
 | 4.4 | Esperar aprobación | **Humano** | 24–48h |

@@ -26,7 +26,7 @@
 
 ## 1. Prerrequisitos
 
-- AWS CLI instalado y perfil configurado (este proyecto usa `--profile im`).
+- AWS CLI instalado y perfil configurado (este proyecto usa `--profile ct`).
 - Dominio registrado con zona DNS en Route 53.
 - Python 3 disponible en local (para derivar la contraseña SMTP).
 - Acceso SSH al servidor si se usa Moodle en EC2.
@@ -34,7 +34,7 @@
 Verificar acceso:
 
 ```bash
-aws sts get-caller-identity --profile im
+aws sts get-caller-identity --profile ct
 ```
 
 ---
@@ -48,7 +48,7 @@ Usar la API v2 (`sesv2`) — la v1 (`ses`) está en modo mantenimiento.
 ```bash
 aws sesv2 create-email-identity \
   --email-identity midominio.co \
-  --profile im
+  --profile ct
 ```
 
 La respuesta incluye tres `DkimTokens` para Easy DKIM. Si el dominio ya existía, obtenerlos con:
@@ -56,7 +56,7 @@ La respuesta incluye tres `DkimTokens` para Easy DKIM. Si el dominio ya existía
 ```bash
 aws sesv2 get-email-identity \
   --email-identity midominio.co \
-  --profile im \
+  --profile ct \
   --output json | jq '.DkimAttributes.Tokens'
 ```
 
@@ -65,7 +65,7 @@ aws sesv2 get-email-identity \
 ```bash
 aws sesv2 get-email-identity \
   --email-identity midominio.co \
-  --profile im \
+  --profile ct \
   --output json | jq '{
     VerificationStatus: .VerificationStatus,
     DkimStatus: .DkimAttributes.Status,
@@ -78,7 +78,7 @@ Esperar hasta obtener `"VerificationStatus": "SUCCESS"` (puede tardar hasta 72 h
 ### 2.3 Verificar estado de la cuenta (sandbox vs producción)
 
 ```bash
-aws sesv2 get-account --profile im --output json | jq '{
+aws sesv2 get-account --profile ct --output json | jq '{
   ProductionAccess: .ProductionAccessEnabled,
   SendingEnabled: .SendingEnabled,
   Max24h: .SendQuota.Max24HourSend,
@@ -95,7 +95,7 @@ Si `ProductionAccessEnabled` es `false`, la cuenta está en sandbox (solo puede 
 Todos los cambios se hacen en un solo batch para ser atómicos. Obtener el Hosted Zone ID:
 
 ```bash
-aws route53 list-hosted-zones --profile im \
+aws route53 list-hosted-zones --profile ct \
   --output json | jq '.HostedZones[] | {Name, Id}'
 ```
 
@@ -135,7 +135,7 @@ ADMIN_EMAIL="admin@midominio.co"
 
 aws route53 change-resource-record-sets \
   --hosted-zone-id "$ZONE_ID" \
-  --profile im \
+  --profile ct \
   --change-batch "{
     \"Changes\": [
       {
@@ -194,7 +194,7 @@ aws route53 change-resource-record-sets \
 Verificar que el cambio se aplicó:
 
 ```bash
-aws route53 get-change --id /change/<CHANGE_ID> --profile im \
+aws route53 get-change --id /change/<CHANGE_ID> --profile ct \
   --output json | jq '.ChangeInfo.Status'
 # "INSYNC" = propagado
 ```
@@ -209,7 +209,7 @@ Si el dominio tenía otro proveedor de correo, eliminar sus registros **en el mi
 
 ```bash
 aws route53 list-resource-record-sets \
-  --hosted-zone-id "$ZONE_ID" --profile im \
+  --hosted-zone-id "$ZONE_ID" --profile ct \
   --output json | jq '.ResourceRecordSets[] | select(.Name | startswith("brevo")) | {Name, TTL}'
 ```
 
@@ -224,7 +224,7 @@ aws route53 list-resource-record-sets \
 ```bash
 aws iam create-user \
   --user-name ses-smtp-user \
-  --profile im
+  --profile ct
 ```
 
 ### 4.2 Adjuntar política de envío
@@ -241,7 +241,7 @@ aws iam put-user-policy \
       "Resource": "*"
     }]
   }' \
-  --profile im
+  --profile ct
 ```
 
 ### 4.3 Crear access key
@@ -249,7 +249,7 @@ aws iam put-user-policy \
 ```bash
 aws iam create-access-key \
   --user-name ses-smtp-user \
-  --profile im \
+  --profile ct \
   --output json
 ```
 
@@ -654,7 +654,7 @@ Configurar el topic SNS en SES (consola o CLI):
 aws sesv2 put-email-identity-feedback-attributes \
   --email-identity midominio.co \
   --email-forwarding-enabled true \
-  --profile im
+  --profile ct
 ```
 
 #### Prueba local con `serverless invoke local`
@@ -708,7 +708,7 @@ Mientras la cuenta esté en sandbox, solo se puede enviar a direcciones verifica
 
 ```bash
 # Verificar estado actual
-aws sesv2 get-account --profile im \
+aws sesv2 get-account --profile ct \
   --output json | jq '.ProductionAccessEnabled'
 # false = sandbox, true = producción
 ```
@@ -763,7 +763,7 @@ dig MX midominio.co +short
 ```bash
 aws sesv2 get-email-identity \
   --email-identity midominio.co \
-  --profile im \
+  --profile ct \
   --output json | jq '{
     Verificado: .VerificationStatus,
     DKIM: .DkimAttributes.Status,
@@ -785,13 +785,13 @@ aws sesv2 send-email \
       "Body": {"Text": {"Data": "Correo de prueba desde AWS SES CLI"}}
     }
   }' \
-  --profile im
+  --profile ct
 ```
 
 ### 9.4 Ver métricas de envío
 
 ```bash
-aws sesv2 get-account --profile im \
+aws sesv2 get-account --profile ct \
   --output json | jq '.SendQuota'
 ```
 
@@ -828,7 +828,7 @@ Ver el script completo en la sección 4.4.
 
 ```bash
 aws route53 list-resource-record-sets \
-  --hosted-zone-id "$ZONE_ID" --profile im \
+  --hosted-zone-id "$ZONE_ID" --profile ct \
   --output json | jq '.ResourceRecordSets[] | select(.Name == "registro-a-borrar.midominio.co.") | .TTL'
 ```
 
@@ -843,8 +843,8 @@ Usar ese TTL exacto en el `Action: DELETE`.
 **Verificación:**
 
 ```bash
-aws iam list-user-policies --user-name ses-smtp-user --profile im
-aws iam list-attached-user-policies --user-name ses-smtp-user --profile im
+aws iam list-user-policies --user-name ses-smtp-user --profile ct
+aws iam list-attached-user-policies --user-name ses-smtp-user --profile ct
 ```
 
 Si ambas listas están vacías, adjuntar la política manualmente (sección 4.2).
@@ -876,7 +876,7 @@ Si ambas listas están vacías, adjuntar la política manualmente (sección 4.2)
 ```bash
 MY_IP=$(curl -s https://checkip.amazonaws.com)
 OLD_IP=$(aws ec2 describe-security-groups \
-  --group-ids sg-XXXXXXXXX --profile im \
+  --group-ids sg-XXXXXXXXX --profile ct \
   --output json | python3 -c "
 import sys,json
 sg=json.load(sys.stdin)['SecurityGroups'][0]
@@ -887,11 +887,11 @@ for r in sg['IpPermissions']:
 
 aws ec2 revoke-security-group-ingress \
   --group-id sg-XXXXXXXXX --protocol tcp --port 22 \
-  --cidr "$OLD_IP" --profile im
+  --cidr "$OLD_IP" --profile ct
 
 aws ec2 authorize-security-group-ingress \
   --group-id sg-XXXXXXXXX --protocol tcp --port 22 \
-  --cidr "$MY_IP/32" --profile im
+  --cidr "$MY_IP/32" --profile ct
 ```
 
 ---

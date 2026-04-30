@@ -15,19 +15,19 @@ Leer PRD.md para contexto de negocio. Leer tech-specs.md para arquitectura técn
 - **Account ID**: 648232846223 (cross-account access via role assumption)
 - **AWS CLI profile**: `im` (configured in `~/.aws/config` using `AdministradorExterno` role)
 - **Region**: us-east-1
-- **EC2 key pair**: `~/.ssh/ClaveIM.pem`
+- **EC2 key pair**: `~/.ssh/ClaveCT.pem`
 
 Verificar acceso:
 ```bash
-aws sts get-caller-identity --profile im
+aws sts get-caller-identity --profile ct
 ```
 
-Todos los comandos AWS deben usar `--profile im`.
+Todos los comandos AWS deben usar `--profile ct`.
 
 ## Servidor EC2
 
 - **IP**: `54.86.113.27`
-- **SSH**: `ssh -i ~/.ssh/ClaveIM.pem ec2-user@54.86.113.27`
+- **SSH**: `ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27`
 - **Moodle**: `/var/www/html/moodle/` (DocumentRoot: `moodle/public`)
 - **Admin**: `/var/www/html/admin/` (frontend + api/ + backend/)
 - **PHP-FPM usuario**: `apache`
