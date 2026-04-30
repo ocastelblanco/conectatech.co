@@ -20,34 +20,7 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Sección 0 de cursos finales
-
-**Origen:** PRD §6 (Alta) · ADR-005 · Deuda técnica desde despliegue inicial de árboles curriculares
-
-**Problema:** Al desplegar un árbol curricular, los cursos finales se crean sin contenido en su sección 0 (portada/bienvenida). Los estudiantes que acceden al curso ven una sección vacía. El editor de árboles en el panel admin no tiene UI para definir ese contenido por curso.
-
-**Qué hacer:**
-
-### Paso 1 — Editor de árboles: campo de sección 0 por curso final
-En el editor de árboles curriculares (`admin-module/frontend`), agregar un campo de texto enriquecido (o Markdown) por cada nodo de tipo "curso final" que permita definir el contenido de bienvenida. Este contenido se guarda como parte del JSON del árbol.
-
-### Paso 2 — Pipeline: poblar sección 0 al desplegar
-En `PobladorService` (o el servicio equivalente de despliegue), al crear cada curso final, usar la API de Moodle para insertar el contenido de la sección 0 si el árbol lo define.
-
-**Archivos a modificar / crear:**
-1. `admin-module/frontend/src/app/features/arboles/` — UI del editor (campo por curso final)
-2. `admin-module/backend/lib/PobladorService.php` (o equivalente) — poblar sección 0 al desplegar
-3. Posiblemente el schema JSON del árbol si no tiene campo para sección 0
-
-**Definición de done:**
-- [ ] El editor de árboles muestra un campo de contenido por cada curso final
-- [ ] Al desplegar el árbol, los cursos finales tienen su sección 0 poblada con ese contenido
-- [ ] Los árboles sin contenido de sección 0 se despliegan igual que antes (retrocompatibilidad)
-- [ ] El campo es opcional; no bloquea el despliegue si está vacío
-
----
-
-## Tarea 2 — [FEATURE] Reportes de progreso
+## Tarea 1 — [FEATURE] Reportes de progreso
 
 **Origen:** PRD §6 (Alta)
 
@@ -73,6 +46,33 @@ En `admin-module/frontend`, agregar una vista bajo `/pines/reporte` (o ruta nuev
 
 ---
 
+## Tarea 2 — [FEATURE] Tipos de pregunta adicionales
+
+**Origen:** PRD §6 (Media)
+
+**Problema:** El pipeline Markdown soporta actualmente solo opción múltiple y ensayo. Los autores de contenido necesitan más variedad para construir evaluaciones completas.
+
+**Qué hacer:**
+
+### Paso 1 — Parser: reconocer nuevos tipos en el Markdown
+En `MarkdownParser.php` y `GiftConverter.php`, añadir soporte para las sintaxis de verdadero/falso, emparejamiento, respuesta corta y numérica según el formato GIFT de Moodle.
+
+### Paso 2 — Preview: iconos diferenciados en el árbol
+En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()` para que el árbol de estructura muestre íconos distintos por tipo de pregunta.
+
+**Archivos a modificar / crear:**
+1. `admin-module/backend/lib/MarkdownParser.php` — reconocer nuevas sintaxis
+2. `admin-module/backend/lib/GiftConverter.php` — generar GIFT para los nuevos tipos
+3. `admin-module/frontend/src/app/features/contenido/contenido.component.ts` — iconos del preview
+
+**Definición de done:**
+- [ ] Verdadero/falso se procesa correctamente en GIFT
+- [ ] Respuesta corta se procesa correctamente en GIFT
+- [ ] Los nuevos tipos aparecen en el árbol de estructura con ícono diferenciado
+- [ ] Los tipos existentes (opción múltiple, ensayo) no se ven afectados
+
+---
+
 ## Historial de tareas completadas
 
 | Fecha | Tarea | Descripción breve |
@@ -85,6 +85,7 @@ En `admin-module/frontend`, agregar una vista bajo `/pines/reporte` (o ruta nuev
 | 2026-04-25 | [INFRA] Sistema de correos AWS | SES dominio+DKIM+MX, Lambda forwarder nodejs24.x con FORWARD_MAP, rule set SES, trigger S3→Lambda, Moodle SMTP configurado, 3 alarmas CloudWatch |
 | 2026-04-27 | [FEATURE] Notificaciones por correo | `EmailService.php` con `notificarPaqueteCreado()` y `notificarPinActivado()`; integrado en `PinesService` y `ActivacionService`; fecha en español vía `IntlDateFormatter`; CRLF correcto en Lambda forwarder |
 | 2026-04-27 | [INFRA] Actualización Moodle 5.1.3 → 5.2 | Plugin `local_conectatech` desinstalado; upgrade limpio vía GitHub archive + composer install; `qtype_random` huérfano eliminado; todas las tablas `mdl_ct_*` y rol `ct_gestor` (22 capabilities) intactos |
+| 2026-04-30 | [FEATURE] Sección 0 de cursos finales | UI por nodo de curso final en editor de árboles; `PobladorService` pobla sección 0 al desplegar; retrocompatible con árboles sin contenido definido |
 
 ---
 
@@ -205,3 +206,15 @@ En `admin-module/frontend`, agregar una vista bajo `/pines/reporte` (o ruta nuev
 - Sin cambio de prioridades — todo lo de esta sesión fue infra/fix
 
 **Resultado:** Sin cambio — Tarea 1 = Sección 0 de cursos finales. Tarea 2 = Reportes de progreso.
+
+### 2026-04-30 — Revisión 10 (Sección 0 de cursos finales completada)
+
+**Cambios en esta sesión:**
+- ✅ Sección 0 de cursos finales: UI por nodo en editor de árboles + `PobladorService` pobla sección 0 al desplegar
+
+**Comparación PRD vs MEMORY:**
+- ✅ Sección 0 de cursos finales: completada
+- 🎯 **Reportes de progreso**: Alta prioridad, siguiente feature de valor para el negocio
+- 🎯 **Tipos de pregunta adicionales**: Media prioridad, enriquece el pipeline de contenido
+
+**Resultado:** Tarea 1 = Reportes de progreso. Tarea 2 = Tipos de pregunta adicionales.

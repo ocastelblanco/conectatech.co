@@ -145,6 +145,11 @@ export class ContenidoComponent implements OnInit {
     this.previewTree.set(this.previewTree().map(n => this.setNodeExpanded(n, false)));
   }
 
+  imprimirEstructura(): void {
+    this.expandAll();
+    setTimeout(() => window.print(), 150);
+  }
+
   private setNodeExpanded(node: TreeNode, expanded: boolean): TreeNode {
     return { ...node, expanded, children: node.children?.map(c => this.setNodeExpanded(c, expanded)) };
   }

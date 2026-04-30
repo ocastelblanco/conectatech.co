@@ -79,3 +79,39 @@ h6 {
 .p-select-option {
   padding: 0.5rem 0.875rem;
 }
+
+/* Impresión de estructura de contenido */
+.cnt-print-header { display: none; }
+
+@media print {
+  body * { visibility: hidden; }
+
+  .cnt-print-estructura,
+  .cnt-print-estructura * { visibility: visible; }
+
+  .cnt-print-estructura {
+    position: absolute;
+    inset: 0;
+    padding: 24px 32px;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .cnt-print-tree-container {
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+  }
+
+  /* Ocultar botones de acción y toggle de nodos */
+  .cnt-print-actions,
+  .cnt-print-actions * { visibility: hidden; }
+  .cnt-print-estructura .p-tree-toggler { display: none !important; }
+
+  /* Mostrar cabecera con nombre de archivo */
+  .cnt-print-header {
+    display: block !important;
+    visibility: visible !important;
+  }
+}

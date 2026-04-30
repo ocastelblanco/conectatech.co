@@ -82,7 +82,7 @@ El estudiante accede a los cursos en conectatech.co
 | Publicar contenido educativo estructurado en Moodle desde documentos Markdown | El pipeline Markdown → Moodle procesa un documento y crea secciones, subsecciones, cuestionarios y actividades sin intervención manual | ✅ Implementado |
 | Permitir que colegios compren y gestionen accesos sin intervención técnica del administrador | El gestor puede asignar pines desde su portal sin asistencia de ConectaTech | ✅ Implementado |
 | Facilitar la activación de cuentas para estudiantes nuevos | El estudiante activa su pin desde una URL pública y queda matriculado automáticamente | ✅ Implementado |
-| Construir y mantener árboles curriculares que definen la estructura de cursos | El administrador puede crear, editar y desplegar árboles curriculares desde el panel | ✅ Implementado (parcialmente — sección 0 de cursos finales pendiente) |
+| Construir y mantener árboles curriculares que definen la estructura de cursos | El administrador puede crear, editar y desplegar árboles curriculares desde el panel | ✅ Implementado |
 | Centralizar la gestión de archivos PDF y recursos digitales | El administrador sube PDFs y los vincula a cursos; el visor se muestra embebido en Moodle | ✅ Implementado |
 | Escalar el acceso a recursos sin incrementar costos de servidor | Los PDFs y videos se sirven desde un CDN, no desde el servidor Moodle | ✅ Implementado |
 
@@ -135,7 +135,7 @@ La herramienta permite:
 - Desplegar el árbol en Moodle (crea categorías y cursos)
 - Los árboles se guardan como JSON en el servidor (`backend/data/arboles/`)
 
-**Pendiente:** Los cursos finales necesitan contenido en su sección 0 (portada). Ver §6 (Roadmap).
+Los cursos finales reciben su contenido de bienvenida (sección 0) definido en el editor de árboles al momento del despliegue.
 
 ---
 
@@ -222,7 +222,7 @@ Página pública (`/activar`) donde un estudiante ingresa su pin y:
 | **Implementación de Sistema de correos AWS** | Implementar el sistema del documento [plan-trabajo-conectatech.md](docs/email/plan-trabajo-conectatech.md) y en la carpeta [docs/email/](docs/email/) en general. | Alta |
 | **Notificaciones por correo** | Enviar correo al gestor cuando se crea un paquete para su organización; al estudiante cuando se activa su pin | Alta |
 | **Actualizar Moodle a la versión 5.2.x** | Migrar la plataforma actual a la versión más reciente de Moodle, valorando cuidadosamente las acciones que se deben tomar, para conservar la integridad de la información y, especialmente, las funcionalidades que hemos construído. Revisar las [nuevas features](https://docs.moodle.org/502/en/New_features). | Alta |
-| **Sección 0 de cursos finales** | Al desplegar un árbol curricular, cada curso final debe tener contenido de portada/bienvenida. El panel admin necesita una UI para definir ese contenido por curso dentro del editor de árboles. | Alta |
+| ~~**Sección 0 de cursos finales**~~ ✅ | ~~Al desplegar un árbol curricular, cada curso final debe tener contenido de portada/bienvenida. El panel admin necesita una UI para definir ese contenido por curso dentro del editor de árboles.~~ | ~~Alta~~ |
 | **Reportes de progreso** | Dashboard con métricas de avance de estudiantes por organización: completitud de cursos, calificaciones promedio, actividad reciente | Alta |
 | **Tipos de pregunta adicionales** | El pipeline Markdown soporta actualmente solo opción múltiple y ensayo. Pendiente: verdadero/falso, emparejamiento, respuesta corta, numérica | Media |
 | **Renovación y reutilización de pines** | Flujo para que el administrador recupere pines "usados" de cursos completados y los reasigne a nuevos estudiantes | Media |
