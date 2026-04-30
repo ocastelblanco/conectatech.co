@@ -123,6 +123,8 @@ class PobladorService
             return;
         }
 
+        $this->eliminarForoAvisos($courseId);
+
         $html = markdown_to_html(trim($markdown));
 
         $section0 = $DB->get_record('course_sections', [
@@ -142,6 +144,26 @@ class PobladorService
         ]);
 
         rebuild_course_cache($courseId, true);
+    }
+
+    private function eliminarForoAvisos(int $courseId): void
+    {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $sql = "SELECT cm.id
+                  FROM {course_modules} cm
+                  JOIN {modules}         m  ON m.id  = cm.module
+                  JOIN {forum}           f  ON f.id  = cm.instance
+                  JOIN {course_sections} cs ON cs.id = cm.section
+                 WHERE cm.course  = :courseid
+                   AND cs.section = 0
+                   AND m.name     = 'forum'
+                   AND f.type     = 'news'";
+
+        foreach ($DB->get_records_sql($sql, ['courseid' => $courseId]) as $cm) {
+            course_delete_module((int)$cm->id);
+        }
     }
 
     /**

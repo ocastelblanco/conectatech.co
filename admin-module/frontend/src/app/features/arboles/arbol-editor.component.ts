@@ -506,7 +506,8 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
     const curso = this.cursoActivo();
     if (!curso || !curso.temas?.length) return;
 
-    let md = `**El curso ${curso.nombre} tiene la siguiente estructura de contenidos:**\n\n`;
+    const gradoNombre = (this.gradoActivo()?.nombre ?? '').toLowerCase();
+    let md = `**El curso ${curso.nombre} de ${gradoNombre} tiene los siguientes temas:**\n\n`;
 
     for (const tema of curso.temas) {
       md += `- ${tema.titulo}\n`;
@@ -519,8 +520,28 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
     const curso = this.cursoActivo();
     if (!curso?.seccion_0?.trim()) return;
 
-    this.previewHtml.set(curso.seccion_0);
+    this.previewHtml.set(this.markdownToHtml(curso.seccion_0));
     this.showPreviewSeccion0.set(true);
+  }
+
+  private markdownToHtml(md: string): string {
+    const bold = md.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    const lines = bold.split('\n');
+    const parts: string[] = [];
+    let inList = false;
+
+    for (const line of lines) {
+      if (line.startsWith('- ')) {
+        if (!inList) { parts.push('<ul>'); inList = true; }
+        parts.push(`<li>${line.slice(2)}</li>`);
+      } else {
+        if (inList) { parts.push('</ul>'); inList = false; }
+        if (line.trim()) parts.push(`<p>${line}</p>`);
+      }
+    }
+    if (inList) parts.push('</ul>');
+
+    return parts.join('');
   }
 
   volver(): void {
