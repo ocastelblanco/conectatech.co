@@ -232,7 +232,7 @@ EOF
 
 El deploy al servidor EC2 es manual (no hay CI/CD). Ver tech-specs.md §7.2 para el proceso completo de rsync y cambio de permisos.
 
-**Gotcha Angular 19+ — build output en `browser/`:** Angular 19+ genera el build dentro de `dist/frontend/browser/` (no directamente en `dist/frontend/`). Al hacer rsync con `--delete`, el `index.html` viejo (que estaba en la raíz del DocumentRoot) se borra. Apache responde 403 porque el nuevo `index.html` está en `browser/`. **Solución:** actualizar el `DocumentRoot` en el VirtualHost de Apache para que apunte a `/var/www/html/admin/browser`.
+**Gotcha Angular 19+ — build output en `browser/`:** Angular 19+ genera el build dentro de `dist/frontend/browser/`. El protocolo de rsync en MEMORY.md ya contempla esto: sincronizar **desde** `dist/frontend/browser/` **hacia** `/var/www/html/admin/`, de modo que los archivos quedan en la raíz del DocumentRoot. El `DocumentRoot` del VirtualHost debe apuntar a `/var/www/html/admin` (sin el sufijo `browser/`). Si alguna sesión anterior apuntó el DocumentRoot a `/var/www/html/admin/browser`, Apache entra en loop de redirección (500). Corrección: `sudo sed -i 's|DocumentRoot /var/www/html/admin/browser|DocumentRoot /var/www/html/admin|g' /etc/httpd/conf.d/admin.conectatech.co.conf && sudo systemctl reload httpd`.
 
 ### Prohibiciones absolutas
 
