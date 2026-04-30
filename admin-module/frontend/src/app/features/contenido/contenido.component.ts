@@ -5,6 +5,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { TreeModule } from 'primeng/tree';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService, SharedModule, TreeDragDropService, TreeNode } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
@@ -22,7 +23,7 @@ interface RawSection {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule, ButtonModule, TextareaModule, TreeModule,
-    SharedModule, TagModule, ToastModule, ProgressSpinnerModule,
+    SharedModule, TagModule, ToastModule, TooltipModule, ProgressSpinnerModule,
   ],
   providers: [MessageService, TreeDragDropService],
   templateUrl: './contenido.component.html',
@@ -143,6 +144,11 @@ export class ContenidoComponent implements OnInit {
 
   collapseAll(): void {
     this.previewTree.set(this.previewTree().map(n => this.setNodeExpanded(n, false)));
+  }
+
+  imprimirEstructura(): void {
+    this.expandAll();
+    setTimeout(() => window.print(), 150);
   }
 
   private setNodeExpanded(node: TreeNode, expanded: boolean): TreeNode {

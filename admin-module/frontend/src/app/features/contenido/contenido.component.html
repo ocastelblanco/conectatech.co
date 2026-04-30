@@ -100,7 +100,7 @@
   <div class="flex flex-wrap gap-4">
 
     <!-- Estructura del contenido (izquierda) -->
-    <div class="flex-1 min-w-[640px] bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+    <div class="flex-1 min-w-[640px] bg-white rounded-xl p-5 shadow-sm border border-gray-100 cnt-print-estructura">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
           <h3 class="text-sm font-semibold text-cnt-midnight m-0">Estructura del contenido</h3>
@@ -116,23 +116,41 @@
           <span>Analizando...</span>
         </div>
         } @else if (previewTree().length) {
-        <div class="flex items-center gap-2 text-xs text-gray-500">
+        <div class="flex items-center gap-1 text-xs text-gray-500 cnt-print-actions">
           <p-button size="small"
                     icon="pi pi-plus"
-                    label="Expandir"
+                    [rounded]="true"
+                    [text]="true"
+                    pTooltip="Expandir"
+                    tooltipPosition="bottom"
                     (click)="expandAll()" />
           <p-button size="small"
                     icon="pi pi-minus"
-                    label="Contraer"
+                    [rounded]="true"
+                    [text]="true"
+                    pTooltip="Contraer"
+                    tooltipPosition="bottom"
                     (click)="collapseAll()" />
-          <span class="text-gray-300">|</span>
+          <p-button size="small"
+                    icon="pi pi-print"
+                    [rounded]="true"
+                    [text]="true"
+                    pTooltip="Imprimir"
+                    tooltipPosition="bottom"
+                    (click)="imprimirEstructura()" />
+          <span class="text-gray-300 mx-1">|</span>
           <span class="text-gray-400">Arrastra para reordenar</span>
         </div>
         }
       </div>
 
+      <!-- Solo visible al imprimir -->
+      <div class="cnt-print-header">
+        <p class="text-xs text-gray-500 m-0 mb-4">Archivo: {{ fileName() }}</p>
+      </div>
+
       @if (previewTree().length) {
-      <div class="border border-gray-100 rounded-lg overflow-y-auto max-h-[520px]">
+      <div class="border border-gray-100 rounded-lg overflow-y-auto max-h-[520px] cnt-print-tree-container">
         <p-tree [value]="previewTree()"
                 [draggableNodes]="true"
                 [droppableNodes]="true"
