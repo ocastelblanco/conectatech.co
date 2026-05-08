@@ -275,41 +275,26 @@
 
           <ng-template pTemplate="header">
             <tr>
-              <th>Curso</th>
+              <th>Colegio</th>
               <th>Categoría</th>
+              <th>Curso</th>
               <th class="text-center">Matriculados</th>
-              <th class="text-center">Completados</th>
-              <th style="min-width: 160px">Progreso</th>
             </tr>
           </ng-template>
 
           <ng-template pTemplate="body" let-curso>
             <tr>
-              <td class="font-medium text-sm">{{ curso.nombre }}</td>
+              <td class="text-sm font-medium text-gray-700">{{ curso.colegio }}</td>
               <td class="text-sm text-gray-500">{{ curso.categoria }}</td>
-              <td class="text-center">{{ curso.matriculados }}</td>
-              <td class="text-center">{{ curso.completados }}</td>
-              <td>
-                <div class="flex items-center gap-2">
-                  <div class="flex-1 bg-gray-100 rounded-full h-2">
-                    <div
-                      class="h-2 rounded-full transition-all duration-300"
-                      [style.width.%]="curso.pct"
-                      [style.backgroundColor]="getPctColor(curso.pct)">
-                    </div>
-                  </div>
-                  <span class="text-xs font-medium w-8 text-right" [style.color]="getPctColor(curso.pct)">
-                    {{ curso.pct }}%
-                  </span>
-                </div>
-              </td>
+              <td class="text-sm">{{ curso.nombre }}</td>
+              <td class="text-center font-medium">{{ curso.matriculados }}</td>
             </tr>
           </ng-template>
 
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="5" class="text-center text-gray-400 py-8 text-sm">
-                No se encontraron cursos con matrículas activas.
+              <td colspan="4" class="text-center text-gray-400 py-8 text-sm">
+                No se encontraron cursos con matrículas activas en la categoría COLEGIOS.
               </td>
             </tr>
           </ng-template>

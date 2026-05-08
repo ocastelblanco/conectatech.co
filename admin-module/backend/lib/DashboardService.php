@@ -103,26 +103,44 @@ class DashboardService
     {
         global $DB;
 
+        // Buscar la categoría raíz COLEGIOS por nombre
+        $colegiosCat = $DB->get_record('course_categories', ['name' => 'COLEGIOS'], 'id, path');
+        if (!$colegiosCat) return [];
+
+        $colegiosId   = (int)$colegiosCat->id;
+        $colegiosPath = rtrim($colegiosCat->path, '/'); // ej: '/13'
+
+        // Mapa id → nombre de los hijos directos de COLEGIOS (los "colegios" reales)
+        $hijos = $DB->get_records('course_categories', ['parent' => $colegiosId], '', 'id, name');
+        $colegioMap = [];
+        foreach ($hijos as $h) {
+            $colegioMap[(int)$h->id] = $h->name;
+        }
+
         $studentRole   = $DB->get_record('role', ['shortname' => 'student'], 'id');
         $studentRoleId = $studentRole ? (int)$studentRole->id : 5;
 
-        // Solo cursos con al menos 1 estudiante matriculado
+        // Solo cursos cuya categoría está dentro de COLEGIOS
         $courses = $DB->get_records_sql(
-            "SELECT c.id, c.fullname, cat.name AS categoria
+            "SELECT c.id, c.fullname,
+                    cat.name AS cat_nombre, cat.path AS cat_path
              FROM {course} c
              JOIN {course_categories} cat ON cat.id = c.category
-             JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
-             JOIN {role_assignments} ra ON ra.contextid = ctx.id AND ra.roleid = ?
-             WHERE c.id != 1
-             GROUP BY c.id, c.fullname, cat.name
-             ORDER BY c.fullname ASC
-             LIMIT 200",
-            [$studentRoleId]
+             WHERE cat.path LIKE ?
+             AND c.id != 1",
+            [$colegiosPath . '/%']
         );
 
         $result = [];
         foreach ($courses as $course) {
             $courseId = (int)$course->id;
+
+            // Extraer el hijo directo de COLEGIOS de la ruta
+            // cat_path = '/13/28' → rest = '28' → colegioId = 28
+            // cat_path = '/13/28/512' → rest = '28/512' → colegioId = 28
+            $rest      = substr($course->cat_path, strlen($colegiosPath) + 1);
+            $colegioId = (int)explode('/', $rest)[0];
+            $colegio   = $colegioMap[$colegioId] ?? '';
 
             $matriculados = (int)$DB->count_records_sql(
                 "SELECT COUNT(DISTINCT ra.userid)
@@ -132,25 +150,20 @@ class DashboardService
                 [$studentRoleId, $courseId]
             );
 
-            $completados = (int)$DB->count_records_sql(
-                "SELECT COUNT(*) FROM {course_completions}
-                 WHERE course = ? AND timecompleted IS NOT NULL AND timecompleted > 0",
-                [$courseId]
-            );
+            if ($matriculados === 0) continue;
 
             $result[] = [
                 'id'           => $courseId,
+                'colegio'      => $colegio,
+                'categoria'    => $course->cat_nombre,
                 'nombre'       => $course->fullname,
-                'categoria'    => $course->categoria,
                 'matriculados' => $matriculados,
-                'completados'  => $completados,
-                'pct'          => $matriculados > 0
-                    ? (int)round($completados / $matriculados * 100)
-                    : 0,
             ];
         }
 
-        usort($result, fn($a, $b) => $a['pct'] <=> $b['pct']);
+        usort($result, fn($a, $b) =>
+            [$a['colegio'], $a['categoria'], $a['nombre']] <=> [$b['colegio'], $b['categoria'], $b['nombre']]
+        );
 
         return $result;
     }
