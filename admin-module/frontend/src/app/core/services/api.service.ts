@@ -128,6 +128,9 @@ export class ApiService {
   getDashboardCursos(): Observable<any> {
     return this.http.get(`${API_BASE}/dashboard/cursos`);
   }
+  getDashboardOrganizaciones(): Observable<any> {
+    return this.http.get(`${API_BASE}/dashboard/organizaciones`);
+  }
 
   // ── Instituciones (Track A) ───────────────────────────────────────────────
   getInstituciones(): Observable<any> {

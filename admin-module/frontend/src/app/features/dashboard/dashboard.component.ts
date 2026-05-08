@@ -80,9 +80,9 @@ export class DashboardComponent implements OnInit {
 
   private cargarOrganizaciones(): void {
     this.loadingOrgs.set(true);
-    this.api.getOrganizaciones().subscribe({
+    this.api.getDashboardOrganizaciones().subscribe({
       next: (r: any) => {
-        this.organizaciones.set(r.data ?? r.organizaciones ?? []);
+        this.organizaciones.set(r.data ?? []);
         this.loadingOrgs.set(false);
         this.orgsLoaded.set(true);
       },
@@ -133,11 +133,4 @@ export class DashboardComponent implements OnInit {
     return 'danger';
   }
 
-  getPinesStats(org: any): { disponibles: number; activos: number; total: number; tasa: number } {
-    const disponibles = org.pines_disponibles ?? 0;
-    const activos     = org.pines_activos     ?? 0;
-    const total       = org.pines_total       ?? disponibles + activos;
-    const tasa        = total > 0 ? Math.round(activos / total * 100) : 0;
-    return { disponibles, activos, total, tasa };
-  }
 }

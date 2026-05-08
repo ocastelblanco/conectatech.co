@@ -61,6 +61,44 @@ class DashboardService
         ];
     }
 
+    public function getOrganizaciones(): array
+    {
+        global $DB;
+
+        $sql = "SELECT o.id, o.name, o.created_at,
+                       cat.name AS categoria_nombre,
+                       COUNT(CASE WHEN p.status = 'available' THEN 1 END) AS pines_disponibles,
+                       COUNT(CASE WHEN p.status = 'assigned'  THEN 1 END) AS pines_asignados,
+                       COUNT(CASE WHEN p.status = 'active'    THEN 1 END) AS pines_activos,
+                       COUNT(p.id) AS pines_total
+                FROM {ct_organization} o
+                LEFT JOIN {course_categories} cat ON cat.id = o.moodle_category_id
+                LEFT JOIN {ct_pin_package} pkg     ON pkg.organization_id = o.id
+                LEFT JOIN {ct_pin} p               ON p.package_id = pkg.id
+                GROUP BY o.id, o.name, o.created_at, cat.name
+                ORDER BY o.name ASC";
+
+        $rows   = $DB->get_records_sql($sql);
+        $result = [];
+
+        foreach ($rows as $row) {
+            $total = (int)$row->pines_total;
+            $activos = (int)$row->pines_activos;
+            $result[] = [
+                'id'                 => (int)$row->id,
+                'name'               => $row->name,
+                'categoria_nombre'   => $row->categoria_nombre ?? '',
+                'pines_disponibles'  => (int)$row->pines_disponibles,
+                'pines_asignados'    => (int)$row->pines_asignados,
+                'pines_activos'      => $activos,
+                'pines_total'        => $total,
+                'tasa_activacion'    => $total > 0 ? (int)round($activos / $total * 100) : 0,
+            ];
+        }
+
+        return $result;
+    }
+
     public function getCursos(): array
     {
         global $DB;

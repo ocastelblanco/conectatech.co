@@ -23,3 +23,11 @@ function handleGetDashboardCursos(): void
     while (ob_get_level() > 0) { ob_end_clean(); }
     echo json_encode(['ok' => true, 'data' => $data]);
 }
+
+function handleGetDashboardOrganizaciones(): void
+{
+    $svc  = new DashboardService();
+    $data = $svc->getOrganizaciones();
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo json_encode(['ok' => true, 'data' => $data]);
+}

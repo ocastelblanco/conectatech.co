@@ -467,6 +467,12 @@ try {
             handleGetDashboardCursos();
             break;
 
+        // GET /api/dashboard/organizaciones
+        case $method === 'GET' && $seg0 === 'dashboard' && $seg1 === 'organizaciones':
+            require API_DIR . '/handlers/dashboard.php';
+            handleGetDashboardOrganizaciones();
+            break;
+
         // ── Instituciones (Track A) ───────────────────────────────────────────
 
         // GET /api/instituciones/categorias  (antes que /{id} para evitar ambigüedad)

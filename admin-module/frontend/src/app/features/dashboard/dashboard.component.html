@@ -223,13 +223,13 @@
           <ng-template pTemplate="body" let-org>
             <tr>
               <td class="font-medium">{{ org.name }}</td>
-              <td class="text-center">{{ getPinesStats(org).disponibles }}</td>
-              <td class="text-center">{{ getPinesStats(org).activos }}</td>
+              <td class="text-center">{{ org.pines_disponibles }}</td>
+              <td class="text-center">{{ org.pines_activos }}</td>
               <td class="text-center">
-                @if (getPinesStats(org).total > 0) {
+                @if (org.pines_total > 0) {
                   <p-tag
-                    [value]="getPinesStats(org).tasa + '%'"
-                    [severity]="getPinsSeverity(getPinesStats(org).tasa)" />
+                    [value]="org.tasa_activacion + '%'"
+                    [severity]="getPinsSeverity(org.tasa_activacion)" />
                 } @else {
                   <span class="text-gray-300 text-xs">Sin pines</span>
                 }
