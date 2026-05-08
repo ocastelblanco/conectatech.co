@@ -116,6 +116,8 @@ require_once LIB_DIR . '/PinesService.php';
 require_once LIB_DIR . '/GestorAuth.php';
 require_once LIB_DIR . '/GestorService.php';
 require_once LIB_DIR . '/ActivacionService.php';
+require_once LIB_DIR . '/InstitucionService.php';
+require_once LIB_DIR . '/DashboardService.php';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Routing
@@ -449,6 +451,58 @@ try {
         case $method === 'POST' && $seg0 === 'activar' && $seg1 === 'pin':
             require API_DIR . '/handlers/activacion.php';
             handleActivarPin();
+            break;
+
+        // ── Dashboard ─────────────────────────────────────────────────────────
+
+        // GET /api/dashboard/resumen
+        case $method === 'GET' && $seg0 === 'dashboard' && $seg1 === 'resumen':
+            require API_DIR . '/handlers/dashboard.php';
+            handleGetDashboardResumen();
+            break;
+
+        // GET /api/dashboard/cursos
+        case $method === 'GET' && $seg0 === 'dashboard' && $seg1 === 'cursos':
+            require API_DIR . '/handlers/dashboard.php';
+            handleGetDashboardCursos();
+            break;
+
+        // ── Instituciones (Track A) ───────────────────────────────────────────
+
+        // GET /api/instituciones/categorias  (antes que /{id} para evitar ambigüedad)
+        case $method === 'GET' && $seg0 === 'instituciones' && $seg1 === 'categorias':
+            require API_DIR . '/handlers/instituciones.php';
+            handleGetCategoriasInstituciones();
+            break;
+
+        // GET /api/instituciones/{id}/progreso
+        case $method === 'GET' && $seg0 === 'instituciones' && $seg1 !== '' && $seg2 === 'progreso':
+            require API_DIR . '/handlers/instituciones.php';
+            handleGetProgresoInstitucion((int)$seg1);
+            break;
+
+        // GET /api/instituciones
+        case $method === 'GET' && $seg0 === 'instituciones' && $seg1 === '':
+            require API_DIR . '/handlers/instituciones.php';
+            handleListarInstituciones();
+            break;
+
+        // POST /api/instituciones
+        case $method === 'POST' && $seg0 === 'instituciones' && $seg1 === '':
+            require API_DIR . '/handlers/instituciones.php';
+            handleCrearInstitucion();
+            break;
+
+        // PUT /api/instituciones/{id}
+        case $method === 'PUT' && $seg0 === 'instituciones' && $seg1 !== '' && $seg2 === '':
+            require API_DIR . '/handlers/instituciones.php';
+            handleActualizarInstitucion((int)$seg1);
+            break;
+
+        // DELETE /api/instituciones/{id}
+        case $method === 'DELETE' && $seg0 === 'instituciones' && $seg1 !== '' && $seg2 === '':
+            require API_DIR . '/handlers/instituciones.php';
+            handleEliminarInstitucion((int)$seg1);
             break;
 
         default:
