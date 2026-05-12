@@ -507,7 +507,7 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
     if (!curso || !curso.temas?.length) return;
 
     const gradoNombre = (this.gradoActivo()?.nombre ?? '').toLowerCase();
-    let md = `**El curso ${curso.nombre} de ${gradoNombre} tiene los siguientes temas:**\n\n`;
+    let md = `**El curso ${curso.nombre} de ${gradoNombre} integra los siguientes temas:**\n\n`;
 
     for (const tema of curso.temas) {
       md += `- ${tema.titulo}\n`;
