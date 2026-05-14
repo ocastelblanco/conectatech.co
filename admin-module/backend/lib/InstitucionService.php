@@ -14,7 +14,7 @@ class InstitucionService
     {
         global $DB;
 
-        $sql = "SELECT i.id, i.name, i.moodle_category_id, i.anio_escolar, i.created_at,
+        $sql = "SELECT i.id, i.name, i.moodle_category_id, i.created_at,
                        cat.name AS categoria_nombre
                 FROM {ct_institucion} i
                 LEFT JOIN {course_categories} cat ON cat.id = i.moodle_category_id
@@ -29,7 +29,6 @@ class InstitucionService
                 'id'                 => (int)$row->id,
                 'name'               => $row->name,
                 'moodle_category_id' => (int)$row->moodle_category_id,
-                'anio_escolar'       => $row->anio_escolar,
                 'created_at'         => (int)$row->created_at,
                 'categoria_nombre'   => $row->categoria_nombre ?? '',
                 'estudiantes'        => $counts['estudiantes'],
@@ -43,7 +42,7 @@ class InstitucionService
 
     // ── CRUD ─────────────────────────────────────────────────────────────────
 
-    public function crear(string $name, int $moodleCategoryId, ?string $anioEscolar): array
+    public function crear(string $name, int $moodleCategoryId): array
     {
         global $DB;
 
@@ -54,7 +53,6 @@ class InstitucionService
         $record = (object)[
             'name'               => $name,
             'moodle_category_id' => $moodleCategoryId,
-            'anio_escolar'       => $anioEscolar,
             'created_at'         => time(),
         ];
 
@@ -64,11 +62,10 @@ class InstitucionService
             'id'                 => (int)$id,
             'name'               => $name,
             'moodle_category_id' => $moodleCategoryId,
-            'anio_escolar'       => $anioEscolar,
         ];
     }
 
-    public function actualizar(int $id, ?string $name, ?int $moodleCategoryId, ?string $anioEscolar): void
+    public function actualizar(int $id, ?string $name, ?int $moodleCategoryId): void
     {
         global $DB;
 
@@ -79,7 +76,6 @@ class InstitucionService
 
         if ($name !== null)             $record->name               = $name;
         if ($moodleCategoryId !== null) $record->moodle_category_id = $moodleCategoryId;
-        if ($anioEscolar !== null)      $record->anio_escolar        = $anioEscolar;
 
         $DB->update_record('ct_institucion', $record);
     }
@@ -164,14 +160,20 @@ class InstitucionService
     {
         global $DB;
 
+        $colegiosId = $DB->get_field('course_categories', 'id', ['name' => 'COLEGIOS']);
+        if (!$colegiosId) {
+            return [];
+        }
+
         $usedIds = $DB->get_fieldset_sql("SELECT moodle_category_id FROM {ct_institucion}", []);
 
-        $where  = 'WHERE id != 1';
-        $params = [];
+        $where  = 'WHERE parent = :parent';
+        $params = ['parent' => (int)$colegiosId];
 
         if (!empty($usedIds)) {
-            [$insql, $params] = $DB->get_in_or_equal($usedIds, SQL_PARAMS_NAMED, 'cat', false);
-            $where .= " AND id $insql";
+            [$insql, $inparams] = $DB->get_in_or_equal($usedIds, SQL_PARAMS_NAMED, 'cat', false);
+            $where  .= " AND id $insql";
+            $params  = array_merge($params, $inparams);
         }
 
         $cats = $DB->get_records_sql(
@@ -191,16 +193,31 @@ class InstitucionService
     {
         global $DB;
 
+        // Obtener todos los IDs de categoría descendientes (la propia + subcategorías)
+        // usando el campo `path` de course_categories (ej: /1/13/28)
+        $parent = $DB->get_record('course_categories', ['id' => $categoryId], 'id,path');
+        if (!$parent) {
+            return ['cursos' => 0, 'estudiantes' => 0, 'docentes' => 0];
+        }
+        $descCatIds = $DB->get_fieldset_sql(
+            "SELECT id FROM {course_categories} WHERE path LIKE ?",
+            [$parent->path . '/%']
+        );
+        $descCatIds[] = $categoryId;
+        $descCatIds   = array_map('intval', $descCatIds);
+
+        [$catSql, $catParams] = $DB->get_in_or_equal($descCatIds, SQL_PARAMS_NAMED, 'cat');
+
         $studentRoleId = $this->getStudentRoleId();
 
-        $teacherRoles    = $DB->get_records_sql(
+        $teacherRoles   = $DB->get_records_sql(
             "SELECT id FROM {role} WHERE shortname IN ('editingteacher', 'teacher')"
         );
-        $teacherRoleIds  = implode(',', array_map(fn($r) => (int)$r->id, $teacherRoles));
+        $teacherRoleIds = implode(',', array_map(fn($r) => (int)$r->id, $teacherRoles));
 
         $cursos = (int)$DB->count_records_sql(
-            "SELECT COUNT(*) FROM {course} WHERE category = ? AND id != 1",
-            [$categoryId]
+            "SELECT COUNT(*) FROM {course} WHERE category $catSql AND id != 1",
+            $catParams
         );
 
         $estudiantes = (int)$DB->count_records_sql(
@@ -208,8 +225,8 @@ class InstitucionService
              FROM {role_assignments} ra
              JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
              JOIN {course} c ON c.id = ctx.instanceid
-             WHERE ra.roleid = ? AND c.category = ?",
-            [$studentRoleId, $categoryId]
+             WHERE ra.roleid = :student AND c.category $catSql",
+            array_merge(['student' => $studentRoleId], $catParams)
         );
 
         $docentes = 0;
@@ -219,8 +236,8 @@ class InstitucionService
                  FROM {role_assignments} ra
                  JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                  JOIN {course} c ON c.id = ctx.instanceid
-                 WHERE ra.roleid IN ($teacherRoleIds) AND c.category = ?",
-                [$categoryId]
+                 WHERE ra.roleid IN ($teacherRoleIds) AND c.category $catSql",
+                $catParams
             );
         }
 

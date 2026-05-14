@@ -46,9 +46,8 @@ export class InstitucionesComponent implements OnInit {
   readonly loadingProgreso  = signal(false);
 
   // Campos del formulario
-  formName        = '';
-  formCatId       = 0;
-  formAnioEscolar = '';
+  formName  = '';
+  formCatId = 0;
 
   readonly totalEstudiantes = computed(() =>
     this.instituciones().reduce((s, i) => s + (i.estudiantes ?? 0), 0)
@@ -77,26 +76,23 @@ export class InstitucionesComponent implements OnInit {
 
   abrirCrear(): void {
     this.editando.set(null);
-    this.formName        = '';
-    this.formCatId       = 0;
-    this.formAnioEscolar = '';
+    this.formName  = '';
+    this.formCatId = 0;
     this.dialogVisible.set(true);
   }
 
   abrirEditar(inst: any): void {
     this.editando.set(inst);
-    this.formName        = inst.name;
-    this.formCatId       = inst.moodle_category_id;
-    this.formAnioEscolar = inst.anio_escolar ?? '';
+    this.formName  = inst.name;
+    this.formCatId = inst.moodle_category_id;
     this.dialogVisible.set(true);
   }
 
   cerrarDialog(): void {
     this.dialogVisible.set(false);
     this.editando.set(null);
-    this.formName        = '';
-    this.formCatId       = 0;
-    this.formAnioEscolar = '';
+    this.formName  = '';
+    this.formCatId = 0;
   }
 
   guardar(): void {
@@ -106,7 +102,6 @@ export class InstitucionesComponent implements OnInit {
     const body = {
       name: this.formName.trim(),
       moodle_category_id: this.formCatId,
-      anio_escolar: this.formAnioEscolar.trim() || undefined,
     };
 
     const op = this.editando()
@@ -140,22 +135,29 @@ export class InstitucionesComponent implements OnInit {
   }
 
   eliminar(inst: any): void {
-    this.confirm.confirm({
-      message: `¿Eliminar la institución "${inst.name}"? Esta acción no se puede deshacer.`,
-      header: 'Confirmar eliminación',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Eliminar',
-      rejectLabel: 'Cancelar',
-      acceptButtonStyleClass: 'p-button-danger',
-      accept: () => {
-        this.api.eliminarInstitucion(inst.id).subscribe({
-          next: () => {
-            this.cargar();
-            this.toast.add({ severity: 'success', summary: 'Eliminado', detail: 'Institución eliminada' });
-          },
-          error: () => this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la institución' }),
-        });
-      },
+    // setTimeout requerido: ConfirmDialog de PrimeNG accede a confirmation.payload
+    // antes de que OnPush complete el ciclo de CD → TypeError en la promesa interna.
+    setTimeout(() => {
+      this.confirm.confirm({
+        message: `¿Eliminar la institución "${inst.name}"? Esta acción no se puede deshacer.`,
+        header: 'Confirmar eliminación',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Eliminar',
+        rejectLabel: 'Cancelar',
+        acceptButtonStyleClass: 'p-button-danger',
+        accept: () => {
+          this.api.eliminarInstitucion(inst.id).subscribe({
+            next: () => {
+              this.cargar();
+              this.api.getCategoriasInstituciones().subscribe({
+                next: (r: any) => this.categorias.set(r.categorias ?? []),
+              });
+              this.toast.add({ severity: 'success', summary: 'Eliminado', detail: 'Institución eliminada' });
+            },
+            error: () => this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la institución' }),
+          });
+        },
+      });
     });
   }
 

@@ -6,26 +6,26 @@
   <!-- Encabezado -->
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-xl font-semibold text-gray-900">Instituciones directas</h1>
-      <p class="text-sm text-gray-500 mt-0.5">Colegios que acceden directamente a ConectaTech (Track A)</p>
+      <h1 class="text-xl font-semibold text-gray-900">Instituciones</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Colegios que acceden directamente a ConectaTech</p>
     </div>
-    <p-button label="Nueva institución" icon="pi pi-plus" (onClick)="abrirCrear()" />
+    <p-button label="Nueva institución"
+              icon="pi pi-plus"
+              (onClick)="abrirCrear()" />
   </div>
 
   <!-- Tabla -->
-  <p-table
-    [value]="instituciones()"
-    [loading]="loading()"
-    [paginator]="instituciones().length > 15"
-    [rows]="15"
-    styleClass="p-datatable-sm"
-    dataKey="id">
+  <p-table [value]="instituciones()"
+           [loading]="loading()"
+           [paginator]="instituciones().length > 15"
+           [rows]="15"
+           styleClass="p-datatable-sm"
+           dataKey="id">
 
     <ng-template pTemplate="header">
       <tr>
         <th>Institución</th>
         <th>Categoría Moodle</th>
-        <th class="text-center">Año escolar</th>
         <th class="text-center">Estudiantes</th>
         <th class="text-center">Docentes</th>
         <th class="text-center">Cursos</th>
@@ -33,41 +33,32 @@
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="body" let-inst>
+    <ng-template pTemplate="body"
+                 let-inst>
       <tr>
         <td class="font-medium">{{ inst.name }}</td>
         <td class="text-sm text-gray-600">{{ inst.categoria_nombre }}</td>
-        <td class="text-center">
-          @if (inst.anio_escolar) {
-            <p-tag [value]="inst.anio_escolar" severity="secondary" />
-          } @else {
-            <span class="text-gray-400 text-xs">—</span>
-          }
-        </td>
         <td class="text-center font-medium">{{ inst.estudiantes }}</td>
         <td class="text-center font-medium">{{ inst.docentes }}</td>
         <td class="text-center font-medium">{{ inst.cursos }}</td>
         <td class="text-center">
           <div class="flex items-center justify-center gap-1">
-            <p-button
-              icon="pi pi-chart-bar"
-              [text]="true"
-              size="small"
-              pTooltip="Ver progreso"
-              (onClick)="verProgreso(inst)" />
-            <p-button
-              icon="pi pi-pencil"
-              [text]="true"
-              size="small"
-              pTooltip="Editar"
-              (onClick)="abrirEditar(inst)" />
-            <p-button
-              icon="pi pi-trash"
-              [text]="true"
-              size="small"
-              severity="danger"
-              pTooltip="Eliminar"
-              (onClick)="eliminar(inst)" />
+            <p-button icon="pi pi-chart-bar"
+                      [text]="true"
+                      size="small"
+                      pTooltip="Ver progreso"
+                      (onClick)="verProgreso(inst)" />
+            <p-button icon="pi pi-pencil"
+                      [text]="true"
+                      size="small"
+                      pTooltip="Editar"
+                      (onClick)="abrirEditar(inst)" />
+            <p-button icon="pi pi-trash"
+                      [text]="true"
+                      size="small"
+                      severity="danger"
+                      pTooltip="Eliminar"
+                      (onClick)="eliminar(inst)" />
           </div>
         </td>
       </tr>
@@ -75,7 +66,8 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td colspan="7" class="text-center text-gray-400 py-8">
+        <td colspan="6"
+            class="text-center text-gray-400 py-8">
           No hay instituciones registradas. Crea la primera con el botón superior.
         </td>
       </tr>
@@ -85,101 +77,100 @@
 </div>
 
 <!-- ── Diálogo Crear / Editar ─────────────────────────────────────────── -->
-<p-dialog
-  [header]="editando() ? 'Editar institución' : 'Nueva institución'"
-  [visible]="dialogVisible()"
-  (visibleChange)="dialogVisible.set($event)"
-  [style]="{ width: '480px' }"
-  [contentStyle]="{ overflow: 'visible' }"
-  [modal]="true"
-  [draggable]="false"
-  (onHide)="cerrarDialog()">
+<p-dialog [header]="editando() ? 'Editar institución' : 'Nueva institución'"
+          [visible]="dialogVisible()"
+          (visibleChange)="dialogVisible.set($event)"
+          [style]="{ width: '480px' }"
+          [contentStyle]="{ overflow: 'visible' }"
+          [modal]="true"
+          [draggable]="false"
+          (onHide)="cerrarDialog()">
 
   <div class="space-y-4 pt-2">
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium text-gray-700">Nombre de la institución *</label>
-      <input pInputText [(ngModel)]="formName" placeholder="Ej: Colegio San Marino" class="w-full" />
+      <input pInputText
+             [(ngModel)]="formName"
+             placeholder="Ej: Colegio San Marino"
+             class="w-full" />
     </div>
 
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium text-gray-700">Categoría Moodle *</label>
-      <p-select
-        [options]="categorias()"
-        [(ngModel)]="formCatId"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Selecciona la categoría del colegio"
-        [filter]="true"
-        filterPlaceholder="Buscar categoría..."
-        appendTo="body"
-        class="w-full" />
+      <p-select [options]="categorias()"
+                [(ngModel)]="formCatId"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Selecciona la categoría del colegio"
+                [filter]="true"
+                filterPlaceholder="Buscar categoría..."
+                appendTo="body"
+                class="w-full" />
       <p class="text-xs text-gray-400">
         Categoría Moodle que agrupa todos los cursos de esta institución.
       </p>
     </div>
 
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium text-gray-700">Año escolar</label>
-      <input pInputText [(ngModel)]="formAnioEscolar" placeholder="Ej: 2026" maxlength="9" class="w-full" />
-    </div>
   </div>
 
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" [text]="true" (onClick)="cerrarDialog()" />
-    <p-button
-      [label]="editando() ? 'Guardar cambios' : 'Crear institución'"
-      [loading]="saving()"
-      [disabled]="!formName.trim() || !formCatId"
-      (onClick)="guardar()" />
+    <p-button label="Cancelar"
+              [text]="true"
+              (onClick)="cerrarDialog()" />
+    <p-button [label]="editando() ? 'Guardar cambios' : 'Crear institución'"
+              [loading]="saving()"
+              [disabled]="!formName.trim() || !formCatId"
+              (onClick)="guardar()" />
   </ng-template>
 </p-dialog>
 
 <!-- ── Diálogo Progreso ───────────────────────────────────────────────── -->
-<p-dialog
-  [header]="'Progreso — ' + (progresoInst()?.name ?? '')"
-  [visible]="progresoVisible()"
-  (visibleChange)="progresoVisible.set($event)"
-  [style]="{ width: '700px' }"
-  [modal]="true"
-  [draggable]="false">
+<p-dialog [header]="'Progreso — ' + (progresoInst()?.name ?? '')"
+          [visible]="progresoVisible()"
+          (visibleChange)="progresoVisible.set($event)"
+          [style]="{ width: '700px' }"
+          [modal]="true"
+          [draggable]="false">
 
   @if (loadingProgreso()) {
-    <div class="py-6 text-center text-gray-400">
-      <i class="pi pi-spin pi-spinner text-2xl"></i>
-      <p class="mt-2 text-sm">Cargando progreso...</p>
-    </div>
+  <div class="py-6 text-center text-gray-400">
+    <i class="pi pi-spin pi-spinner text-2xl"></i>
+    <p class="mt-2 text-sm">Cargando progreso...</p>
+  </div>
   } @else if (progresoCursos().length === 0) {
-    <p class="py-6 text-center text-gray-400 text-sm">
-      No hay cursos con estudiantes matriculados en esta institución.
-    </p>
+  <p class="py-6 text-center text-gray-400 text-sm">
+    No hay cursos con estudiantes matriculados en esta institución.
+  </p>
   } @else {
-    <div class="space-y-3 py-2">
-      @for (curso of progresoCursos(); track curso.course_id) {
-        <div class="rounded-lg border border-gray-100 p-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="font-medium text-sm text-gray-800">{{ curso.nombre }}</span>
-            <span class="text-sm font-semibold" [style.color]="getPctColor(curso.pct)">
-              {{ curso.pct }}%
-            </span>
-          </div>
-          <div class="w-full bg-gray-100 rounded-full h-2 mb-2">
-            <div
-              class="h-2 rounded-full transition-all duration-300"
-              [style.width.%]="curso.pct"
-              [style.backgroundColor]="getPctColor(curso.pct)">
-            </div>
-          </div>
-          <div class="flex gap-4 text-xs text-gray-500">
-            <span><span class="font-medium text-gray-700">{{ curso.matriculados }}</span> matriculados</span>
-            <span><span class="font-medium text-green-600">{{ curso.completados }}</span> completados</span>
-            <span><span class="font-medium text-amber-500">{{ curso.en_progreso }}</span> en progreso</span>
-          </div>
+  <div class="space-y-3 py-2">
+    @for (curso of progresoCursos(); track curso.course_id) {
+    <div class="rounded-lg border border-gray-100 p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-medium text-sm text-gray-800">{{ curso.nombre }}</span>
+        <span class="text-sm font-semibold"
+              [style.color]="getPctColor(curso.pct)">
+          {{ curso.pct }}%
+        </span>
+      </div>
+      <div class="w-full bg-gray-100 rounded-full h-2 mb-2">
+        <div class="h-2 rounded-full transition-all duration-300"
+             [style.width.%]="curso.pct"
+             [style.backgroundColor]="getPctColor(curso.pct)">
         </div>
-      }
+      </div>
+      <div class="flex gap-4 text-xs text-gray-500">
+        <span><span class="font-medium text-gray-700">{{ curso.matriculados }}</span> matriculados</span>
+        <span><span class="font-medium text-green-600">{{ curso.completados }}</span> completados</span>
+        <span><span class="font-medium text-amber-500">{{ curso.en_progreso }}</span> en progreso</span>
+      </div>
     </div>
+    }
+  </div>
   }
 
   <ng-template pTemplate="footer">
-    <p-button label="Cerrar" [text]="true" (onClick)="progresoVisible.set(false)" />
+    <p-button label="Cerrar"
+              [text]="true"
+              (onClick)="progresoVisible.set(false)" />
   </ng-template>
 </p-dialog>

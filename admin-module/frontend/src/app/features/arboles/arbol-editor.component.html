@@ -387,7 +387,7 @@
                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Temas asignados</span>
                 <span class="text-xs text-gray-400">{{ cursoActivo()!.temas?.length ?? 0 }} temas</span>
               </div>
-              <div class="border border-dashed rounded-lg min-h-[160px] flex flex-col overflow-hidden transition-colors"
+              <div class="border border-dashed rounded-lg min-h-[160px] flex flex-col overflow-hidden transition-colors pb-[2em]"
                    [class]="dragOverIndex() === -2 ? 'border-cnt-blue bg-blue-50' : 'border-gray-200 bg-white'"
                    (dragover)="onTemasDragOver($event, -2)"
                    (drop)="onTemasDropAtIndex($event, -1)">
@@ -399,7 +399,7 @@
                 }
                 @for (tema of cursoActivo()!.temas; track $index; let i = $index) {
                 <div draggable="true"
-                     class="flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 last:border-b-0 cursor-grab hover:bg-gray-50"
+                     class="flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 last:border-b-0 cursor-grab bg-gray-50 hover:bg-gray-100"
                      [class.border-t-2]="dragOverIndex() === i"
                      [class.border-t-cnt-blue]="dragOverIndex() === i"
                      [class.bg-blue-50]="dragOverIndex() === i"

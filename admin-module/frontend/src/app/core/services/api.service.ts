@@ -136,10 +136,10 @@ export class ApiService {
   getInstituciones(): Observable<any> {
     return this.http.get(`${API_BASE}/instituciones`);
   }
-  crearInstitucion(body: { name: string; moodle_category_id: number; anio_escolar?: string }): Observable<any> {
+  crearInstitucion(body: { name: string; moodle_category_id: number }): Observable<any> {
     return this.http.post(`${API_BASE}/instituciones`, body);
   }
-  actualizarInstitucion(id: number, body: { name?: string; moodle_category_id?: number; anio_escolar?: string | null }): Observable<any> {
+  actualizarInstitucion(id: number, body: { name?: string; moodle_category_id?: number }): Observable<any> {
     return this.http.put(`${API_BASE}/instituciones/${id}`, body);
   }
   eliminarInstitucion(id: number): Observable<any> {
