@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PobladorService.php — Lógica de negocio para poblar cursos finales.
  *
@@ -138,7 +139,7 @@ class PobladorService
         }
 
         course_update_section($courseId, $section0, [
-            'name'    => 'Bienvenida',
+            'name'    => 'Nuestro curso',
             'summary' => $html,
             'visible' => 1,
         ]);

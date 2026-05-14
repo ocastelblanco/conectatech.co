@@ -121,6 +121,37 @@ export class ApiService {
     return this.http.get(`${API_BASE}/organizaciones/categorias`);
   }
 
+  // ── Dashboard ────────────────────────────────────────────────────────────────
+  getDashboardResumen(): Observable<any> {
+    return this.http.get(`${API_BASE}/dashboard/resumen`);
+  }
+  getDashboardCursos(): Observable<any> {
+    return this.http.get(`${API_BASE}/dashboard/cursos`);
+  }
+  getDashboardOrganizaciones(): Observable<any> {
+    return this.http.get(`${API_BASE}/dashboard/organizaciones`);
+  }
+
+  // ── Instituciones (Track A) ───────────────────────────────────────────────
+  getInstituciones(): Observable<any> {
+    return this.http.get(`${API_BASE}/instituciones`);
+  }
+  crearInstitucion(body: { name: string; moodle_category_id: number }): Observable<any> {
+    return this.http.post(`${API_BASE}/instituciones`, body);
+  }
+  actualizarInstitucion(id: number, body: { name?: string; moodle_category_id?: number }): Observable<any> {
+    return this.http.put(`${API_BASE}/instituciones/${id}`, body);
+  }
+  eliminarInstitucion(id: number): Observable<any> {
+    return this.http.delete(`${API_BASE}/instituciones/${id}`);
+  }
+  getProgresoInstitucion(id: number): Observable<any> {
+    return this.http.get(`${API_BASE}/instituciones/${id}/progreso`);
+  }
+  getCategoriasInstituciones(): Observable<any> {
+    return this.http.get(`${API_BASE}/instituciones/categorias`);
+  }
+
   // Activos — integración Moodle
   getActivosCursosRepositorio(): Observable<{ ok: boolean; cursos: any[] }> {
     return this.http.get<any>(`${API_BASE}/activos/cursos-repositorio`);

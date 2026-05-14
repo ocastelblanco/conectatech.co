@@ -1,22 +1,311 @@
+<p-toast />
+
 <div class="space-y-6">
 
-  <!-- Status banner -->
-  <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium"
-       [class]="apiStatus() === 'ok'
-      ? 'bg-green-50 text-green-800 border border-green-200'
-      : apiStatus() === 'error'
-      ? 'bg-red-50 text-red-800 border border-red-200'
-      : 'bg-blue-50 text-blue-800 border border-blue-200'">
-    @if (apiStatus() === 'ok') {
-    <i class="pi pi-check-circle text-green-600"></i>
-    API conectada correctamente.
-    } @else if (apiStatus() === 'error') {
-    <i class="pi pi-exclamation-circle text-red-600"></i>
-    No se pudo conectar con la API. Verifica que estes autenticado en Moodle.
-    } @else {
-    <i class="pi pi-spin pi-spinner text-blue-600"></i>
-    Verificando conexion...
-    }
+  <!-- Encabezado -->
+  <div>
+    <h1 class="text-xl font-semibold text-gray-900">Dashboard</h1>
+    <p class="text-sm text-gray-500 mt-0.5">Vista general de la plataforma ConectaTech</p>
   </div>
+
+  <!-- Tabs principales -->
+  <p-tabs value="resumen"
+          (valueChange)="onTabChange($event)">
+    <p-tablist>
+      <p-tab value="resumen">Resumen</p-tab>
+      <p-tab value="instituciones">Instituciones</p-tab>
+      <p-tab value="organizaciones">Organizaciones</p-tab>
+      <p-tab value="cursos">Cursos</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+
+      <!-- ── Tab Resumen ─────────────────────────────────────────────────── -->
+      <p-tabpanel value="resumen">
+        @if (loadingResumen()) {
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 py-2">
+          @for (i of [1,2,3,4,5,6]; track i) {
+          <p-skeleton height="100px"
+                      borderRadius="12px" />
+          }
+        </div>
+        } @else if (resumen()) {
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 py-2">
+
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Instituciones</p>
+                <p class="text-3xl font-bold text-indigo-600 mt-1">{{ resumen().instituciones }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+                <i class="pi pi-graduation-cap text-indigo-600"></i>
+              </div>
+            </div>
+            <a routerLink="/instituciones"
+               class="text-xs text-indigo-500 hover:text-indigo-700 mt-3 inline-block">
+              Ver instituciones →
+            </a>
+          </div>
+
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Organizaciones</p>
+                <p class="text-3xl font-bold text-blue-600 mt-1">{{ resumen().organizaciones }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                <i class="pi pi-building text-blue-600"></i>
+              </div>
+            </div>
+            <a routerLink="/organizaciones"
+               class="text-xs text-blue-500 hover:text-blue-700 mt-3 inline-block">
+              Ver organizaciones →
+            </a>
+          </div>
+
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Pines activos</p>
+                <p class="text-3xl font-bold text-emerald-600 mt-1">{{ resumen().pines_activos }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <i class="pi pi-ticket text-emerald-600"></i>
+              </div>
+            </div>
+            <a routerLink="/pines"
+               class="text-xs text-emerald-500 hover:text-emerald-700 mt-3 inline-block">
+              Ver pines →
+            </a>
+          </div>
+
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Cursos con matrícula</p>
+                <p class="text-3xl font-bold text-violet-600 mt-1">{{ resumen().cursos }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center">
+                <i class="pi pi-book text-violet-600"></i>
+              </div>
+            </div>
+            <span class="text-xs text-gray-400 mt-3 inline-block">Todos los tracks</span>
+          </div>
+
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Usuarios activos (30 d)</p>
+                <p class="text-3xl font-bold text-orange-600 mt-1">{{ resumen().usuarios_activos }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+                <i class="pi pi-users text-orange-600"></i>
+              </div>
+            </div>
+            <span class="text-xs text-gray-400 mt-3 inline-block">Estudiantes + docentes</span>
+          </div>
+
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Docentes activos (30 d)</p>
+                <p class="text-3xl font-bold text-teal-600 mt-1">{{ resumen().docentes_activos }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
+                <i class="pi pi-user text-teal-600"></i>
+              </div>
+            </div>
+            <span class="text-xs text-gray-400 mt-3 inline-block">Con rol editingteacher / teacher</span>
+          </div>
+
+        </div>
+        } @else {
+        <p class="text-sm text-gray-400 py-6 text-center">No se pudo cargar el resumen.</p>
+        }
+      </p-tabpanel>
+
+      <!-- ── Tab Instituciones ───────────────────────────────────────────── -->
+      <p-tabpanel value="instituciones">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm text-gray-500">
+            Colegios con acceso directo a ConectaTech — matrículas gestionadas por el equipo CT.
+          </p>
+          <a routerLink="/instituciones">
+            <p-button label="Gestionar"
+                      icon="pi pi-arrow-right"
+                      iconPos="right"
+                      [text]="true"
+                      size="small" />
+          </a>
+        </div>
+
+        <p-table [value]="instituciones()"
+                 [loading]="loadingInstituciones()"
+                 [paginator]="instituciones().length > 10"
+                 [rows]="10"
+                 styleClass="p-datatable-sm"
+                 dataKey="id">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Institución</th>
+              <th>Categoría Moodle</th>
+              <th class="text-center">Estudiantes</th>
+              <th class="text-center">Docentes</th>
+              <th class="text-center">Cursos</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body"
+                       let-inst>
+            <tr>
+              <td class="font-medium">{{ inst.name }}</td>
+              <td class="text-sm text-gray-500">{{ inst.categoria_nombre }}</td>
+              <td class="text-center">{{ inst.estudiantes }}</td>
+              <td class="text-center">{{ inst.docentes }}</td>
+              <td class="text-center">{{ inst.cursos }}</td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6"
+                  class="text-center text-gray-400 py-8 text-sm">
+                Sin instituciones registradas.
+                <a routerLink="/instituciones"
+                   class="text-indigo-500 hover:underline ml-1">Crear la primera →</a>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-tabpanel>
+
+      <!-- ── Tab Organizaciones ─────────────────────────────────────────── -->
+      <p-tabpanel value="organizaciones">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm text-gray-500">
+            Intermediarios que distribuyen ConectaTech a través de pines de acceso.
+          </p>
+          <a routerLink="/organizaciones">
+            <p-button label="Gestionar"
+                      icon="pi pi-arrow-right"
+                      iconPos="right"
+                      [text]="true"
+                      size="small" />
+          </a>
+        </div>
+
+        @if (loadingOrgs()) {
+        <div class="space-y-2 py-2">
+          @for (i of [1,2,3]; track i) {
+          <p-skeleton height="48px" />
+          }
+        </div>
+        } @else {
+        <p-table [value]="organizaciones()"
+                 [paginator]="organizaciones().length > 10"
+                 [rows]="10"
+                 styleClass="p-datatable-sm">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Organización</th>
+              <th class="text-center">Pines disponibles</th>
+              <th class="text-center">Pines activos</th>
+              <th class="text-center">Tasa de activación</th>
+              <th class="text-center">Detalle</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body"
+                       let-org>
+            <tr>
+              <td class="font-medium">{{ org.name }}</td>
+              <td class="text-center">{{ org.pines_disponibles }}</td>
+              <td class="text-center">{{ org.pines_activos }}</td>
+              <td class="text-center">
+                @if (org.pines_total > 0) {
+                <p-tag [value]="org.tasa_activacion + '%'"
+                       [severity]="getPinsSeverity(org.tasa_activacion)" />
+                } @else {
+                <span class="text-gray-300 text-xs">Sin pines</span>
+                }
+              </td>
+              <td class="text-center">
+                <a [routerLink]="['/pines']">
+                  <p-button icon="pi pi-ticket"
+                            [text]="true"
+                            size="small"
+                            pTooltip="Ver pines" />
+                </a>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5"
+                  class="text-center text-gray-400 py-8 text-sm">
+                Sin organizaciones. Selecciona el tab antes de que los datos carguen, o
+                <a routerLink="/organizaciones"
+                   class="text-blue-500 hover:underline ml-1">crea la primera →</a>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+        }
+      </p-tabpanel>
+
+      <!-- ── Tab Cursos ─────────────────────────────────────────────────── -->
+      <p-tabpanel value="cursos">
+        <p class="text-sm text-gray-500 mb-4">
+          Todos los cursos con al menos un estudiante matriculado, ordenados por menor progreso primero.
+        </p>
+
+        @if (loadingCursos()) {
+        <div class="space-y-2 py-2">
+          @for (i of [1,2,3,4,5]; track i) {
+          <p-skeleton height="48px" />
+          }
+        </div>
+        } @else {
+        <p-table [value]="cursos()"
+                 [paginator]="cursos().length > 20"
+                 [rows]="20"
+                 styleClass="p-datatable-sm">
+
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Colegio</th>
+              <th>Categoría</th>
+              <th>Curso</th>
+              <th class="text-center">Matriculados</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body"
+                       let-curso>
+            <tr>
+              <td class="text-sm font-medium text-gray-700">{{ curso.colegio }}</td>
+              <td class="text-sm text-gray-500">{{ curso.categoria }}</td>
+              <td class="text-sm">{{ curso.nombre }}</td>
+              <td class="text-center font-medium">{{ curso.matriculados }}</td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="4"
+                  class="text-center text-gray-400 py-8 text-sm">
+                No se encontraron cursos con matrículas activas en la categoría COLEGIOS.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+        }
+      </p-tabpanel>
+
+    </p-tabpanels>
+  </p-tabs>
 
 </div>

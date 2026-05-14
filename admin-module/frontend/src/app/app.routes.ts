@@ -34,6 +34,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/activos/activos.component').then(m => m.ActivosComponent)
       },
       {
+        path: 'instituciones',
+        loadComponent: () => import('./features/instituciones/instituciones.component').then(m => m.InstitucionesComponent)
+      },
+      {
         path: 'organizaciones',
         loadComponent: () => import('./features/organizaciones/organizaciones.component').then(m => m.OrganizacionesComponent)
       },

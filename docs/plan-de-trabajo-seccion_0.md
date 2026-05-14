@@ -34,10 +34,10 @@ Retrocompatible: árboles existentes sin `seccion_0` se despliegan igual.
 Después del bloque de fechas (línea 312), agregar:
 
 ```html
-<!-- Portada / Bienvenida -->
+<!-- Nuestro curso -->
 <div class="border-t pt-4 mt-4 space-y-3">
   <div class="flex items-center justify-between">
-    <label class="text-sm font-medium text-gray-700">Portada / Bienvenida (sección 0)</label>
+    <label class="text-sm font-medium text-gray-700">Nuestro curso (sección 0)</label>
     <span class="text-[10px] text-gray-400">Markdown</span>
   </div>
 
@@ -167,7 +167,7 @@ public function poblarSeccionCero(int $courseId, string $markdown): void
     }
 
     course_update_section($courseId, $section0, [
-        'name'    => 'Bienvenida',
+        'name'    => 'Nuestro curso',
         'summary' => $html,
         'visible' => 1,
     ]);

@@ -46,7 +46,23 @@ function create_if_not_exists(database_manager $dbman, xmldb_table $table): void
 echo "=== Sistema de gestión de pines — instalación de tablas ===\n\n";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. ct_organization
+// 1. ct_institucion
+//    Institución educativa que compra directamente a ConectaTech (Track A).
+//    Las matrículas las gestiona ConectaTech vía CSV/Excel.
+//    Se asocia a la categoría Moodle que agrupa todos sus cursos.
+// ─────────────────────────────────────────────────────────────────────────────
+$t = new xmldb_table('ct_institucion');
+$t->add_field('id',                 XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+$t->add_field('name',               XMLDB_TYPE_CHAR,    '255', null, XMLDB_NOTNULL);
+$t->add_field('moodle_category_id', XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL);
+$t->add_field('anio_escolar',       XMLDB_TYPE_CHAR,    '9',   null, null);           // ej: "2026", nullable
+$t->add_field('created_at',         XMLDB_TYPE_INTEGER, '10',  null, XMLDB_NOTNULL);
+$t->add_key(  'primary',            XMLDB_KEY_PRIMARY,  ['id']);
+$t->add_index('idx_category',       XMLDB_INDEX_UNIQUE, ['moodle_category_id']);
+create_if_not_exists($dbman, $t);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. ct_organization
 //    Una institución educativa o empresa que compra pines a ConectaTech.
 //    Se asocia a una subcategoría Moodle dentro de COLEGIOS.
 // ─────────────────────────────────────────────────────────────────────────────
