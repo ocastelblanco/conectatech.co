@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-04-27 (rev. 8)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-05-14 (rev. 9)
 
 ---
 
@@ -20,33 +20,7 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Reportes de progreso
-
-**Origen:** PRD §6 (Alta)
-
-**Problema:** No existe forma de ver el progreso de los estudiantes dentro del panel admin. Los gestores y el equipo ConectaTech no pueden saber qué estudiantes han completado cursos o actividades, ni generar reportes para los colegios.
-
-**Qué hacer:**
-
-### Paso 1 — Endpoint de progreso por paquete/pin
-En `handlers/reportes.php`, agregar un endpoint que consulte `mdl_course_completions` y devuelva el progreso por paquete: estudiantes matriculados, completados, en progreso, por organización/colegio.
-
-### Paso 2 — Vista de reporte en el panel admin
-En `admin-module/frontend`, agregar una vista bajo `/pines/reporte` (o ruta nueva) que muestre el progreso en una tabla con filtros por organización, paquete y estado de completitud.
-
-**Archivos a modificar / crear:**
-1. `admin-module/api/handlers/reportes.php` — nuevo endpoint de progreso
-2. `admin-module/frontend/src/app/features/pines/pines-reporte/` — componente de reporte
-
-**Definición de done:**
-- [ ] El endpoint devuelve progreso por paquete consultando `mdl_course_completions`
-- [ ] La vista muestra tabla con estudiantes y su estado por curso
-- [ ] Filtros por organización y paquete funcionan
-- [ ] Los datos son consistentes con los que se ven en Moodle directamente
-
----
-
-## Tarea 2 — [FEATURE] Tipos de pregunta adicionales
+## Tarea 1 — [FEATURE] Tipos de pregunta adicionales
 
 **Origen:** PRD §6 (Media)
 
@@ -73,6 +47,32 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 
 ---
 
+## Tarea 2 — [FEATURE] Renovación y reutilización de pines
+
+**Origen:** PRD §6 (Media)
+
+**Problema:** Cuando un estudiante completa su curso, el pin queda "usado" y no se puede reutilizar. El administrador no tiene forma de recuperar pines de cursos completados y reasignarlos a nuevos estudiantes, lo que genera costo innecesario de nuevos pines.
+
+**Qué hacer:**
+
+### Paso 1 — Endpoint de renovación
+En `handlers/pines.php`, agregar un endpoint `POST /pines/{id}/renovar` que, dado un pin activado cuyo estudiante haya completado el curso, lo marque como disponible nuevamente (desmatricula al estudiante anterior y resetea el estado del pin).
+
+### Paso 2 — UI en el panel de pines
+En el componente de pines del gestor, añadir un botón "Renovar" visible solo en pines con estado `usado` + curso completado, con confirmación antes de ejecutar.
+
+**Archivos a modificar / crear:**
+1. `admin-module/api/handlers/pines.php` — endpoint de renovación
+2. `admin-module/frontend/src/app/features/pines/` — botón de renovación en tabla
+
+**Definición de done:**
+- [ ] El endpoint desmatricula al estudiante anterior y cambia el estado del pin a disponible
+- [ ] El botón solo aparece para pines que califican (usados + curso completado)
+- [ ] Confirmación antes de ejecutar la renovación
+- [ ] El pin renovado puede ser activado por un nuevo estudiante sin errores
+
+---
+
 ## Historial de tareas completadas
 
 | Fecha | Tarea | Descripción breve |
@@ -86,6 +86,7 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 | 2026-04-27 | [FEATURE] Notificaciones por correo | `EmailService.php` con `notificarPaqueteCreado()` y `notificarPinActivado()`; integrado en `PinesService` y `ActivacionService`; fecha en español vía `IntlDateFormatter`; CRLF correcto en Lambda forwarder |
 | 2026-04-27 | [INFRA] Actualización Moodle 5.1.3 → 5.2 | Plugin `local_conectatech` desinstalado; upgrade limpio vía GitHub archive + composer install; `qtype_random` huérfano eliminado; todas las tablas `mdl_ct_*` y rol `ct_gestor` (22 capabilities) intactos |
 | 2026-04-30 | [FEATURE] Sección 0 de cursos finales | UI por nodo de curso final en editor de árboles; `PobladorService` pobla sección 0 al desplegar; retrocompatible con árboles sin contenido definido |
+| 2026-05-14 | [FEATURE] Dashboard + panel de instituciones | Dashboard con tabs por track comercial (instituciones/organizaciones/cursos); CRUD de instituciones directas (Track A); conteos reales via `path` de categorías Moodle; script de limpieza `limpiar-cms-huerfanos.php` con cron diario |
 
 ---
 
@@ -192,6 +193,22 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 - 🎯 **Reportes de progreso**: Alta prioridad, siguiente feature de valor
 
 **Resultado:** Tarea 1 = Sección 0 de cursos finales. Tarea 2 = Reportes de progreso.
+
+### 2026-05-14 — Revisión 9 (Dashboard + panel de instituciones completado)
+
+**Cambios en esta sesión:**
+- ✅ Dashboard con tabs por track comercial: instituciones (Track A), organizaciones (Track B), cursos cross-cutting
+- ✅ Panel de instituciones: CRUD completo, categorías filtradas a hijas de `COLEGIOS`, conteos reales via `course_categories.path`
+- ✅ Script `limpiar-cms-huerfanos.php` con cron diario (3AM) — previene corrupción de course_modules
+- ⏸ Reportes de progreso (estadísticas detalladas por estudiante/curso): explícitamente diferido por el usuario — "por ahora no vamos a usar esas estadísticas"
+
+**Comparación PRD vs MEMORY:**
+- ✅ Dashboard básico con métricas por institución/organización: completado
+- ⏸ Reportes de progreso detallados (completitud, calificaciones, actividad): diferido sin fecha
+- 🎯 **Tipos de pregunta adicionales**: Media prioridad, siguiente feature de valor para contenido
+- 🎯 **Renovación y reutilización de pines**: Media prioridad, reduce costo operativo
+
+**Resultado:** Tarea 1 = Tipos de pregunta adicionales. Tarea 2 = Renovación y reutilización de pines.
 
 ### 2026-04-28 — Revisión 9 (Boost Union + estilos login)
 
