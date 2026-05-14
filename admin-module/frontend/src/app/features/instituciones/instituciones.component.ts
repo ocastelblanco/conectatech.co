@@ -9,7 +9,6 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-import { ProgressBarModule } from 'primeng/progressbar';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 
@@ -21,7 +20,6 @@ import { ApiService } from '../../core/services/api.service';
     FormsModule,
     ButtonModule, TableModule, DialogModule, InputTextModule,
     SelectModule, ToastModule, ConfirmDialogModule, TagModule, TooltipModule,
-    ProgressBarModule,
   ],
   templateUrl: './instituciones.component.html',
 })
@@ -36,14 +34,7 @@ export class InstitucionesComponent implements OnInit {
   readonly saving         = signal(false);
   readonly editando       = signal<any | null>(null);
 
-  // Diálogo de progreso
-  readonly dialogVisible    = signal(false);
-
-  // Diálogo de progreso
-  readonly progresoVisible  = signal(false);
-  readonly progresoInst     = signal<any | null>(null);
-  readonly progresoCursos   = signal<any[]>([]);
-  readonly loadingProgreso  = signal(false);
+  readonly dialogVisible = signal(false);
 
   // Campos del formulario
   formName  = '';
@@ -161,27 +152,4 @@ export class InstitucionesComponent implements OnInit {
     });
   }
 
-  verProgreso(inst: any): void {
-    this.progresoInst.set(inst);
-    this.progresoVisible.set(true);
-    this.progresoCursos.set([]);
-    this.loadingProgreso.set(true);
-
-    this.api.getProgresoInstitucion(inst.id).subscribe({
-      next: (r: any) => {
-        this.progresoCursos.set(r.data?.cursos ?? []);
-        this.loadingProgreso.set(false);
-      },
-      error: () => {
-        this.loadingProgreso.set(false);
-        this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el progreso' });
-      },
-    });
-  }
-
-  getPctColor(pct: number): string {
-    if (pct >= 70) return '#22c55e';
-    if (pct >= 30) return '#f59e0b';
-    return '#ef4444';
-  }
 }

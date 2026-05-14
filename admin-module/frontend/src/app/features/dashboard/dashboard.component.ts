@@ -6,7 +6,6 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
-import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
@@ -17,7 +16,7 @@ import { ApiService } from '../../core/services/api.service';
   providers: [MessageService],
   imports: [
     RouterLink, TabsModule, TableModule, ButtonModule, TagModule,
-    TooltipModule, SkeletonModule, DialogModule, ToastModule,
+    TooltipModule, SkeletonModule, ToastModule,
   ],
   templateUrl: './dashboard.component.html',
 })
@@ -32,12 +31,6 @@ export class DashboardComponent implements OnInit {
   // ── Instituciones (carga en init — Tab A) ────────────────────────────────
   readonly instituciones        = signal<any[]>([]);
   readonly loadingInstituciones = signal(true);
-
-  // ── Progreso por institución (dialog) ────────────────────────────────────
-  readonly progresoVisible = signal(false);
-  readonly progresoInst    = signal<any | null>(null);
-  readonly progresoCursos  = signal<any[]>([]);
-  readonly loadingProgreso = signal(false);
 
   // ── Organizaciones (lazy — Tab B) ────────────────────────────────────────
   readonly organizaciones = signal<any[]>([]);
@@ -102,30 +95,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // ── Progreso ─────────────────────────────────────────────────────────────
-
-  verProgreso(inst: any): void {
-    this.progresoInst.set(inst);
-    this.progresoCursos.set([]);
-    this.loadingProgreso.set(true);
-    this.progresoVisible.set(true);
-
-    this.api.getProgresoInstitucion(inst.id).subscribe({
-      next:  (r: any) => { this.progresoCursos.set(r.data?.cursos ?? []); this.loadingProgreso.set(false); },
-      error: ()       => {
-        this.loadingProgreso.set(false);
-        this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el progreso' });
-      },
-    });
-  }
-
   // ── Helpers de presentación ───────────────────────────────────────────────
-
-  getPctColor(pct: number): string {
-    if (pct >= 70) return '#22c55e';
-    if (pct >= 30) return '#f59e0b';
-    return '#ef4444';
-  }
 
   getPinsSeverity(pct: number): 'success' | 'warn' | 'danger' {
     if (pct >= 70) return 'success';
