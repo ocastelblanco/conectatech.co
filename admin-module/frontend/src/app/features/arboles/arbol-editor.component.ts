@@ -482,7 +482,14 @@ export class ArbolEditorComponent implements OnInit, OnDestroy {
         t => t.repo_shortname === this._draggedSection.repo_shortname &&
           t.section_num === this._draggedSection.section_num
       );
-      if (!already) {
+      if (already) {
+        this.toast.add({
+          severity: 'warn',
+          summary: 'Tema duplicado',
+          detail: `"${this._draggedSection.titulo}" ya está asignado a este curso.`,
+          life: 4000,
+        });
+      } else {
         const idx = targetIndex < 0 ? temas.length : targetIndex;
         temas.splice(idx, 0, { ...this._draggedSection });
         this.updateCursoField('temas', temas);
