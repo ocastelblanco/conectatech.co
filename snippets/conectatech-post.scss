@@ -74,6 +74,20 @@ a {
 	width: auto;
 }
 
+// Logo del drawer lateral (menú mobile). Boost Union pone la clase .logo
+// directo en el <img> (no en un contenedor), y usa .h-100 de Bootstrap, que
+// en un contenedor de altura automática se resuelve al tamaño natural de la
+// imagen. Sin este límite, el logo tapa el resto del menú en mobile.
+// Además, sustituimos el isotipo compacto por la versión horizontal blanca:
+// se lee mejor sobre el fondo oscuro ($conecta-midnight) del drawer.
+.drawerheading .logo {
+	content: url("https://assets.conectatech.co/conectatech/logos/horizontal_blanco.png");
+	height: auto !important;
+	max-height: 72px !important;
+	width: auto !important;
+	max-width: 160px;
+}
+
 // Navbar con identidad ConectaTech
 .navbar {
 	border-bottom: 2px solid lighten($conecta-midnight, 75%);
@@ -840,6 +854,26 @@ body {
 			.section-item {
 				.sectionname > a {
 					color: $area-cs;
+				}
+			}
+		}
+		&.quimica {
+			#courseheaderimage {
+				background-color: $area-qu;
+			}
+			.section-item {
+				.sectionname > a {
+					color: $area-qu;
+				}
+			}
+		}
+		&.fisica {
+			#courseheaderimage {
+				background-color: $area-fi;
+			}
+			.section-item {
+				.sectionname > a {
+					color: $area-fi;
 				}
 			}
 		}
