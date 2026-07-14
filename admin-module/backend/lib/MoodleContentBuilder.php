@@ -592,6 +592,13 @@ class MoodleContentBuilder
 
     /**
      * Elimina todos los course_modules de una sección y de sus subsecciones delegadas.
+     *
+     * @throws Throwable Si course_delete_module() falla para algún cmid. No se debe
+     *         silenciar: resetCourse() borra las course_sections restantes por SQL
+     *         directo justo después, y un cmid que sobrevivió a un delete fallido
+     *         quedaría huérfano (su sección desaparecería sin que él se haya
+     *         eliminado), reproduciendo la corrupción "ID de módulo no válido" que
+     *         luego impide borrar el curso completo.
      */
     private function clearSectionContent(int $sectionNum): void
     {
@@ -603,11 +610,7 @@ class MoodleContentBuilder
         $this->collectCmIds($sectionNum, $modinfo, $cmids);
 
         foreach (array_reverse($cmids) as $cmid) {
-            try {
-                course_delete_module($cmid);
-            } catch (Throwable $e) {
-                error_log("WARN: No se pudo eliminar cmid {$cmid}: " . $e->getMessage());
-            }
+            course_delete_module($cmid);
         }
     }
 
