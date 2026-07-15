@@ -472,7 +472,7 @@ class ArbolCurricularService
                                     'section_num' => $t['section_num'],
                                 ], array_values($temasAAnadir));
 
-                                $pobladorService->poblarCurso($shortnameMoodle, $sections, $dryRun);
+                                $this->poblarOFallar($pobladorService, $shortnameMoodle, $sections, $dryRun);
                             }
 
                             if (!$dryRun && !empty($curso['seccion_0'])) {
@@ -794,7 +794,28 @@ class ArbolCurricularService
         ], $curso['temas'] ?? []);
 
         if (!empty($sections)) {
-            $pobladorService->poblarCurso($existing->shortname, $sections, $dryRun);
+            $this->poblarOFallar($pobladorService, $existing->shortname, $sections, $dryRun);
+        }
+    }
+
+    /**
+     * Invoca poblarCurso() y lanza excepción si alguna sección falló.
+     * PobladorService acumula los errores por sección sin detenerse; aquí se
+     * propagan para que ejecutar() marque el curso como error en el resumen
+     * en lugar de reportarlo como exitoso.
+     */
+    private function poblarOFallar(
+        PobladorService $pobladorService,
+        string          $shortname,
+        array           $sections,
+        bool            $dryRun
+    ): void {
+        $resultado = $pobladorService->poblarCurso($shortname, $sections, $dryRun);
+
+        if (!empty($resultado['errors'])) {
+            throw new RuntimeException(
+                'Secciones con error: ' . implode(' | ', $resultado['errors'])
+            );
         }
     }
 
@@ -822,7 +843,7 @@ class ArbolCurricularService
         ], $curso['temas'] ?? []);
 
         if (!empty($sections)) {
-            $pobladorService->poblarCurso($shortname, $sections, $dryRun);
+            $this->poblarOFallar($pobladorService, $shortname, $sections, $dryRun);
         }
     }
 }

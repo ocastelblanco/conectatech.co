@@ -110,6 +110,16 @@ class MoodleSectionCloner
             throw new RuntimeException("Error al extraer backup.mbz a {$tempdir}");
         }
 
+        // ── 4b. Renumerar la sección del backup al final del curso destino ────
+        // restore_section_structure_step::process_section() busca en el destino
+        // una sección no-delegada con el MISMO número que trae el backup: si
+        // existe, FUSIONA los módulos dentro de ella en vez de crear una nueva;
+        // si no existe, la crea con ese número dejando placeholders vacíos en
+        // los huecos. Reescribir <number> a MAX(section)+1 del destino garantiza
+        // que el restore siempre cree una sección nueva al final, sin fusiones
+        // ni placeholders.
+        $this->renumerarSeccionEnBackup($tempdir, $sectionId, $targetCourseId);
+
         // ── 5. Restore al curso destino ───────────────────────────────────────
         $rc = new restore_controller(
             $backupid,
@@ -123,6 +133,62 @@ class MoodleSectionCloner
         $rc->execute_precheck();
         $rc->execute_plan();
         $rc->destroy();
+    }
+
+    /**
+     * Reescribe el <number> de la sección principal (no delegada) en el backup
+     * extraído, asignándole el siguiente número de sección libre del curso
+     * destino. Las secciones delegadas (mod_subsection) incluidas en el backup
+     * no se tocan: el restore siempre las crea nuevas al final del curso.
+     *
+     * @param string $tempdir         Directorio del backup extraído
+     * @param int    $sectionId       ID (mdl_course_sections.id) de la sección origen
+     * @param int    $targetCourseId  ID del curso destino
+     * @throws RuntimeException Si el section.xml no existe o no se puede reescribir
+     */
+    private function renumerarSeccionEnBackup(
+        string $tempdir,
+        int $sectionId,
+        int $targetCourseId
+    ): void {
+        global $DB;
+
+        $sectionXml = "{$tempdir}/sections/section_{$sectionId}/section.xml";
+
+        if (!file_exists($sectionXml)) {
+            throw new RuntimeException(
+                "section.xml no encontrado en el backup extraído: {$sectionXml}"
+            );
+        }
+
+        $maxSection = (int)$DB->get_field_sql(
+            'SELECT COALESCE(MAX(section), 0) FROM {course_sections} WHERE course = ?',
+            [$targetCourseId]
+        );
+        $newNumber = $maxSection + 1;
+
+        $contents = file_get_contents($sectionXml);
+        if ($contents === false) {
+            throw new RuntimeException("No se pudo leer {$sectionXml}");
+        }
+
+        $updated = preg_replace(
+            '/<number>\d+<\/number>/',
+            "<number>{$newNumber}</number>",
+            $contents,
+            1,
+            $count
+        );
+
+        if ($updated === null || $count !== 1) {
+            throw new RuntimeException(
+                "No se encontró el elemento <number> en {$sectionXml}"
+            );
+        }
+
+        if (file_put_contents($sectionXml, $updated) === false) {
+            throw new RuntimeException("No se pudo escribir {$sectionXml}");
+        }
     }
 
     /**
