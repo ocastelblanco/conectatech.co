@@ -168,17 +168,20 @@ class MoodleContentBuilder
 
                 case 'subseccion-regular':
                     $delegatedNum = $this->createSubsectionModule($parentSectionNum, $subsection['title']);
-                    // Cuestionarios H3-level [evaluacion] dentro de la subsección
-                    foreach ($subsection['h3_evaluaciones'] ?? [] as $h3ev) {
-                        $this->createQuizModule($delegatedNum, $h3ev['title'], $h3ev['questions'], $sectionIdx);
-                    }
-                    // Un recurso "Área de medios y texto" independiente por cada bloque H3
+                    // Crear quizzes (H3 [evaluacion]) y labels (bloques H3 regulares) respetando
+                    // el orden real de aparición en el markdown (items_ordered), no agrupados por tipo.
                     // Regla 2: si h3_title es "(Título)", usar el texto interior como nombre del label
-                    foreach ($subsection['blocks'] as $block) {
-                        $html = $this->htmlConverter->convertBlock($block);
-                        if (!empty(trim($html))) {
-                            $labelName = HtmlConverter::parseBlockTitle($block['h3_title'])['label'];
-                            $this->createLabelModule($delegatedNum, $html, $labelName);
+                    foreach ($subsection['items_ordered'] ?? [] as $item) {
+                        if ($item['kind'] === 'eval') {
+                            $h3ev = $subsection['h3_evaluaciones'][$item['index']];
+                            $this->createQuizModule($delegatedNum, $h3ev['title'], $h3ev['questions'], $sectionIdx);
+                        } else {
+                            $block = $subsection['blocks'][$item['index']];
+                            $html  = $this->htmlConverter->convertBlock($block);
+                            if (!empty(trim($html))) {
+                                $labelName = HtmlConverter::parseBlockTitle($block['h3_title'])['label'];
+                                $this->createLabelModule($delegatedNum, $html, $labelName);
+                            }
                         }
                     }
                     $result['action'] = 'subseccion_con_label';
