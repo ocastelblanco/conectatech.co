@@ -324,6 +324,31 @@ class MoodleContentBuilder
         $info->navmethod              = 'free';
         $info->cmidnumber             = '';
 
+        // add_moduleinfo() NO aplica los defaults de "Opciones de revisión" configurados en
+        // Administración del sitio > Quiz > Apariencia (tabla config_plugins) — esos defaults
+        // solo se prellenan en el formulario web (mod_form.php). quiz_process_options() recalcula
+        // reviewattempt/reviewmarks/etc a partir de campos booleanos por fase (ej. attemptduring,
+        // attemptimmediately, attemptopen, attemptclosed); si no vienen en $info, cada campo queda
+        // en 0 (excepto reviewattempt, al que Moodle siempre le fuerza el bit DURING). Replicamos
+        // aquí los defaults del sitio para que un quiz creado desde Markdown se comporte igual que
+        // uno creado manualmente por un administrador.
+        $reviewFields = [
+            'attempt', 'correctness', 'maxmarks', 'marks',
+            'specificfeedback', 'generalfeedback', 'rightanswer', 'overallfeedback',
+        ];
+        $reviewPhases = [
+            'during'      => \mod_quiz\question\display_options::DURING,
+            'immediately' => \mod_quiz\question\display_options::IMMEDIATELY_AFTER,
+            'open'        => \mod_quiz\question\display_options::LATER_WHILE_OPEN,
+            'closed'      => \mod_quiz\question\display_options::AFTER_CLOSE,
+        ];
+        foreach ($reviewFields as $field) {
+            $siteDefault = (int)get_config('quiz', 'review' . $field);
+            foreach ($reviewPhases as $phase => $bit) {
+                $info->{$field . $phase} = ($siteDefault & $bit) ? 1 : 0;
+            }
+        }
+
         $result   = add_moduleinfo($info, $this->course);
         $quizId   = (int)$result->instance;
         $quizCmId = (int)$result->coursemodule;
