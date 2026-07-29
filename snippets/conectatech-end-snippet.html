@@ -1,7 +1,7 @@
 <script>
   /********* AÑADE CLASES AL <BODY> DE UN CURSO SEGÚN EL ÁRBOL CURRICULAR - GENERAL ***********/
   /* CT:MAP:START */
-  const CT_COURSES = { "29": ["cosmovision-cristiana", "matematicas"], "37": ["cosmovision-cristiana", "ciencias-naturales"], "49": ["cosmovision-cristiana", "ciencias-sociales"], "30": ["cosmovision-cristiana", "matematicas"], "38": ["cosmovision-cristiana", "ciencias-naturales"], "50": ["cosmovision-cristiana", "ciencias-sociales"], "31": ["cosmovision-cristiana", "matematicas"], "52": ["cosmovision-cristiana", "ciencias-naturales"], "32": ["cosmovision-cristiana", "matematicas"], "53": ["cosmovision-cristiana", "ciencias-naturales"], "35": ["cosmovision-cristiana", "matematicas"], "36": ["cosmovision-cristiana", "matematicas"], "33": ["planeta-lector", "cuaderno-de-besos"], "39": ["cosmovision-cristiana", "ciencias-naturales"], "40": ["cosmovision-cristiana", "matematicas"], "48": ["cosmovision-cristiana", "ciencias-sociales"], "41": ["cosmovision-cristiana", "ciencias-naturales"], "42": ["cosmovision-cristiana", "matematicas"], "43": ["cosmovision-cristiana", "matematicas"], "44": ["cosmovision-cristiana", "matematicas"], "45": ["cosmovision-cristiana", "matematicas"], "46": ["cosmovision-cristiana", "matematicas"] };
+  const CT_COURSES = { "29": ["cosmovision-cristiana", "matematicas"], "37": ["cosmovision-cristiana", "ciencias-naturales"], "49": ["cosmovision-cristiana", "ciencias-sociales"], "59": ["cosmovision-cristiana", "quimica"], "71": ["cosmovision-cristiana", "fisica"], "30": ["cosmovision-cristiana", "matematicas"], "38": ["cosmovision-cristiana", "ciencias-naturales"], "50": ["cosmovision-cristiana", "ciencias-sociales"], "60": ["cosmovision-cristiana", "quimica"], "73": ["cosmovision-cristiana", "fisica"], "31": ["cosmovision-cristiana", "matematicas"], "52": ["cosmovision-cristiana", "ciencias-naturales"], "61": ["cosmovision-cristiana", "quimica"], "72": ["cosmovision-cristiana", "fisica"], "76": ["cosmovision-cristiana", "ciencias-sociales"], "32": ["cosmovision-cristiana", "matematicas"], "53": ["cosmovision-cristiana", "ciencias-naturales"], "62": ["cosmovision-cristiana", "quimica"], "68": ["cosmovision-cristiana", "fisica"], "78": ["cosmovision-cristiana", "ciencias-sociales"], "35": ["cosmovision-cristiana", "matematicas"], "63": ["cosmovision-cristiana", "quimica"], "66": ["cosmovision-cristiana", "fisica"], "36": ["cosmovision-cristiana", "matematicas"], "64": ["cosmovision-cristiana", "quimica"], "67": ["cosmovision-cristiana", "fisica"], "33": ["planeta-lector", "cuaderno-de-besos"], "39": ["cosmovision-cristiana", "ciencias-naturales"], "40": ["cosmovision-cristiana", "matematicas"], "48": ["cosmovision-cristiana", "ciencias-sociales"], "41": ["cosmovision-cristiana", "ciencias-naturales"], "42": ["cosmovision-cristiana", "matematicas"], "43": ["cosmovision-cristiana", "matematicas"], "44": ["cosmovision-cristiana", "matematicas"], "45": ["cosmovision-cristiana", "matematicas"], "46": ["cosmovision-cristiana", "matematicas"] };
   /* CT:MAP:END */
   const bodyElement = document.querySelector("body");
   if (bodyElement !== null) {
@@ -10,6 +10,13 @@
       if (m && CT_COURSES[m[1]]) bodyElement.classList.add(...CT_COURSES[m[1]]);
     });
   }
+  /********** DEFINE CONSTANTES GENERALES ********/
+  // Los niveles y los cursos que los componen
+  const niveles = [
+    { nombre: 'primaria', cursos: ['1', '2', '3', '4', '5'] },
+    { nombre: 'secundaria', cursos: ['6', '7', '8', '9'] },
+    { nombre: 'media', cursos: ['10', '11'] }
+  ];
 
   /********** DEFINE EL TIPO DE PROYECTO ********/
   let proyecto = null;
@@ -109,6 +116,12 @@
     const datos = extraeMateriaCurso(tituloCurso);
     if (datos) {
       [materia, grado] = datos;
+      let nivel = null;
+      niveles.forEach((etapa) => {
+        if (etapa.cursos.includes(grado)) nivel = etapa.nombre;
+      });
+      bodyElement.classList.add('grado-' + grado);
+      if (nivel) bodyElement.classList.add(nivel);
       tituloCursoElement.innerText = materia;
       if (addGrado) {
         const gradoElement = document.createElement("div");
