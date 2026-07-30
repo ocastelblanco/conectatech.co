@@ -92,7 +92,8 @@ function handleMarkdownPreview(): void
                                 $bIdx  = $item['index'];
                                 $block = $sub['blocks'][$bIdx] ?? null;
                                 if ($block === null) { continue; }
-                                $showH3 = $showH3Map[mb_strtolower(trim($block['h3_title']))] ?? $fallbackShowH3;
+                                $showH3 = !($block['suppress_title'] ?? false)
+                                    && ($showH3Map[mb_strtolower(trim($block['h3_title']))] ?? $fallbackShowH3);
                                 $subNode['children'][] = [
                                     'key'      => "s{$sIdx}-ss{$ssIdx}-b{$bIdx}",
                                     'label'    => $block['h3_title'],
@@ -118,7 +119,8 @@ function handleMarkdownPreview(): void
                     } else {
                         // Fallback legacy: sin items_ordered, blocks primero luego evals
                         foreach (($sub['blocks'] ?? []) as $bIdx => $block) {
-                            $showH3 = $showH3Map[mb_strtolower(trim($block['h3_title']))] ?? $fallbackShowH3;
+                            $showH3 = !($block['suppress_title'] ?? false)
+                                && ($showH3Map[mb_strtolower(trim($block['h3_title']))] ?? $fallbackShowH3);
                             $subNode['children'][] = [
                                 'key'      => "s{$sIdx}-ss{$ssIdx}-b{$bIdx}",
                                 'label'    => $block['h3_title'],
