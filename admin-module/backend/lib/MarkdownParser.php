@@ -173,6 +173,18 @@ class MarkdownParser
             return;
         }
 
+        // El bloque auto-inicializado en handleH2 (texto suelto antes del primer H3 real)
+        // hereda el título del H2 como h3_title. Si llega aquí es porque SÍ hay un H3 real
+        // a continuación → se creará una subsección Moodle con ese mismo título, así que
+        // el bloque no debe repetirlo como <h3> dentro de su propio contenido.
+        if (
+            $this->curBlock !== null
+            && $this->curSub['type'] === 'subseccion-regular'
+            && !($this->curSub['has_h3'] ?? true)
+        ) {
+            $this->curBlock['suppress_title'] = true;
+        }
+
         $this->finalizeCurrentBlock();
 
         $rawTitle = self::stripTitleFormatting($rawTitle);
