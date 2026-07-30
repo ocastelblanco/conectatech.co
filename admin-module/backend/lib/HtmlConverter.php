@@ -61,6 +61,9 @@ class HtmlConverter
         $content   = $block['content'];
         $normKey   = MarkdownParser::normalizeTitle($h3Title);
         $titleInfo = self::parseBlockTitle($h3Title);
+        if (!empty($block['suppress_title'])) {
+            $titleInfo['show_title'] = false;
+        }
 
         // Buscar en el mapa; si no existe, usar fallback
         if (isset($this->blockMap[$normKey])) {
