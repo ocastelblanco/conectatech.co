@@ -42,6 +42,21 @@ El header `frame-ancestors` es crítico: permite que el visor PDF sea incrustado
 
 > **NOTA:** `X-Frame-Options` **no** está configurado intencionalmente — `Content-Security-Policy: frame-ancestors` lo reemplaza con mayor flexibilidad.
 
+### Cache Behaviors (por path)
+
+| PathPattern | CachePolicyId | Motivo |
+|---|---|---|
+| (default) `*` | `658327ea-...` (`Managed-CachingOptimized`) | PDFs, imágenes y los assets de la app del visor son inmutables (nombre = UUID o hash de build) — cachear agresivamente es correcto y deseado. |
+| `recursos/pdf/index.json` | `4135ea2d-...` (`Managed-CachingDisabled`) | El índice cambia con cada subida/confirmación/renombrado/borrado — debe leerse siempre fresco. |
+| `recursos/img/index.json` | `4135ea2d-...` (`Managed-CachingDisabled`) | Igual que el índice de PDFs. |
+
+> **GOTCHA (2026-08-11):** `Managed-CachingOptimized` **no garantiza** respetar `Cache-Control: no-cache, no-store` que envía el origen — su TTL mínimo es 1 segundo, así que en la práctica CloudFront igual cacheaba `index.json` (confirmado con `x-cache: Hit from cloudfront` y `Age` de varias horas, sirviendo un índice desactualizado). La única forma confiable de garantizar cero-cacheo en CloudFront es un Cache Behavior dedicado con la política `Managed-CachingDisabled` (o Min/Max/Default TTL en 0) — no basta con el header del origen. Si se agrega un nuevo endpoint dinámico servido desde este bucket/distribución (otro índice, otro JSON que cambie seguido), debe recibir el mismo tratamiento: un `PathPattern` propio con `CachingDisabled`.
+>
+> Si esto vuelve a pasar (contenido desactualizado sirviéndose desde `assets.conectatech.co`), invalidar manualmente mientras se investiga:
+> ```bash
+> aws cloudfront create-invalidation --profile ct --distribution-id E2KULI3BS0YJDX --paths "/recursos/pdf/index.json" "/recursos/img/index.json"
+> ```
+
 ## CORS del bucket S3
 
 Configurado para soportar carga directa de PDFs via URLs pre-firmadas:
