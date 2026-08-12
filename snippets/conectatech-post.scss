@@ -877,6 +877,16 @@ body {
 				}
 			}
 		}
+		&.ingles {
+			#courseheaderimage {
+				background-color: $area-in;
+			}
+			.section-item {
+				.sectionname > a {
+					color: $area-in;
+				}
+			}
+		}
 	}
 	/** PÁGINAS DE UNA SOLA SECCIÓN **/
 	&.single-section-page {
