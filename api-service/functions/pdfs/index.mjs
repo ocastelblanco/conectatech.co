@@ -42,12 +42,46 @@ async function readIndex(key) {
   }
 }
 
-async function writeIndex(key, items) {
-  await s3.send(new PutObjectCommand({
-    Bucket: BUCKET, Key: key,
-    Body: JSON.stringify(items, null, 2),
-    ContentType: "application/json", CacheControl: "no-cache, no-store",
-  }));
+// Lee-modifica-escribe el índice de forma atómica usando escritura condicional
+// de S3 (If-Match / If-None-Match sobre el ETag). Si otra invocación concurrente
+// escribió el índice entre la lectura y la escritura, S3 rechaza el PUT con 412
+// y se reintenta desde una lectura fresca — evita que dos subidas cercanas en
+// el tiempo se pisen y una de ellas pierda su registro silenciosamente.
+//
+// `mutatorFn(items)` muta el array en memoria y puede devolver:
+//   - un objeto con `abort: true` para no escribir nada (p. ej. id no encontrado)
+//   - cualquier otro valor, que se retorna al llamador tras escribir con éxito
+async function mutateIndex(key, mutatorFn) {
+  const MAX_ATTEMPTS = 6;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let items, etag;
+    try {
+      const r = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+      items = JSON.parse(await r.Body.transformToString());
+      etag  = r.ETag;
+    } catch (e) {
+      if (e.name === "NoSuchKey") { items = []; etag = null; }
+      else throw e;
+    }
+
+    const result = mutatorFn(items);
+    if (result && result.abort) return result;
+
+    try {
+      await s3.send(new PutObjectCommand({
+        Bucket: BUCKET, Key: key,
+        Body: JSON.stringify(items, null, 2),
+        ContentType: "application/json", CacheControl: "no-cache, no-store",
+        ...(etag ? { IfMatch: etag } : { IfNoneMatch: "*" }),
+      }));
+      return result;
+    } catch (e) {
+      const isConflict = e.name === "PreconditionFailed" || e.$metadata?.httpStatusCode === 412;
+      if (isConflict && attempt < MAX_ATTEMPTS) continue;
+      throw e;
+    }
+  }
 }
 
 export const handler = async (event) => {
@@ -100,9 +134,7 @@ export const handler = async (event) => {
         status: "pending", createdAt: now, updatedAt: now,
       };
 
-      const items = await readIndex(IDX_KEY);
-      items.push(item);
-      await writeIndex(IDX_KEY, items);
+      await mutateIndex(IDX_KEY, (items) => { items.push(item); });
       return res(201, { item, uploadUrl, contentType });
     }
 
@@ -111,15 +143,22 @@ export const handler = async (event) => {
     if (method === "POST" && pdfConfirmM) {
       if (perm !== "admin") return res(403, { error: "Forbidden" });
       const id = pdfConfirmM[1];
-      const items = await readIndex(IDX_KEY);
-      const idx = items.findIndex(i => i.id === id);
-      if (idx === -1) return res(404, { error: "PDF no encontrado" });
-      try { await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key: items[idx].s3key })); }
+
+      const preItem = (await readIndex(IDX_KEY)).find(i => i.id === id);
+      if (!preItem) return res(404, { error: "PDF no encontrado" });
+      try { await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key: preItem.s3key })); }
       catch { return res(400, { error: "Archivo aún no disponible en S3" }); }
-      items[idx].status = "active";
-      items[idx].updatedAt = new Date().toISOString();
-      await writeIndex(IDX_KEY, items);
-      return res(200, { item: items[idx] });
+
+      const now = new Date().toISOString();
+      const result = await mutateIndex(IDX_KEY, (items) => {
+        const idx = items.findIndex(i => i.id === id);
+        if (idx === -1) return { abort: true };
+        items[idx].status = "active";
+        items[idx].updatedAt = now;
+        return { item: items[idx] };
+      });
+      if (result.abort) return res(404, { error: "PDF no encontrado" });
+      return res(200, { item: result.item });
     }
 
     const pdfItemM = path.match(/^\/pdfs\/([^/]+)$/);
@@ -129,13 +168,16 @@ export const handler = async (event) => {
       if (perm !== "admin") return res(403, { error: "Forbidden" });
       const id = pdfItemM[1];
       const { title } = JSON.parse(event.body || "{}");
-      const items = await readIndex(IDX_KEY);
-      const idx = items.findIndex(i => i.id === id);
-      if (idx === -1) return res(404, { error: "PDF no encontrado" });
-      if (title) items[idx].title = title;
-      items[idx].updatedAt = new Date().toISOString();
-      await writeIndex(IDX_KEY, items);
-      return res(200, { item: items[idx] });
+      const now = new Date().toISOString();
+      const result = await mutateIndex(IDX_KEY, (items) => {
+        const idx = items.findIndex(i => i.id === id);
+        if (idx === -1) return { abort: true };
+        if (title) items[idx].title = title;
+        items[idx].updatedAt = now;
+        return { item: items[idx] };
+      });
+      if (result.abort) return res(404, { error: "PDF no encontrado" });
+      return res(200, { item: result.item });
     }
 
     // GET /pdfs/{id}/download — URL pre-firmada de descarga
@@ -159,12 +201,14 @@ export const handler = async (event) => {
     if (method === "DELETE" && pdfItemM) {
       if (perm !== "admin") return res(403, { error: "Forbidden" });
       const id = pdfItemM[1];
-      const items = await readIndex(IDX_KEY);
-      const idx = items.findIndex(i => i.id === id);
-      if (idx === -1) return res(404, { error: "PDF no encontrado" });
-      const [removed] = items.splice(idx, 1);
-      try { await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: removed.s3key })); } catch {}
-      await writeIndex(IDX_KEY, items);
+      const result = await mutateIndex(IDX_KEY, (items) => {
+        const idx = items.findIndex(i => i.id === id);
+        if (idx === -1) return { abort: true };
+        const [removed] = items.splice(idx, 1);
+        return { removed };
+      });
+      if (result.abort) return res(404, { error: "PDF no encontrado" });
+      try { await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: result.removed.s3key })); } catch {}
       return res(200, { deleted: true, id });
     }
 
@@ -198,9 +242,7 @@ export const handler = async (event) => {
         status: "pending", createdAt: now, updatedAt: now,
       };
 
-      const items = await readIndex(IMG_IDX_KEY);
-      items.push(item);
-      await writeIndex(IMG_IDX_KEY, items);
+      await mutateIndex(IMG_IDX_KEY, (items) => { items.push(item); });
       return res(201, { item, uploadUrl, contentType });
     }
 
@@ -209,15 +251,22 @@ export const handler = async (event) => {
     if (method === "POST" && imgConfirmM) {
       if (perm !== "admin") return res(403, { error: "Forbidden" });
       const id = imgConfirmM[1];
-      const items = await readIndex(IMG_IDX_KEY);
-      const idx = items.findIndex(i => i.id === id);
-      if (idx === -1) return res(404, { error: "Imagen no encontrada" });
-      try { await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key: items[idx].s3key })); }
+
+      const preItem = (await readIndex(IMG_IDX_KEY)).find(i => i.id === id);
+      if (!preItem) return res(404, { error: "Imagen no encontrada" });
+      try { await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key: preItem.s3key })); }
       catch { return res(400, { error: "Archivo aún no disponible en S3" }); }
-      items[idx].status = "active";
-      items[idx].updatedAt = new Date().toISOString();
-      await writeIndex(IMG_IDX_KEY, items);
-      return res(200, { item: items[idx] });
+
+      const now = new Date().toISOString();
+      const result = await mutateIndex(IMG_IDX_KEY, (items) => {
+        const idx = items.findIndex(i => i.id === id);
+        if (idx === -1) return { abort: true };
+        items[idx].status = "active";
+        items[idx].updatedAt = now;
+        return { item: items[idx] };
+      });
+      if (result.abort) return res(404, { error: "Imagen no encontrada" });
+      return res(200, { item: result.item });
     }
 
     const imgItemM = path.match(/^\/imagenes\/([^/]+)$/);
@@ -227,25 +276,30 @@ export const handler = async (event) => {
       if (perm !== "admin") return res(403, { error: "Forbidden" });
       const id = imgItemM[1];
       const { title } = JSON.parse(event.body || "{}");
-      const items = await readIndex(IMG_IDX_KEY);
-      const idx = items.findIndex(i => i.id === id);
-      if (idx === -1) return res(404, { error: "Imagen no encontrada" });
-      if (title) items[idx].title = title;
-      items[idx].updatedAt = new Date().toISOString();
-      await writeIndex(IMG_IDX_KEY, items);
-      return res(200, { item: items[idx] });
+      const now = new Date().toISOString();
+      const result = await mutateIndex(IMG_IDX_KEY, (items) => {
+        const idx = items.findIndex(i => i.id === id);
+        if (idx === -1) return { abort: true };
+        if (title) items[idx].title = title;
+        items[idx].updatedAt = now;
+        return { item: items[idx] };
+      });
+      if (result.abort) return res(404, { error: "Imagen no encontrada" });
+      return res(200, { item: result.item });
     }
 
     // DELETE /imagenes/{id}
     if (method === "DELETE" && imgItemM) {
       if (perm !== "admin") return res(403, { error: "Forbidden" });
       const id = imgItemM[1];
-      const items = await readIndex(IMG_IDX_KEY);
-      const idx = items.findIndex(i => i.id === id);
-      if (idx === -1) return res(404, { error: "Imagen no encontrada" });
-      const [removed] = items.splice(idx, 1);
-      try { await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: removed.s3key })); } catch {}
-      await writeIndex(IMG_IDX_KEY, items);
+      const result = await mutateIndex(IMG_IDX_KEY, (items) => {
+        const idx = items.findIndex(i => i.id === id);
+        if (idx === -1) return { abort: true };
+        const [removed] = items.splice(idx, 1);
+        return { removed };
+      });
+      if (result.abort) return res(404, { error: "Imagen no encontrada" });
+      try { await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: result.removed.s3key })); } catch {}
       return res(200, { deleted: true, id });
     }
 
