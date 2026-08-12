@@ -65,7 +65,8 @@ function getCursosDeCategoria($DB, int $catId): array
 }
 
 /**
- * Obtiene las secciones nombradas de un curso (excluye sección 0 y delegadas).
+ * Obtiene las secciones nombradas de un curso (excluye sección 0 y delegadas),
+ * con las subsecciones (mod_subsection) que cuelgan de cada una.
  */
 function getSeccionesRepositorio($DB, int $courseId): array
 {
@@ -81,9 +82,63 @@ function getSeccionesRepositorio($DB, int $courseId): array
     $result = [];
 
     foreach ($rows as $r) {
+        $num = (int) $r->section;
         $result[] = [
-            'num'    => (int) $r->section,
-            'titulo' => $r->name,
+            'num'          => $num,
+            'titulo'       => $r->name,
+            'subsecciones' => getSubseccionesDeSeccion($DB, $courseId, $num),
+        ];
+    }
+
+    return $result;
+}
+
+/**
+ * Obtiene las subsecciones (mod_subsection) que cuelgan directamente de una
+ * sección padre, con el número de su sección delegada (destino real para
+ * insertar/reemplazar contenido dentro de la subsección).
+ */
+function getSubseccionesDeSeccion($DB, int $courseId, int $parentSectionNum): array
+{
+    $parentSection = $DB->get_record('course_sections', [
+        'course'  => $courseId,
+        'section' => $parentSectionNum,
+    ]);
+
+    if (!$parentSection) {
+        return [];
+    }
+
+    $sql = "SELECT cm.instance AS instanceid, sub.name AS titulo
+              FROM {course_modules} cm
+              JOIN {modules}    m   ON m.id = cm.module
+              JOIN {subsection} sub ON sub.id = cm.instance
+             WHERE cm.course  = :courseid
+               AND cm.section = :parentsectionid
+               AND m.name     = 'subsection'
+             ORDER BY cm.id";
+
+    $rows = $DB->get_records_sql($sql, [
+        'courseid'        => $courseId,
+        'parentsectionid' => $parentSection->id,
+    ]);
+
+    $result = [];
+
+    foreach ($rows as $r) {
+        $delegated = $DB->get_record('course_sections', [
+            'course'    => $courseId,
+            'component' => 'mod_subsection',
+            'itemid'    => (int) $r->instanceid,
+        ]);
+
+        if (!$delegated) {
+            continue; // huérfano defensivo, no debería ocurrir
+        }
+
+        $result[] = [
+            'num'    => (int) $delegated->section,
+            'titulo' => $r->titulo,
         ];
     }
 
@@ -95,10 +150,14 @@ function getSeccionesRepositorio($DB, int $courseId): array
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Crea un recurso mod_label (Área de texto y medios) en una sección de un
- * curso repositorio, con un iframe incrustando el visor PDF del CDN.
+ * Crea un recurso mod_label (Área de texto y medios) con un iframe
+ * incrustando el visor PDF del CDN, en una sección de un curso repositorio.
  *
- * Body JSON: { pdfId, pdfTitle, courseId, seccionNum, pageStart?, pageEnd? }
+ * Si se indica subseccionNum, el visor se inserta dentro de esa subsección
+ * REEMPLAZANDO todo su contenido actual (se borran sus módulos existentes).
+ * Si no se indica, se agrega al final de seccionNum (comportamiento original).
+ *
+ * Body JSON: { pdfId, pdfTitle, courseId, seccionNum, subseccionNum?, pageStart?, pageEnd? }
  *
  * Response 200: { ok: true, cmId: int|null }
  */
@@ -106,16 +165,53 @@ function handleCrearVisor(): void
 {
     global $DB, $CFG;
 
-    $body       = readJsonBody();
-    $pdfId      = trim($body['pdfId']    ?? '');
-    $pdfTitle   = trim($body['pdfTitle'] ?? '');
-    $courseId   = (int) ($body['courseId']   ?? 0);
-    $seccionNum = (int) ($body['seccionNum'] ?? 0);
-    $pageStart  = (isset($body['pageStart']) && $body['pageStart'] !== '') ? (int) $body['pageStart'] : null;
-    $pageEnd    = (isset($body['pageEnd'])   && $body['pageEnd']   !== '') ? (int) $body['pageEnd']   : null;
+    $body          = readJsonBody();
+    $pdfId         = trim($body['pdfId']    ?? '');
+    $pdfTitle      = trim($body['pdfTitle'] ?? '');
+    $courseId      = (int) ($body['courseId']   ?? 0);
+    $seccionNum    = (int) ($body['seccionNum'] ?? 0);
+    $subseccionNum = (isset($body['subseccionNum']) && $body['subseccionNum'] !== '')
+        ? (int) $body['subseccionNum']
+        : null;
+    $pageStart     = (isset($body['pageStart']) && $body['pageStart'] !== '') ? (int) $body['pageStart'] : null;
+    $pageEnd       = (isset($body['pageEnd'])   && $body['pageEnd']   !== '') ? (int) $body['pageEnd']   : null;
 
     if (!$pdfId || !$pdfTitle || !$courseId || $seccionNum < 1) {
         badRequest('Faltan campos obligatorios: pdfId, pdfTitle, courseId, seccionNum (>= 1)');
+    }
+    if ($subseccionNum !== null && $subseccionNum < 1) {
+        badRequest('subseccionNum debe ser un entero mayor a 0');
+    }
+
+    require_once($CFG->dirroot . '/course/lib.php');
+
+    $targetSectionNum = $seccionNum;
+
+    if ($subseccionNum !== null) {
+        // Verificar que subseccionNum pertenece a este curso y es realmente una
+        // sección delegada (mod_subsection) — evita que el cliente apunte a
+        // cualquier número de sección arbitrario (p. ej. una sección H1 normal).
+        $delegated = $DB->get_record('course_sections', [
+            'course'    => $courseId,
+            'section'   => $subseccionNum,
+            'component' => 'mod_subsection',
+        ]);
+        if (!$delegated) {
+            badRequest('subseccionNum no corresponde a una subsección válida de este curso');
+        }
+
+        // Vaciar el contenido actual de la subsección antes de insertar el visor
+        // (mismo patrón que MoodleContentBuilder::clearSectionContent()).
+        $course  = $DB->get_record('course', ['id' => $courseId], '*', MUST_EXIST);
+        $modinfo = get_fast_modinfo($course);
+        $section = $modinfo->get_section_info($subseccionNum, IGNORE_MISSING);
+        if ($section && !empty($section->sequence)) {
+            foreach (array_filter(explode(',', $section->sequence)) as $cmid) {
+                course_delete_module((int) $cmid);
+            }
+        }
+
+        $targetSectionNum = $subseccionNum;
     }
 
     // Construir URL del visor
@@ -132,11 +228,9 @@ function handleCrearVisor(): void
         . '</p>';
 
     // Crear mod_label
-    require_once($CFG->dirroot . '/course/lib.php');
-
     $module = (object) [
         'course'       => $courseId,
-        'section'      => $seccionNum,
+        'section'      => $targetSectionNum,
         'modulename'   => 'label',
         'name'         => $pdfTitle,
         'introeditor'  => [

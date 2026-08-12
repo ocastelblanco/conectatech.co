@@ -152,6 +152,7 @@ class MarkdownParser
             'items_ordered'   => [],   // orden de aparición de blocks y h3_evaluaciones en el MD
             'questions'       => [],   // preguntas H2-level [evaluacion]
             'pregunta_blocks' => [],   // bloques presaberes
+            'force_empty'     => false, // {SECCION-VACIA}: ver handleContent() y finalizeSubsection()
         ];
 
         // Para referente-biblico-seccion: auto-iniciar bloque (no hay H3 en el fuente)
@@ -377,7 +378,14 @@ class MarkdownParser
                 } else {
                     // Bloque semántico regular
                     if ($this->curBlock !== null) {
-                        $this->curBlock['content'] .= $line . "\n";
+                        // Placeholder {SECCION-VACIA}: solo se reconoce mientras seguimos en el
+                        // bloque auto-inicializado por handleH2() (has_h3 aún false), es decir,
+                        // antes de cualquier H3 real. Fuera de ese contexto es texto literal.
+                        if (!($this->curSub['has_h3'] ?? true) && trim($line) === '{SECCION-VACIA}') {
+                            $this->curSub['force_empty'] = true;
+                        } else {
+                            $this->curBlock['content'] .= $line . "\n";
+                        }
                     }
                 }
                 break;
@@ -590,10 +598,14 @@ class MarkdownParser
         $this->finalizeCurrentBlock();
 
         if ($this->curSub !== null && $this->curSection !== null) {
-            // Regla 1: subseccion-regular sin H3 → label directo en sección padre
+            // Regla 1: subseccion-regular sin H3 → label directo en sección padre.
+            // Excepción: si {SECCION-VACIA} se activó y el bloque quedó realmente vacío,
+            // se mantiene como subseccion-regular con blocks=[] para que
+            // MoodleContentBuilder cree una mod_subsection real y vacía en Moodle.
             if (
                 $this->curSub['type'] === 'subseccion-regular'
                 && !($this->curSub['has_h3'] ?? true)
+                && !(($this->curSub['force_empty'] ?? false) && empty($this->curSub['blocks']))
             ) {
                 $this->curSub['type'] = 'h2-texto-directo';
             }

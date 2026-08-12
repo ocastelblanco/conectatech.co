@@ -162,6 +162,7 @@ export class ApiService {
     pdfTitle: string;
     courseId: number;
     seccionNum: number;
+    subseccionNum?: number;
     pageStart?: number;
     pageEnd?: number;
   }): Observable<{ ok: boolean; cmId: number | null }> {
