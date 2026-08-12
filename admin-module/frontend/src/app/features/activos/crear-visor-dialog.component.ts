@@ -8,15 +8,26 @@ import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 import { AssetItem } from '../../core/services/cdn-api.service';
+
+interface Subseccion {
+  num: number;
+  titulo: string;
+}
+
+interface Seccion {
+  num: number;
+  titulo: string;
+  subsecciones: Subseccion[];
+}
 
 interface CursoRepo {
   id: number;
   shortname: string;
   fullname: string;
-  secciones: { num: number; titulo: string }[];
+  secciones: Seccion[];
 }
 
 @Component({
@@ -73,7 +84,7 @@ interface CursoRepo {
           <label class="text-sm font-medium text-gray-700">Sección</label>
           <p-select
             [ngModel]="selectedSeccion()"
-            (ngModelChange)="selectedSeccion.set($event)"
+            (ngModelChange)="onSeccionChange($event)"
             [options]="secciones()"
             optionLabel="titulo"
             placeholder="Seleccionar sección..."
@@ -81,6 +92,27 @@ interface CursoRepo {
             [disabled]="!selectedCourse()"
             appendTo="body"
           />
+        </div>
+
+        <!-- Selector de subsección (opcional) -->
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-700">Subsección (opcional)</label>
+          <p-select
+            [ngModel]="selectedSubseccion()"
+            (ngModelChange)="selectedSubseccion.set($event)"
+            [options]="subsecciones()"
+            optionLabel="titulo"
+            placeholder="Ninguna (agregar al final de la sección)"
+            [showClear]="true"
+            class="w-full"
+            [disabled]="!selectedSeccion() || subsecciones().length === 0"
+            appendTo="body"
+          />
+          @if (selectedSubseccion()) {
+            <span class="text-xs text-amber-600">
+              Se reemplazará todo el contenido actual de esta subsección.
+            </span>
+          }
         </div>
 
         <!-- Rango de páginas (opcional) -->
@@ -156,11 +188,17 @@ export class CrearVisorDialogComponent {
 
   private readonly api = inject(ApiService);
   private readonly messageService = inject(MessageService);
+  // Reutiliza la instancia de ConfirmationService provista por ActivosComponent
+  // (padre en el árbol de componentes), que ya tiene un <p-confirmdialog> montado.
+  // NO declarar `providers: [ConfirmationService]` en este componente: crearía una
+  // instancia aislada sin diálogo visual asociado y .confirm() nunca se mostraría.
+  private readonly confirm = inject(ConfirmationService);
 
   readonly cursos = signal<CursoRepo[]>([]);
   readonly loadingCursos = signal(false);
   readonly selectedCourse = signal<CursoRepo | null>(null);
-  readonly selectedSeccion = signal<{ num: number; titulo: string } | null>(null);
+  readonly selectedSeccion = signal<Seccion | null>(null);
+  readonly selectedSubseccion = signal<Subseccion | null>(null);
   readonly usePageRange = signal(false);
   readonly pageStart = signal<number | null>(null);
   readonly pageEnd = signal<number | null>(null);
@@ -168,6 +206,7 @@ export class CrearVisorDialogComponent {
   readonly creating = signal(false);
 
   readonly secciones = computed(() => this.selectedCourse()?.secciones ?? []);
+  readonly subsecciones = computed(() => this.selectedSeccion()?.subsecciones ?? []);
   readonly canSubmit = computed(() =>
     !!this.pdfTitle().trim() && !!this.selectedCourse() && !!this.selectedSeccion() && !this.creating()
   );
@@ -179,6 +218,7 @@ export class CrearVisorDialogComponent {
         if (p) this.pdfTitle.set(p.title);
         this.selectedCourse.set(null);
         this.selectedSeccion.set(null);
+        this.selectedSubseccion.set(null);
         this.usePageRange.set(false);
         this.pageStart.set(null);
         this.pageEnd.set(null);
@@ -201,6 +241,12 @@ export class CrearVisorDialogComponent {
   onCourseChange(course: CursoRepo | null): void {
     this.selectedCourse.set(course);
     this.selectedSeccion.set(null);
+    this.selectedSubseccion.set(null);
+  }
+
+  onSeccionChange(seccion: Seccion | null): void {
+    this.selectedSeccion.set(seccion);
+    this.selectedSubseccion.set(null);
   }
 
   onVisibleChange(v: boolean): void {
@@ -208,6 +254,23 @@ export class CrearVisorDialogComponent {
   }
 
   submit(): void {
+    const subseccion = this.selectedSubseccion();
+    if (subseccion) {
+      this.confirm.confirm({
+        message: `Se reemplazará todo el contenido actual de la subsección "${subseccion.titulo}". Esta acción no se puede deshacer. ¿Continuar?`,
+        header: 'Confirmar reemplazo de subsección',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Reemplazar',
+        rejectLabel: 'Cancelar',
+        acceptButtonStyleClass: 'p-button-danger',
+        accept: () => this.doSubmit(),
+      });
+    } else {
+      this.doSubmit();
+    }
+  }
+
+  private doSubmit(): void {
     const pdf = this.pdf();
     const course = this.selectedCourse();
     const seccion = this.selectedSeccion();
@@ -220,6 +283,8 @@ export class CrearVisorDialogComponent {
       courseId: course.id,
       seccionNum: seccion.num,
     };
+    const subseccion = this.selectedSubseccion();
+    if (subseccion) body.subseccionNum = subseccion.num;
     if (this.usePageRange() && this.pageStart() !== null) body.pageStart = this.pageStart();
     if (this.usePageRange() && this.pageEnd() !== null) body.pageEnd = this.pageEnd();
 
