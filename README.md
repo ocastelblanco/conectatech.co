@@ -1,12 +1,14 @@
 # ConectaTech.co - Plataforma Moodle en AWS
 
-Infraestructura de código abierto como servicio (IaC) para desplegar una plataforma completa de aprendizaje **Moodle 5.1** en Amazon Web Services (AWS) con alta disponibilidad, seguridad y optimización de costos.
+Infraestructura de código abierto como servicio (IaC) para desplegar una plataforma completa de aprendizaje **Moodle 5.2** en Amazon Web Services (AWS) con alta disponibilidad, seguridad y optimización de costos.
 
 ## Resumen Ejecutivo
 
-**ConectaTech.co** es una solución empresarial lista para producción que proporciona:
+**ConectaTech.co** es una plataforma educativa B2B para colegios colombianos, construida sobre Moodle 5.2. Este README cubre la infraestructura AWS y el despliegue de Moodle; el panel de administración (Angular + API PHP) que el equipo de ConectaTech usa para gestionar contenido, matrículas y pines está documentado en [`admin-module/README.md`](admin-module/README.md).
 
-- ✅ **Moodle 5.1** con arquitectura moderna `/public` DocumentRoot
+La solución de infraestructura provee:
+
+- ✅ **Moodle 5.2** con arquitectura moderna `/public` DocumentRoot
 - ✅ **Infraestructura escalable** en AWS (EC2, RDS, EBS, CloudFront)
 - ✅ **Seguridad de nivel empresarial** (SSL/TLS, firewalls, encriptación)
 - ✅ **Automatización completa** con Terraform y scripts bash
@@ -21,11 +23,11 @@ Infraestructura de código abierto como servicio (IaC) para desplegar una plataf
 | **EC2** | t4g.small (2 vCPU, 2 GB RAM) | Instance ID: `i-0238341b5897b8e8f` |
 | **SO** | Amazon Linux 2023 ARM64 | Zona: us-east-1c |
 | **IP Pública** | 54.86.113.27 (Elastic IP) | Disponible permanentemente |
-| **RDS** | MariaDB 10.11.15 db.t4g.micro | Endpoint: `conectatech-prod-db-[...].cuz8c66mcaes.us-east-1.rds.amazonaws.com` |
+| **RDS** | MariaDB 10.11.16 db.t4g.micro | Endpoint: `conectatech-prod-db-[...].cuz8c66mcaes.us-east-1.rds.amazonaws.com` |
 | **Almacenamiento** | EBS gp3 40GB (15GB OS + 25GB datos) | Volúmenes encriptados |
-| **Moodle** | Versión 5.1.3 Build 20260216 | Instalado y funcional |
-| **Web** | Apache 2.4.66 + PHP 8.3.29 + PHP-FPM | Optimizado para 50-100 usuarios |
-| **SSL** | Let's Encrypt | A+ rating, auto-renovable, expira 2026-05-18 |
+| **Moodle** | Versión 5.2 (Build 20260630) | Instalado y funcional |
+| **Web** | httpd 2.4.66 + PHP 8.3.29 + PHP-FPM | Optimizado para 50-100 usuarios |
+| **SSL** | Let's Encrypt | A+ rating, auto-renovable vía cron (`certbot renew`) |
 | **Dominio** | conectatech.co | Registrado y apuntando a 54.86.113.27 |
 
 ## Tabla de Contenidos
@@ -113,8 +115,8 @@ cd ../scripts/
    ┌───────────────────────────────────────┐
    │        EC2 Instance (t4g.small)       │
    │  ┌─────────────────────────────────┐  │
-   │  │  Apache 2.4.66 + PHP 8.3.29     │  │
-   │  │  Moodle 5.1.3                   │  │
+   │  │  httpd 2.4.66 + PHP 8.3.29      │  │
+   │  │  Moodle 5.2                     │  │
    │  │  DocumentRoot: /var/www/html/.. │  │
    │  │  /moodledata (25GB EBS)         │  │
    │  └────────────┬────────────────────┘  │
@@ -122,7 +124,7 @@ cd ../scripts/
                    │
                    ▼
    ┌───────────────────────────────────────┐
-   │   RDS MariaDB 10.11.15 (db.t4g.micro) │
+   │   RDS MariaDB 10.11.16 (db.t4g.micro) │
    │   Database: moodle                    │
    │   Backups: 7 días automáticos         │
    └───────────────────────────────────────┘
@@ -145,7 +147,7 @@ cd ../scripts/
 - **Encriptación:** Habilitada en reposo
 
 #### 3. **Database (RDS MariaDB)**
-- **Engine:** MariaDB 10.11.15 (LTS compatible)
+- **Engine:** MariaDB 10.11.16 (LTS compatible)
 - **Instancia:** db.t4g.micro (1 GB RAM)
 - **Storage:** 20 GB gp3 (auto-escalable hasta 100 GB)
 - **Backups:** Automáticos cada 24h, retención 7 días
@@ -164,8 +166,8 @@ cd ../scripts/
 - **Proveedor:** Let's Encrypt
 - **Certificado:** Wildcard automático
 - **Rating:** A+ (SSL Labs)
-- **Auto-renovación:** Cada 60 días via Certbot
-- **Expira:** 2026-05-18 (renovable automáticamente)
+- **Auto-renovación:** cron `/etc/cron.d/certbot` (3AM y 3PM UTC), via Certbot
+- **Vigencia:** ~90 días por certificado, renovación automática antes del vencimiento
 
 #### 6. **Monitoreo**
 - **CloudWatch:** Métricas de CPU, memoria, disco, red
@@ -212,7 +214,7 @@ cd ../scripts/
 
 - [ ] SSH key: `~/.ssh/ClaveCT.pem` (permisos 400)
 - [ ] Credenciales Moodle (usuario: `admin`)
-- [ ] AWS CLI con profile `im` configurado
+- [ ] AWS CLI con profile `ct` configurado
 
 ---
 
@@ -243,7 +245,7 @@ cat > terraform.tfvars << EOF
 project_name                = "moodle"
 environment                 = "prod"
 aws_region                  = "us-east-1"
-aws_profile                 = "im"
+aws_profile                 = "ct"
 
 # EC2
 key_pair_name               = "ClaveCT"
@@ -325,7 +327,7 @@ cd ../scripts/
 ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 # Verificar servicios
-sudo systemctl status apache2
+sudo systemctl status httpd
 sudo systemctl status php-fpm
 
 # Verificar conectividad a RDS
@@ -365,8 +367,8 @@ ssh -i ~/.ssh/ClaveCT.pem ec2-user@conectatech.co
 
 ```bash
 # Apache
-sudo systemctl {start|stop|restart|status} apache2
-sudo systemctl reload apache2  # Sin downtime
+sudo systemctl {start|stop|restart|status} httpd
+sudo systemctl reload httpd  # Sin downtime
 
 # PHP-FPM
 sudo systemctl {start|stop|restart|status} php-fpm
@@ -406,10 +408,10 @@ sudo mysqldump -h ENDPOINT_RDS -u moodleadmin -p moodle > backup_${FECHA}.sql
 sudo tail -f /var/www/html/moodle/var/log/moodle.log
 
 # Apache access log
-sudo tail -f /var/log/apache2/access_log
+sudo tail -f /var/log/httpd/access_log
 
 # Apache error log
-sudo tail -f /var/log/apache2/error_log
+sudo tail -f /var/log/httpd/error_log
 
 # PHP-FPM errors
 sudo tail -f /var/log/php-fpm/error.log
@@ -497,8 +499,8 @@ show_config
 validate_config
 ```
 
-#### Apache VirtualHost
-Ubicación: `/etc/apache2/sites-available/moodle.conf`
+#### Apache (httpd) VirtualHost
+Ubicación: `/etc/httpd/conf.d/moodle-le-ssl.conf` (Amazon Linux 2023 usa `httpd`, no `apache2`)
 
 ```apache
 <VirtualHost *:80>
@@ -681,7 +683,7 @@ aws logs tail /aws/ec2/moodle --follow --profile ct
 
 # O en el servidor:
 sudo journalctl -u php-fpm -f
-sudo journalctl -u apache2 -f
+sudo journalctl -u httpd -f
 ```
 
 ### Escalado Vertical
@@ -705,7 +707,7 @@ aws ec2 start-instances --instance-ids i-0238341b5897b8e8f --profile ct
 ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27
 
 # 7. Verificar servicios
-sudo systemctl status apache2
+sudo systemctl status httpd
 sudo systemctl status php-fpm
 
 # Downtime total: 5-10 minutos
@@ -740,7 +742,7 @@ sudo rm -rf /moodledata/cache/*
 
 ```bash
 # 1. Revisar error log de Apache
-sudo tail -f /var/log/apache2/error_log
+sudo tail -f /var/log/httpd/error_log
 
 # 2. Revisar error log de Moodle
 sudo tail -f /var/www/html/moodle/var/log/moodle.log
@@ -810,7 +812,7 @@ sudo certbot renew --dry-run  # Test
 sudo certbot renew --force-renewal  # Real
 
 # 3. Verificar Apache después
-sudo systemctl reload apache2
+sudo systemctl reload httpd
 
 # 4. Verificar en línea
 curl -I https://conectatech.co  # Debe ser 200 OK
@@ -906,6 +908,8 @@ find /moodledata -type f -mtime +90 -delete  # Archivos no modificados en 90 dí
 
 ## Estructura del Proyecto
 
+Este repositorio contiene dos capas: la **infraestructura Moodle** (este README) y el **panel de administración** ConectaTech (`admin-module/`), que tiene su propio README con detalle de su arquitectura Angular/PHP.
+
 ```
 conectatech.co/
 ├── terraform/                      # Infraestructura como código
@@ -915,41 +919,46 @@ conectatech.co/
 │   ├── variables.tf                # Definición de variables
 │   ├── outputs.tf                  # Salidas y estimación de costos
 │   ├── terraform.tfvars            # Valores configuración (secreto - no commitear)
-│   ├── .gitignore                  # Ignorar archivos sensibles
-│   └── terraform.lock              # Lock de versiones de providers
+│   └── terraform.tfvars.example    # Plantilla de variables
 │
 ├── scripts/                        # Scripts de configuración y setup
 │   ├── 01-provision-infrastructure.sh  # Provisionar AWS (deprecated: usar Terraform)
-│   ├── 02-setup-server.sh          # Instalar dependencias, Apache, PHP
-│   ├── 03-install-moodle.sh        # Descargar e instalar Moodle 5.1
+│   ├── 02-setup-server.sh          # Instalar dependencias, httpd, PHP
+│   ├── 03-install-moodle.sh        # Descargar e instalar Moodle 5.2
 │   ├── 04-configure-ssl.sh         # Instalar Let's Encrypt, configurar HTTPS
 │   ├── 05-optimize-system.sh       # Optimizar PHP-FPM, SWAP, etc
 │   ├── 06-setup-backups.sh         # Configurar snapshots EBS automáticos
 │   └── 07-setup-monitoring.sh      # CloudWatch agent, logs centralizados
 │
-├── docs/                           # Documentación detallada
-│   ├── 01-architecture-overview.md     # Arquitectura y componentes
-│   ├── 02-prerequisites.md             # Requisitos previos
-│   ├── 03-ec2-configuration.md         # Configuración EC2
-│   ├── 04-moodle-installation.md       # Instalación Moodle
-│   ├── 05-optimization.md              # Optimización de performance
-│   ├── 06-ssl-configuration.md         # SSL/TLS Let's Encrypt
-│   ├── 07-backups.md                   # Estrategia de backups
-│   ├── 08-monitoring.md                # Monitoreo y alertas
-│   ├── 09-maintenance.md               # Mantenimiento operacional
-│   └── cuenta-aws.md                   # Detalles de cuenta AWS
+├── admin-module/                   # Panel de administración (ver admin-module/README.md)
+│   ├── frontend/                   # SPA Angular 21 (panel admin)
+│   ├── api/                        # API REST PHP (expuesta como /admin-api/*)
+│   └── backend/                    # Scripts CLI PHP + librerías compartidas
 │
-├── config/                         # Archivos de configuración
+├── api-service/                    # Lambda Node.js — API pública de PDFs (api.conectatech.co)
+│
+├── lambda/                         # Otras funciones Lambda (ej. reenvío de correo)
+│
+├── viewer-pdf/                     # Visor de PDF desplegado en assets.conectatech.co
+│
+├── docs/                           # Documentación de infraestructura y arquitectura
+│   ├── 01-architecture-overview.md ... 09-maintenance.md   # Guías numeradas de infra
+│   ├── infraestructura-cdn.md      # CloudFront + S3 (assets.conectatech.co)
+│   ├── gestion-pines.md, flujos-pines.md  # Modelo de pines de activación
+│   └── cuenta-aws.md               # Detalles de cuenta AWS
+│
+├── config/                         # Archivos de configuración compartidos
 │   ├── variables.sh                # Variables bash compartidas
-│   └── moodle-default.conf         # Template Apache VirtualHost
+│   └── moodle-default.conf         # Template VirtualHost httpd
 │
-├── .claude/                        # Instrucciones para Claude Code
-│   └── CLAUDE.md                   # Guía para asistente IA
-│
+├── PRD.md                          # Requisitos de producto
+├── tech-specs.md                   # Especificaciones técnicas completas
+├── MEMORY.md                       # Estado del proyecto y decisiones (ADRs)
+├── TODO.md                         # Tareas activas
+├── CREDENCIALES.md                 # Credenciales sensibles (gitignored, no se commitea)
+├── CLAUDE.md                       # Instrucciones del proyecto para agentes IA
 ├── .gitignore                      # Git ignore rules
-├── CLAUDE.md                       # Instrucciones del proyecto
 └── README.md                       # Este archivo
-
 ```
 
 ---
@@ -1000,13 +1009,13 @@ Nuevas cuentas AWS obtienen 12 meses gratis de:
 
 ### Backend
 - **SO:** Amazon Linux 2023 (ARM64)
-- **Web Server:** Apache 2.4.66 + OpenSSL
+- **Web Server:** httpd (Apache) 2.4.66 + OpenSSL
 - **Runtime:** PHP 8.3.29 + PHP-FPM
 - **Cache:** OPcache (PHP), Moodle cache (file-based)
-- **Aplicación:** Moodle 5.1.3
+- **Aplicación:** Moodle 5.2
 
 ### Database
-- **Engine:** MariaDB 10.11.15 LTS
+- **Engine:** MariaDB 10.11.16 LTS
 - **Storage:** EBS gp3 con encriptación
 - **Backups:** RDS Automated Backups
 - **Replicación:** (Opcional) Multi-AZ
@@ -1033,7 +1042,7 @@ Nuevas cuentas AWS obtienen 12 meses gratis de:
 
 ## Características Principales
 
-✅ **Moodle 5.1 Moderno**
+✅ **Moodle 5.2 Moderno**
 - Nueva arquitectura `/public` DocumentRoot
 - Routing Engine mejorado
 - Plugins actualizados
@@ -1069,12 +1078,12 @@ Nuevas cuentas AWS obtienen 12 meses gratis de:
 
 ---
 
-## Requisitos de Moodle 5.1
+## Requisitos de Moodle 5.2
 
 | Componente | Mínimo | Actual | Estado |
 |-----------|--------|--------|--------|
 | **PHP** | 8.2.0 | 8.3.29 | ✅ Compatible |
-| **MariaDB** | 10.11.0 | 10.11.15 | ✅ Compatible |
+| **MariaDB** | 10.11.0 | 10.11.16 | ✅ Compatible |
 | **MySQL** | 8.4.0 | - | N/A (usando MariaDB) |
 | **max_input_vars** | 5000 | 5000+ | ✅ Configurado |
 | **Extensiones** | sodium, intl, zip, gd | Todas instaladas | ✅ OK |
@@ -1126,7 +1135,7 @@ Este proyecto es una solución interna para ConectaTech.co. Para reportar issues
 
 **Logs en servidor:**
 - Moodle: `/var/www/html/moodle/var/log/moodle.log`
-- Apache: `/var/log/apache2/{access,error}_log`
+- Apache (httpd): `/var/log/httpd/{access,error}_log`
 - Sistema: `sudo journalctl -n 100`
 
 ---
@@ -1142,8 +1151,8 @@ Todos los derechos reservados. La infraestructura y scripts incluidos están pro
 ## Información del Documento
 
 - **Fecha de Creación:** 2026-02-17
-- **Última Actualización:** 2026-02-17
-- **Versión:** 1.0.0
+- **Última Actualización:** 2026-08-21
+- **Versión:** 1.1.0
 - **Estado de Despliegue:** Production Ready ✅
 - **Mantenedor:** Equipo DevOps
 
