@@ -12,9 +12,19 @@ Ver especificación completa en `docs/local_usagereports-especificacion.md` del 
 - [x] Fase 1 — Esqueleto del plugin (`version.php`)
 - [x] Fase 2 — `config/usage-events.json` poblado con eventos confirmados
 - [x] Fase 3 — Entidad (`classes/reportbuilder/local/entities/usage_event.php`) y datasource (`classes/reportbuilder/datasource/usage_report.php`)
-- [ ] Fase 4 — Validar en Moodle 5.2 si el generador visual agrupa/cuenta por Institución+Rol+Curso+Tipo de evento (riesgo conocido `MDL-76392`), o si hay que exponer fila-por-evento y resolver el conteo en tabla dinámica sobre el CSV/Excel exportado
-- [ ] Fase 5 — Deploy en producción bajo ventana de mantenimiento (no hay staging, ver ADR-006) + configuración del informe en la UI (columnas, filtros, Audiencia, Schedule mensual)
+- [x] Fase 4 — Plugin instalado en producción y validación de agregación (`MDL-76392`) completada — **agrupa y cuenta correctamente**
+- [ ] Fase 5 — Configurar el informe real (columnas finales, Audiencia, Schedule mensual) — pendiente de decisión del cliente sobre destinatarios
 - [ ] Fase 6 — `db/access.php` si se requieren capacidades específicas para ver el reporte (a evaluar tras la Fase 5, según quién deba consumir el informe)
+
+## Fase 4 — Instalación y validación de agregación (2026-09-07)
+
+**Instalación:** plugin copiado a `local/usagereports/` en producción bajo ventana de mantenimiento (`maintenance.php --enable/--disable`), `upgrade.php --non-interactive` sin errores, `purge_caches.php`. La fuente "Uso de la plataforma" aparece en *Informes personalizados* sin instalar ningún plugin de terceros.
+
+**Validación de agregación (`MDL-76392`) — resuelto, NO es un bloqueante para este datasource.** Se creó un informe de prueba (eliminado al terminar) con las 5 columnas por defecto y se puso la columna Institución en agregación "Cuenta". El generador visual agrupó correctamente por las columnas sin agregación (Rol, Curso, Tipo de evento, Fecha) y devolvió conteos reales (1, 1, 2, 1...) sin ningún error SQL — la limitación histórica de Moodle para `SUM`/`COUNT` agrupados no afecta a este datasource. **No hace falta** la alternativa de fila-por-evento + tabla dinámica en Excel que contemplaba la especificación original.
+
+**Hallazgo de diseño para la Fase 5 — no agrupar por `Fecha` con granularidad de minuto.** La columna Fecha (`timecreated`) tiene precisión de minuto, así que agruparla junto con Institución/Rol/Curso/Tipo de evento produce casi un grupo por evento individual (poco útil para un conteo mensual). **Recomendación:** en el informe real, no incluir la columna Fecha entre las columnas agrupadas — usar en su lugar el **filtro** "Fecha" (rango) para acotar el informe al mes correspondiente antes de agregar por Institución+Rol+Curso+Tipo de evento. Esto es una decisión de configuración en la UI, no requiere cambios de código.
+
+**Verificación técnica adicional (antes de tocar el navegador):** se ejercitó el datasource vía CLI (`manager::get_report_from_persistent()` + `get_active_columns()`/`get_active_filters()`) para confirmar que `initialise()` no lanza ningún error fatal antes de arriesgarse a una prueba en la UI de producción.
 
 ## Fase 3 — Entidad y datasource (2026-09-07)
 
