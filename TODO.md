@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 14)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 15)
 
 ---
 
@@ -20,30 +20,29 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Reportes de uso de la plataforma — Fase 5 (configurar el informe real)
+## Tarea 1 — [FEATURE] Renovación y reutilización de pines
 
-**Origen:** Continuación de ADR-011 / `docs/local_usagereports-especificacion.md`. Fase 0-4 completada 2026-09-07 (auditoría + esqueleto + `usage-events.json` + entidad/datasource + instalación en producción + validación de agregación) — ver Historial.
+**Origen:** PRD §6 (Media)
 
-**Problema:** El plugin ya está instalado en producción y la agregación por Institución+Rol+Curso+Tipo de evento fue validada en la UI real (sin bloqueos de `MDL-76392`). Falta crear el informe **real** (no de prueba) con Audiencia y Schedule mensual — esto requiere una decisión del cliente sobre destinatarios que todavía no se tiene.
-
-**Bloqueado en:** confirmar con el cliente quién debe recibir el correo mensual (¿solo el admin de ConectaTech? ¿gestores por organización?) y si el envío es CSV o Excel.
+**Problema:** Cuando un estudiante completa su curso, el pin queda "usado" y no se puede reutilizar. El administrador no tiene forma de recuperar pines de cursos completados y reasignarlos a nuevos estudiantes, lo que genera costo innecesario de nuevos pines.
 
 **Qué hacer:**
 
-### Paso 1 — Crear el informe real
-*Sitio administración > Informes > Informes personalizados > Nuevo informe* → fuente "Uso de la plataforma" → nombre definitivo → columnas (Institución, Rol, Curso, Tipo de evento con agregación "Cuenta"; **no** incluir Fecha como columna agrupada, ver hallazgo en el `README.md` del plugin) → filtro de Fecha para acotar el rango del mes → Audiencia.
+### Paso 1 — Endpoint de renovación
+En `handlers/pines.php`, agregar un endpoint `POST /pines/{id}/renovar` que, dado un pin activado cuyo estudiante haya completado el curso, lo marque como disponible nuevamente (desmatricula al estudiante anterior y resetea el estado del pin).
 
-### Paso 2 — Configurar el Schedule
-Pestaña *Schedules* → *New schedule* → recurrencia mensual, formato (CSV o Excel), lista de destinatarios confirmada con el cliente.
+### Paso 2 — UI en el panel de pines
+En el componente de pines del gestor, añadir un botón "Renovar" visible solo en pines con estado `usado` + curso completado, con confirmación antes de ejecutar.
 
 **Archivos a modificar / crear:**
-1. `admin-module/backend/moodle-plugins/usagereports/README.md` — registrar el nombre del informe real, columnas finales y el schedule configurado (destinatarios, frecuencia)
+1. `admin-module/api/handlers/pines.php` — endpoint de renovación
+2. `admin-module/frontend/src/app/features/pines/` — botón de renovación en tabla
 
 **Definición de done:**
-- [ ] Destinatarios y formato confirmados con el cliente
-- [ ] Informe real creado con columnas agregadas por Institución+Rol+Curso+Tipo de evento (sin Fecha agrupada)
-- [ ] Audiencia definida y Schedule mensual activo
-- [ ] `README.md` actualizado con el nombre del informe y el schedule configurado
+- [ ] El endpoint desmatricula al estudiante anterior y cambia el estado del pin a disponible
+- [ ] El botón solo aparece para pines que califican (usados + curso completado)
+- [ ] Confirmación antes de ejecutar la renovación
+- [ ] El pin renovado puede ser activado por un nuevo estudiante sin errores
 
 ---
 
@@ -91,6 +90,7 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 | 2026-09-07 | [FEATURE] `local_usagereports` — Fase 0-2 | Auditoría real contra `mdl_logstore_standard_log` (30 días); hallazgo: `course_module_viewed` no se dispara (0 eventos), se usa `section_viewed` en su lugar; esqueleto del plugin (`version.php`) y `config/usage-events.json` poblado con eventos confirmados; `README.md` del plugin documenta la auditoría |
 | 2026-09-07 | [FEATURE] `local_usagereports` — Fase 3 | Entidad `usage_event` y datasource `usage_report` para el Report Builder; ruta real de clases corregida (`classes/reportbuilder/local/entities/`, no `classes/local/entities/` como asumía la especificación); reutiliza entidades core `user`/`course` (mismo patrón que `core_role\reportbuilder\datasource\roles`); clasificación de eventos vía `CASE` SQL dinámico con parámetros con nombre; `lang/en` y `lang/es` completos |
 | 2026-09-07 | [FEATURE] `local_usagereports` — Fase 4 | Plugin instalado en producción bajo ventana de mantenimiento; validación real en la UI del Report Builder: agrupar/contar por Institución+Rol+Curso+Tipo de evento funciona sin errores (`MDL-76392` no bloquea este datasource); hallazgo: no agrupar por Fecha (granularidad de minuto) — usarla como filtro de rango en su lugar; usuario admin temporal y reporte de prueba eliminados al terminar |
+| 2026-09-07 | [FEATURE] `local_usagereports` — Fase 5 (cierre) | Informe real "Uso de la plataforma" creado por el cliente siguiendo las instrucciones (columnas agregadas por Institución+Rol+Curso+Tipo de evento, Fecha como filtro, Audiencia y Schedule mensual solo para el admin de ConectaTech, formato CSV). Feature completa de punta a punta |
 
 ---
 
@@ -296,3 +296,17 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 - ⏳ Tipos de pregunta adicionales: Media prioridad, sigue desplazada
 
 **Resultado:** Tarea 1 = Reportes de uso de la plataforma — Fase 5 (crear el informe real, bloqueada en decisión de destinatarios). Tarea 2 = Tipos de pregunta adicionales.
+
+### 2026-09-07 — Revisión 15 (`local_usagereports` completado de punta a punta)
+
+**Cambios en esta sesión:**
+- ✅ Cliente confirmó destinatario (solo admin de ConectaTech) y formato (CSV)
+- ✅ Cliente creó el informe real "Uso de la plataforma" siguiendo las instrucciones: columnas Institución/Rol/Curso/Tipo de evento con agregación "Cuenta", Fecha removida como columna (usada solo como filtro de rango), Audiencia restringida al admin, Schedule mensual activo
+- Pregunta de seguimiento del cliente resuelta: exportación bajo demanda vía el botón "Exportar" en la vista del informe (independiente del schedule mensual)
+
+**Comparación PRD vs MEMORY:**
+- ✅ **Reportes de uso de la plataforma (`local_usagereports`)**: completado de punta a punta (Fases 0-5)
+- 🎯 **Renovación y reutilización de pines**: Media prioridad, siguiente feature de valor (reduce costo operativo)
+- ⏳ Tipos de pregunta adicionales: Media prioridad, sigue en el TODO
+
+**Resultado:** Tarea 1 = Renovación y reutilización de pines. Tarea 2 = Tipos de pregunta adicionales.

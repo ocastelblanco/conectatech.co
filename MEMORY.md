@@ -179,12 +179,13 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 - [x] Fix: `$DB->force_transaction_rollback()` defensivo en `processSubsection` catch
 - [x] Preguntas ensayo: soporte `variante: texto` (editor) y `variante: adjunto`
 - [x] Sistema de documentación (PRD.md, tech-specs.md, CLAUDE.md completo, MEMORY.md, TODO.md)
+- [x] Reportes de uso de la plataforma (`local_usagereports`) — fuente propia del Report Builder de Moodle, sin plugins de terceros (ver ADR-011)
 
 ### Pendientes ⏳
 
 - [x] Sección 0 de cursos finales — completada 2026-04-30 (ver ADR-005)
 - [ ] Reportes de progreso de estudiantes (completitud, calificaciones) — diferido explícitamente por el cliente ("por ahora no vamos a usar esas estadísticas")
-- [ ] **Reportes de uso de la plataforma (`local_usagereports`)** — EN CURSO desde 2026-09-07. Fase 0-4 completada (auditoría real + esqueleto + `usage-events.json` + entidad/datasource + instalado y validado en producción); Fase 5 (informe real con Audiencia/Schedule) bloqueada en decisión del cliente sobre destinatarios. Ver ADR-011, `docs/local_usagereports-especificacion.md` y `admin-module/backend/moodle-plugins/usagereports/README.md`
+- [x] **Reportes de uso de la plataforma (`local_usagereports`)** — completado 2026-09-07. Informe real "Uso de la plataforma": columnas Institución/Rol/Curso/Tipo de evento agregadas por "Cuenta", Fecha como filtro de rango (no columna agrupada), Audiencia = solo admin de ConectaTech, Schedule mensual CSV. Exportación bajo demanda vía botón "Exportar" en la vista del informe. Ver ADR-011, `docs/local_usagereports-especificacion.md` y `admin-module/backend/moodle-plugins/usagereports/README.md`
 - [ ] Tipos de pregunta GIFT adicionales (verdadero/falso, emparejamiento, respuesta corta, numérica)
 - [ ] Notificaciones por correo (SES)
 - [ ] Renovación/reutilización de pines usados
