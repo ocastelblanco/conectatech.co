@@ -13,8 +13,20 @@ Ver especificación completa en `docs/local_usagereports-especificacion.md` del 
 - [x] Fase 2 — `config/usage-events.json` poblado con eventos confirmados
 - [x] Fase 3 — Entidad (`classes/reportbuilder/local/entities/usage_event.php`) y datasource (`classes/reportbuilder/datasource/usage_report.php`)
 - [x] Fase 4 — Plugin instalado en producción y validación de agregación (`MDL-76392`) completada — **agrupa y cuenta correctamente**
-- [ ] Fase 5 — Configurar el informe real (columnas finales, Audiencia, Schedule mensual) — pendiente de decisión del cliente sobre destinatarios
-- [ ] Fase 6 — `db/access.php` si se requieren capacidades específicas para ver el reporte (a evaluar tras la Fase 5, según quién deba consumir el informe)
+- [x] Fase 5 — Informe real "Uso de la plataforma" creado y configurado (ver detalle abajo)
+- [ ] Fase 6 — `db/access.php` si se requieren capacidades específicas para ver el reporte — **no necesario por ahora**: Audiencia restringida a administradores del sistema es suficiente para el alcance actual (destinatario único)
+
+## Fase 5 — Informe real (2026-09-07)
+
+**Nombre del informe:** `Uso de la plataforma`
+
+**Columnas:** Institución, Rol, Curso, Tipo de evento — con agregación "Cuenta" (ver Fase 4 para el detalle de cómo se validó el agrupado). La columna Fecha se removió de las columnas mostradas/agrupadas; se usa únicamente como **filtro** de rango para acotar el informe al período de interés (ver hallazgo de Fase 4 sobre su granularidad de minuto).
+
+**Audiencia:** restringida al administrador de ConectaTech (destinatario único por ahora — no hay gestores ni otros roles consumiendo este reporte todavía).
+
+**Schedule:** mensual, formato CSV, destinatario el correo del admin de ConectaTech.
+
+**Exportación bajo demanda:** desde la vista del informe (no el editor), botón "Exportar" — permite descargar CSV/Excel/ODS/PDF en cualquier momento, independiente del schedule mensual.
 
 ## Fase 4 — Instalación y validación de agregación (2026-09-07)
 
