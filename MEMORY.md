@@ -184,7 +184,7 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 
 - [x] Sección 0 de cursos finales — completada 2026-04-30 (ver ADR-005)
 - [ ] Reportes de progreso de estudiantes (completitud, calificaciones) — diferido explícitamente por el cliente ("por ahora no vamos a usar esas estadísticas")
-- [ ] **Reportes de uso de la plataforma (`local_usagereports`)** — EN CURSO desde 2026-09-07. Fase 0-2 completada (auditoría real + esqueleto + `usage-events.json`); Fase 3 (entidad + datasource) es la siguiente. Ver ADR-011, `docs/local_usagereports-especificacion.md` y `admin-module/backend/moodle-plugins/usagereports/README.md`
+- [ ] **Reportes de uso de la plataforma (`local_usagereports`)** — EN CURSO desde 2026-09-07. Fase 0-3 completada (auditoría real + esqueleto + `usage-events.json` + entidad/datasource); Fase 4-5 (validar agregación `MDL-76392` + deploy) es la siguiente. Ver ADR-011, `docs/local_usagereports-especificacion.md` y `admin-module/backend/moodle-plugins/usagereports/README.md`
 - [ ] Tipos de pregunta GIFT adicionales (verdadero/falso, emparejamiento, respuesta corta, numérica)
 - [ ] Notificaciones por correo (SES)
 - [ ] Renovación/reutilización de pines usados
@@ -269,6 +269,7 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 - **Estrategia de prueba:** decisión explícita del cliente — instalar directo en producción bajo ventana de mantenimiento (no hay staging, ver ADR-006), con capacidad de desinstalar rápido si el datasource falla.
 - **Riesgo conocido a validar en Fase 4:** limitaciones históricas del Report Builder de Moodle para agregaciones SUM/COUNT agrupadas (`MDL-76392`). Si el generador visual no soporta el agrupado directo, se expone fila-por-evento y el conteo se resuelve en tabla dinámica sobre el CSV/Excel exportado — documentado en el `README.md` del plugin.
 - **Consecuencias:** cualquier nuevo tipo de actividad a contabilizar (ej. `mod_assign`, `mod_h5pactivity`) se agrega editando `usage-events.json`, no el código PHP. Ver `docs/local_usagereports-especificacion.md` para la especificación completa y el detalle de joins (`mdl_context`, `mdl_role_assignments`, `mdl_role`).
+- **Corrección a la especificación (Fase 3, 2026-09-07):** la ruta real de las entidades del Report Builder en Moodle 5.2 es `classes/reportbuilder/local/entities/`, no `classes/local/entities/` como asumía el documento original — confirmado leyendo el código fuente de plugins core (`admin/roles`, `admin`) en el servidor antes de escribir código. El datasource reutiliza las entidades core `\core_reportbuilder\local\entities\user` y `\core_reportbuilder\local\entities\course` (mismo patrón que `\core_role\reportbuilder\datasource\roles`) en vez de reimplementar esos joins — reduce el código propio a mantener.
 
 ### ADR-008 — Git flow: hotfixes directos a main, feature branches para lo demás
 - **Fecha:** 2026-04-14

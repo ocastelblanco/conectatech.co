@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 12)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 13)
 
 ---
 
@@ -20,30 +20,28 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Reportes de uso de la plataforma — Fase 3 (entidad + datasource Report Builder)
+## Tarea 1 — [FEATURE] Reportes de uso de la plataforma — Fase 4-5 (validación de agregación + deploy)
 
-**Origen:** Continuación de ADR-011 / `docs/local_usagereports-especificacion.md`. Fase 0-2 (auditoría + esqueleto + `usage-events.json`) completada 2026-09-07 — ver Historial.
+**Origen:** Continuación de ADR-011 / `docs/local_usagereports-especificacion.md`. Fase 0-3 (auditoría + esqueleto + `usage-events.json` + entidad/datasource) completada 2026-09-07 — ver Historial.
 
-**Problema:** El plugin ya tiene el esqueleto y la lista de eventos validada contra datos reales, pero todavía no expone ninguna fuente en el Report Builder — falta la entidad y el datasource que Moodle necesita para que "Uso de la plataforma" aparezca como fuente al crear un informe personalizado.
+**Problema:** El plugin ya tiene entidad y datasource implementados (`php -l` limpio, lang strings completos), pero nunca se ha instalado en una instancia real de Moodle. Falta la validación funcional end-to-end y el deploy en producción.
 
 **Qué hacer:**
 
-### Paso 1 — Entidad
-`classes/local/entities/usage_event.php`, extendiendo `\core_reportbuilder\local\entities\base`. Joins a `mdl_user`, `mdl_context`, `mdl_role_assignments`, `mdl_role`, `mdl_course` (ver sección 3 de la especificación). Columnas: Institución, Rol, Curso, Tipo de evento (calculada leyendo `usage-events.json`), Fecha. Filtros: Institución (select), Rol (select), Curso (autocomplete), Rango de fecha, Tipo de evento (select).
+### Paso 1 — Instalar y validar agregación (riesgo `MDL-76392`)
+Copiar el plugin a `local/usagereports/` en el servidor (ventana de mantenimiento, decisión ya tomada por el cliente — no hay staging), correr `upgrade.php --non-interactive`, y en el generador visual del Report Builder probar si permite agrupar/contar filas por Institución+Rol+Curso+Tipo de evento directamente. Documentar el resultado en el `README.md` del plugin (sección 5.3 de la especificación): si no es posible, la fuente queda fila-por-evento y el conteo se resuelve en tabla dinámica sobre el CSV/Excel exportado.
 
-### Paso 2 — Datasource
-`classes/reportbuilder/datasource/usage_report.php`, extendiendo `\core_reportbuilder\datasource`. `initialise()` define la tabla principal (`mdl_logstore_standard_log`), agrega la entidad `usage_event` y las columnas/filtros por defecto.
+### Paso 2 — Configurar el informe en la UI
+*Sitio administración > Informes > Informes personalizados > Nuevo informe* → fuente "Uso de la plataforma" → definir Audiencia → pestaña Schedules → envío mensual (CSV o Excel).
 
 **Archivos a modificar / crear:**
-1. `admin-module/backend/moodle-plugins/usagereports/classes/local/entities/usage_event.php`
-2. `admin-module/backend/moodle-plugins/usagereports/classes/reportbuilder/datasource/usage_report.php`
-3. `admin-module/backend/moodle-plugins/usagereports/lang/es/local_usagereports.php` — lang strings para nombre de fuente, entidad, columnas y filtros
+1. `admin-module/backend/moodle-plugins/usagereports/README.md` — documentar el resultado de la prueba de agregación y dejar registrado el schedule configurado (destinatarios, frecuencia)
 
 **Definición de done:**
-- [ ] La entidad expone las 5 columnas y 5 filtros descritos arriba
-- [ ] El datasource registra la entidad y pasa `php -l` sin errores de sintaxis
-- [ ] Todos los `get_string()` usados en entidad/datasource tienen su lang string correspondiente
-- [ ] `README.md` del plugin actualizado marcando la Fase 3 como completa
+- [ ] Plugin instalado en producción sin errores de `upgrade.php`
+- [ ] La fuente "Uso de la plataforma" aparece en Informes personalizados
+- [ ] Resultado de la prueba de agregación (`MDL-76392`) documentado en el `README.md`
+- [ ] Informe configurado con columnas/filtros de la Fase 3, Audiencia definida y Schedule mensual activo
 
 ---
 
@@ -89,6 +87,7 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 | 2026-04-30 | [FEATURE] Sección 0 de cursos finales | UI por nodo de curso final en editor de árboles; `PobladorService` pobla sección 0 al desplegar; retrocompatible con árboles sin contenido definido |
 | 2026-05-14 | [FEATURE] Dashboard + panel de instituciones | Dashboard con tabs por track comercial (instituciones/organizaciones/cursos); CRUD de instituciones directas (Track A); conteos reales via `path` de categorías Moodle; script de limpieza `limpiar-cms-huerfanos.php` con cron diario |
 | 2026-09-07 | [FEATURE] `local_usagereports` — Fase 0-2 | Auditoría real contra `mdl_logstore_standard_log` (30 días); hallazgo: `course_module_viewed` no se dispara (0 eventos), se usa `section_viewed` en su lugar; esqueleto del plugin (`version.php`) y `config/usage-events.json` poblado con eventos confirmados; `README.md` del plugin documenta la auditoría |
+| 2026-09-07 | [FEATURE] `local_usagereports` — Fase 3 | Entidad `usage_event` y datasource `usage_report` para el Report Builder; ruta real de clases corregida (`classes/reportbuilder/local/entities/`, no `classes/local/entities/` como asumía la especificación); reutiliza entidades core `user`/`course` (mismo patrón que `core_role\reportbuilder\datasource\roles`); clasificación de eventos vía `CASE` SQL dinámico con parámetros con nombre; `lang/en` y `lang/es` completos |
 
 ---
 
@@ -264,3 +263,18 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 - ⏳ Tipos de pregunta adicionales: Media prioridad, sigue desplazada
 
 **Resultado:** Tarea 1 = Reportes de uso de la plataforma — Fase 3 (entidad + datasource). Tarea 2 = Tipos de pregunta adicionales.
+
+### 2026-09-07 — Revisión 13 (Fase 3 de `local_usagereports` completada, misma sesión)
+
+**Cambios en esta sesión:**
+- ✅ Entidad `usage_event` y datasource `usage_report` implementados y verificados con `php -l`
+- 🐛 Corrección de la especificación: la ruta real de las entidades del Report Builder en Moodle 5.2 es `classes/reportbuilder/local/entities/`, no `classes/local/entities/` — confirmado leyendo el código fuente de plugins core (`admin/roles`, `admin`) directamente en el servidor antes de escribir código, no por suposición
+- Decisión de diseño: el datasource reutiliza las entidades core `user` y `course` (columnas `user:institution`, `course:fullname`, filtro `course:courseselector`) en vez de reimplementar esos joins — mismo patrón que `core_role\reportbuilder\datasource\roles`
+- `lang/en/local_usagereports.php` y `lang/es/local_usagereports.php` completos, verificados contra todos los `get_string()`/`lang_string()` usados
+
+**Comparación PRD vs MEMORY:**
+- ✅ Fase 3 de `local_usagereports`: completada
+- 🎯 **Fase 4-5 (validación de agregación + deploy en producción)**: siguiente paso, requiere instalar el plugin por primera vez
+- ⏳ Tipos de pregunta adicionales: Media prioridad, sigue desplazada
+
+**Resultado:** Tarea 1 = Reportes de uso de la plataforma — Fase 4-5 (instalar, validar agregación `MDL-76392`, configurar el informe con Schedule mensual). Tarea 2 = Tipos de pregunta adicionales.

@@ -11,10 +11,38 @@ Ver especificación completa en `docs/local_usagereports-especificacion.md` del 
 - [x] Fase 0 — Auditoría real de eventos contra `mdl_logstore_standard_log`
 - [x] Fase 1 — Esqueleto del plugin (`version.php`)
 - [x] Fase 2 — `config/usage-events.json` poblado con eventos confirmados
-- [ ] Fase 3 — Entidad (`classes/local/entities/usage_event.php`) y datasource (`classes/reportbuilder/datasource/usage_report.php`)
+- [x] Fase 3 — Entidad (`classes/reportbuilder/local/entities/usage_event.php`) y datasource (`classes/reportbuilder/datasource/usage_report.php`)
 - [ ] Fase 4 — Validar en Moodle 5.2 si el generador visual agrupa/cuenta por Institución+Rol+Curso+Tipo de evento (riesgo conocido `MDL-76392`), o si hay que exponer fila-por-evento y resolver el conteo en tabla dinámica sobre el CSV/Excel exportado
 - [ ] Fase 5 — Deploy en producción bajo ventana de mantenimiento (no hay staging, ver ADR-006) + configuración del informe en la UI (columnas, filtros, Audiencia, Schedule mensual)
-- [ ] Fase 6 — `lang/es/local_usagereports.php` y `lang/en/local_usagereports.php`, `db/access.php` si se requieren capacidades específicas para ver el reporte
+- [ ] Fase 6 — `db/access.php` si se requieren capacidades específicas para ver el reporte (a evaluar tras la Fase 5, según quién deba consumir el informe)
+
+## Fase 3 — Entidad y datasource (2026-09-07)
+
+### Corrección de la ruta real de las clases
+
+La especificación original proponía `classes/local/entities/usage_event.php`. La ruta **real** que usa Moodle 5.2 para las entidades del Report Builder es `classes/reportbuilder/local/entities/`, confirmada leyendo el código fuente de plugins core equivalentes en el servidor de producción (`admin/roles/classes/reportbuilder/local/entities/role.php`, `admin/classes/reportbuilder/local/entities/task_log.php`). Se usó esa ruta real, no la del documento.
+
+### Reutilización de entidades core en vez de reimplementar joins
+
+En vez de que `usage_event` resuelva Institución (join a `mdl_user`) y Curso (join a `mdl_course`) con SQL propio, el **datasource** reutiliza las entidades ya existentes de Moodle core `\core_reportbuilder\local\entities\user` (columna `user:institution`) y `\core_reportbuilder\local\entities\course` (columna `course:fullname`), uniéndolas por `userid`/`courseid` del log — exactamente el mismo patrón que usa `\core_role\reportbuilder\datasource\roles` para unir la entidad `user` genérica a `role_assignments`. Esto evita duplicar lógica de formato/links ya resuelta en el núcleo y reduce el código propio a mantener.
+
+La entidad `usage_event` sólo resuelve lo que es específico de este reporte: `mdl_logstore_standard_log` (Tipo de evento, Fecha) y el join a `mdl_context` → `mdl_role_assignments` → `mdl_role` restringido a `student`/`editingteacher` (columna y filtro Rol).
+
+### Filtro de curso: `course:courseselector`, no `course:fullname`
+
+La especificación pedía un filtro de Curso "autocomplete". La entidad core `course` expone justo eso como filtro `courseselector` (selector de curso con autocompletado), separado de la columna `course:fullname`. Se usa `course:courseselector` como filtro por defecto.
+
+### Filtro de Institución: texto libre, no select
+
+La especificación asumía un filtro de Institución tipo `select`. La entidad core `user` no tiene un callback de opciones para `institution` (a diferencia de, por ejemplo, `country` o `lang`, que sí lo tienen) — es un campo de texto libre en el perfil de usuario, sin lista fija de valores en el esquema de Moodle. Se usa el filtro `text` que la entidad ya provee (`user:institution`), que en la práctica es más útil que un select para un campo sin enumeración fija.
+
+### Clasificación de eventos: SQL `CASE` dinámico con parámetros con nombre
+
+`usage_events_config::get_categories()` carga y cachea `config/usage-events.json` (vía `core_component::get_component_directory()`, no una ruta relativa hardcodeada). La entidad construye un `CASE WHEN eventname IN (:p1, :p2, ...) THEN 'visualizacion' ...` usando `$DB->get_in_or_equal(..., SQL_PARAMS_NAMED, ...)` para cada categoría — los `eventname` del JSON nunca se concatenan directo en el SQL. La restricción de rol (`student`/`editingteacher`) sí se embebe como literal SQL directo en el `JOIN`, porque son 2 constantes fijas de la clase (no vienen de `usage-events.json` ni de input externo) y la API de joins de Report Builder (`join_trait::add_join()`) no admite parámetros con nombre.
+
+### Alcance no cubierto en esta fase
+
+Falta validar en el generador visual de Moodle si el agrupado/conteo por Institución+Rol+Curso+Tipo de evento funciona directamente o si hay que exponer fila-por-evento (Fase 4), y el deploy real en producción (Fase 5).
 
 ## Auditoría de eventos (2026-09-07)
 
