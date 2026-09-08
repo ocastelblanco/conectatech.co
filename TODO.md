@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 13)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 14)
 
 ---
 
@@ -20,28 +20,30 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Reportes de uso de la plataforma — Fase 4-5 (validación de agregación + deploy)
+## Tarea 1 — [FEATURE] Reportes de uso de la plataforma — Fase 5 (configurar el informe real)
 
-**Origen:** Continuación de ADR-011 / `docs/local_usagereports-especificacion.md`. Fase 0-3 (auditoría + esqueleto + `usage-events.json` + entidad/datasource) completada 2026-09-07 — ver Historial.
+**Origen:** Continuación de ADR-011 / `docs/local_usagereports-especificacion.md`. Fase 0-4 completada 2026-09-07 (auditoría + esqueleto + `usage-events.json` + entidad/datasource + instalación en producción + validación de agregación) — ver Historial.
 
-**Problema:** El plugin ya tiene entidad y datasource implementados (`php -l` limpio, lang strings completos), pero nunca se ha instalado en una instancia real de Moodle. Falta la validación funcional end-to-end y el deploy en producción.
+**Problema:** El plugin ya está instalado en producción y la agregación por Institución+Rol+Curso+Tipo de evento fue validada en la UI real (sin bloqueos de `MDL-76392`). Falta crear el informe **real** (no de prueba) con Audiencia y Schedule mensual — esto requiere una decisión del cliente sobre destinatarios que todavía no se tiene.
+
+**Bloqueado en:** confirmar con el cliente quién debe recibir el correo mensual (¿solo el admin de ConectaTech? ¿gestores por organización?) y si el envío es CSV o Excel.
 
 **Qué hacer:**
 
-### Paso 1 — Instalar y validar agregación (riesgo `MDL-76392`)
-Copiar el plugin a `local/usagereports/` en el servidor (ventana de mantenimiento, decisión ya tomada por el cliente — no hay staging), correr `upgrade.php --non-interactive`, y en el generador visual del Report Builder probar si permite agrupar/contar filas por Institución+Rol+Curso+Tipo de evento directamente. Documentar el resultado en el `README.md` del plugin (sección 5.3 de la especificación): si no es posible, la fuente queda fila-por-evento y el conteo se resuelve en tabla dinámica sobre el CSV/Excel exportado.
+### Paso 1 — Crear el informe real
+*Sitio administración > Informes > Informes personalizados > Nuevo informe* → fuente "Uso de la plataforma" → nombre definitivo → columnas (Institución, Rol, Curso, Tipo de evento con agregación "Cuenta"; **no** incluir Fecha como columna agrupada, ver hallazgo en el `README.md` del plugin) → filtro de Fecha para acotar el rango del mes → Audiencia.
 
-### Paso 2 — Configurar el informe en la UI
-*Sitio administración > Informes > Informes personalizados > Nuevo informe* → fuente "Uso de la plataforma" → definir Audiencia → pestaña Schedules → envío mensual (CSV o Excel).
+### Paso 2 — Configurar el Schedule
+Pestaña *Schedules* → *New schedule* → recurrencia mensual, formato (CSV o Excel), lista de destinatarios confirmada con el cliente.
 
 **Archivos a modificar / crear:**
-1. `admin-module/backend/moodle-plugins/usagereports/README.md` — documentar el resultado de la prueba de agregación y dejar registrado el schedule configurado (destinatarios, frecuencia)
+1. `admin-module/backend/moodle-plugins/usagereports/README.md` — registrar el nombre del informe real, columnas finales y el schedule configurado (destinatarios, frecuencia)
 
 **Definición de done:**
-- [ ] Plugin instalado en producción sin errores de `upgrade.php`
-- [ ] La fuente "Uso de la plataforma" aparece en Informes personalizados
-- [ ] Resultado de la prueba de agregación (`MDL-76392`) documentado en el `README.md`
-- [ ] Informe configurado con columnas/filtros de la Fase 3, Audiencia definida y Schedule mensual activo
+- [ ] Destinatarios y formato confirmados con el cliente
+- [ ] Informe real creado con columnas agregadas por Institución+Rol+Curso+Tipo de evento (sin Fecha agrupada)
+- [ ] Audiencia definida y Schedule mensual activo
+- [ ] `README.md` actualizado con el nombre del informe y el schedule configurado
 
 ---
 
@@ -88,6 +90,7 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 | 2026-05-14 | [FEATURE] Dashboard + panel de instituciones | Dashboard con tabs por track comercial (instituciones/organizaciones/cursos); CRUD de instituciones directas (Track A); conteos reales via `path` de categorías Moodle; script de limpieza `limpiar-cms-huerfanos.php` con cron diario |
 | 2026-09-07 | [FEATURE] `local_usagereports` — Fase 0-2 | Auditoría real contra `mdl_logstore_standard_log` (30 días); hallazgo: `course_module_viewed` no se dispara (0 eventos), se usa `section_viewed` en su lugar; esqueleto del plugin (`version.php`) y `config/usage-events.json` poblado con eventos confirmados; `README.md` del plugin documenta la auditoría |
 | 2026-09-07 | [FEATURE] `local_usagereports` — Fase 3 | Entidad `usage_event` y datasource `usage_report` para el Report Builder; ruta real de clases corregida (`classes/reportbuilder/local/entities/`, no `classes/local/entities/` como asumía la especificación); reutiliza entidades core `user`/`course` (mismo patrón que `core_role\reportbuilder\datasource\roles`); clasificación de eventos vía `CASE` SQL dinámico con parámetros con nombre; `lang/en` y `lang/es` completos |
+| 2026-09-07 | [FEATURE] `local_usagereports` — Fase 4 | Plugin instalado en producción bajo ventana de mantenimiento; validación real en la UI del Report Builder: agrupar/contar por Institución+Rol+Curso+Tipo de evento funciona sin errores (`MDL-76392` no bloquea este datasource); hallazgo: no agrupar por Fecha (granularidad de minuto) — usarla como filtro de rango en su lugar; usuario admin temporal y reporte de prueba eliminados al terminar |
 
 ---
 
@@ -278,3 +281,18 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 - ⏳ Tipos de pregunta adicionales: Media prioridad, sigue desplazada
 
 **Resultado:** Tarea 1 = Reportes de uso de la plataforma — Fase 4-5 (instalar, validar agregación `MDL-76392`, configurar el informe con Schedule mensual). Tarea 2 = Tipos de pregunta adicionales.
+
+### 2026-09-07 — Revisión 14 (Fase 4 completada, misma sesión — plugin instalado y validado en producción)
+
+**Cambios en esta sesión:**
+- ✅ Plugin instalado en `local/usagereports/` en producción bajo ventana de mantenimiento; `upgrade.php --non-interactive` sin errores
+- ✅ Validación en la UI real del Report Builder (con usuario admin temporal provisto por el cliente, eliminado al terminar): agrupar/contar por Institución+Rol+Curso+Tipo de evento **funciona correctamente** — `MDL-76392` no es un bloqueante para este datasource
+- 🐛 Hallazgo de diseño: la columna Fecha tiene granularidad de minuto — agruparla junto con las demás produce casi un grupo por evento; se debe usar como filtro de rango, no como columna agrupada, en el informe real
+- Verificación adicional previa a la UI: se ejercitó el datasource vía CLI (`manager::get_report_from_persistent()`) para confirmar ausencia de errores fatales antes de arriesgar la instancia de producción
+
+**Comparación PRD vs MEMORY:**
+- ✅ Fase 0-4 de `local_usagereports`: completada — validación técnica end-to-end exitosa
+- 🎯 **Fase 5 (informe real con Audiencia y Schedule)**: bloqueada en una decisión del cliente (destinatarios del correo mensual, formato CSV/Excel) — no es una tarea técnica
+- ⏳ Tipos de pregunta adicionales: Media prioridad, sigue desplazada
+
+**Resultado:** Tarea 1 = Reportes de uso de la plataforma — Fase 5 (crear el informe real, bloqueada en decisión de destinatarios). Tarea 2 = Tipos de pregunta adicionales.
