@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-05-14 (rev. 9)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 11)
 
 ---
 
@@ -20,7 +20,42 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Tipos de pregunta adicionales
+## Tarea 1 — [FEATURE] Reportes de uso de la plataforma — Fase 0-2 (auditoría + esqueleto del plugin)
+
+**Origen:** Especificación aprobada por el cliente, `docs/local_usagereports-especificacion.md`. Ver ADR-011 en MEMORY.md.
+
+**Problema:** No existe forma de generar un informe recurrente (envío mensual por correo) de uso de la plataforma (visualizaciones, actividades, creación de recursos) agrupado por Institución/Rol/Curso, porque las fuentes nativas del Report Builder de Moodle no exponen `mdl_logstore_standard_log`. La restricción explícita del cliente prohíbe usar plugins de reporting de terceros — se requiere un plugin propio (`local_usagereports`) que registre una fuente de datos vía la Report Builder API oficial.
+
+**Qué hacer:**
+
+### Paso 1 — Auditoría real de eventos
+Ejecutar contra la BD de producción (solo lectura, vía SSH/mysql CLI, sin instalar nada):
+```sql
+SELECT eventname, crud, edulevel, COUNT(*) AS total
+FROM mdl_logstore_standard_log
+WHERE timecreated > UNIX_TIMESTAMP(NOW() - INTERVAL 30 DAY)
+GROUP BY eventname, crud, edulevel
+ORDER BY total DESC;
+```
+Confirmar qué `eventname` se generan realmente con el contenido actual (recursos "Área de texto y medios" = `mod_label`/`mod_subsection`, cuestionarios GIFT = `mod_quiz`).
+
+### Paso 2 — Esqueleto del plugin + config de eventos
+Crear la estructura base en `admin-module/backend/moodle-plugins/usagereports/` (nombre de carpeta **sin** prefijo `local_` — ver `moodle_plugin_install.md`, el componente `local_usagereports` va solo en `version.php`). Poblar `usage-events.json` con los `eventname` confirmados en el Paso 1, no con la lista candidata del documento.
+
+**Archivos a modificar / crear:**
+1. `admin-module/backend/moodle-plugins/usagereports/version.php`
+2. `admin-module/backend/moodle-plugins/usagereports/config/usage-events.json`
+3. `admin-module/backend/moodle-plugins/usagereports/README.md` — documenta los resultados de la auditoría y deja explícito que las Fases 3-6 (entidad/datasource, validación de agregación `MDL-76392`, deploy, git flow) quedan pendientes
+
+**Definición de done:**
+- [ ] Auditoría ejecutada contra la BD real de producción, resultados documentados en el `README.md` del plugin
+- [ ] `usage-events.json` contiene los `eventname` confirmados por la auditoría (categorías: `visualizacion`, `actividad`, `creacion`)
+- [ ] `version.php` declara el componente `local_usagereports` con el nombre de directorio correcto (`usagereports`)
+- [ ] `README.md` deja documentado qué falta (Fases 3-6) como próximos pasos
+
+---
+
+## Tarea 2 — [FEATURE] Tipos de pregunta adicionales
 
 **Origen:** PRD §6 (Media)
 
@@ -44,32 +79,6 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 - [ ] Respuesta corta se procesa correctamente en GIFT
 - [ ] Los nuevos tipos aparecen en el árbol de estructura con ícono diferenciado
 - [ ] Los tipos existentes (opción múltiple, ensayo) no se ven afectados
-
----
-
-## Tarea 2 — [FEATURE] Renovación y reutilización de pines
-
-**Origen:** PRD §6 (Media)
-
-**Problema:** Cuando un estudiante completa su curso, el pin queda "usado" y no se puede reutilizar. El administrador no tiene forma de recuperar pines de cursos completados y reasignarlos a nuevos estudiantes, lo que genera costo innecesario de nuevos pines.
-
-**Qué hacer:**
-
-### Paso 1 — Endpoint de renovación
-En `handlers/pines.php`, agregar un endpoint `POST /pines/{id}/renovar` que, dado un pin activado cuyo estudiante haya completado el curso, lo marque como disponible nuevamente (desmatricula al estudiante anterior y resetea el estado del pin).
-
-### Paso 2 — UI en el panel de pines
-En el componente de pines del gestor, añadir un botón "Renovar" visible solo en pines con estado `usado` + curso completado, con confirmación antes de ejecutar.
-
-**Archivos a modificar / crear:**
-1. `admin-module/api/handlers/pines.php` — endpoint de renovación
-2. `admin-module/frontend/src/app/features/pines/` — botón de renovación en tabla
-
-**Definición de done:**
-- [ ] El endpoint desmatricula al estudiante anterior y cambia el estado del pin a disponible
-- [ ] El botón solo aparece para pines que califican (usados + curso completado)
-- [ ] Confirmación antes de ejecutar la renovación
-- [ ] El pin renovado puede ser activado por un nuevo estudiante sin errores
 
 ---
 
@@ -235,3 +244,16 @@ En el componente de pines del gestor, añadir un botón "Renovar" visible solo e
 - 🎯 **Tipos de pregunta adicionales**: Media prioridad, enriquece el pipeline de contenido
 
 **Resultado:** Tarea 1 = Reportes de progreso. Tarea 2 = Tipos de pregunta adicionales.
+
+### 2026-09-07 — Revisión 11 (nueva prioridad del cliente — reportes de uso de la plataforma)
+
+**Cambios en esta sesión:**
+- Skill `slim-readme`: symlink externo reemplazado por fuente real dentro del repo (PR #25, fusionada)
+- Cliente entregó `docs/local_usagereports-especificacion.md` y aprobó el plan de acción propuesto (ver ADR-011 en MEMORY.md): plugin `local_usagereports` vía Report Builder nativo de Moodle, sin plugins de terceros, para el informe recurrente mensual de uso (visualizaciones/actividad/creación por Institución/Rol/Curso)
+
+**Comparación PRD vs MEMORY:**
+- 🆕 **Reportes de uso de la plataforma**: nuevo, Alta prioridad — aprobado explícitamente por el cliente en esta sesión, con plan detallado ya validado
+- ⏸ Reportes de progreso (completitud/calificaciones): sigue diferido sin fecha por decisión del cliente
+- ⏸ Tipos de pregunta adicionales y Renovación de pines: Media prioridad, se desplazan
+
+**Resultado:** Tarea 1 = Reportes de uso de la plataforma — Fase 0-2 (auditoría de eventos reales + esqueleto del plugin + `usage-events.json`). Tarea 2 = Tipos de pregunta adicionales (desplazada, retoma como siguiente en cuanto se libere un slot).

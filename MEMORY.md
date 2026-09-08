@@ -1,6 +1,6 @@
 # MEMORY.md — ConectaTech.co
 > Documento de rehidratación de sesión · Leer al inicio de cada sesión
-> Última actualización: 2026-04-27
+> Última actualización: 2026-09-07
 
 ---
 
@@ -16,7 +16,7 @@
 | **URL API pública** | `https://api.conectatech.co` |
 | **URL API interna** | `https://conectatech.co/admin-api/` |
 | **Rama principal** | `main` |
-| **Última sesión relevante** | 2026-04-27 — Moodle 5.1.3 → 5.2, Boost Union SCSS fix |
+| **Última sesión relevante** | 2026-09-07 — Skill `slim-readme` (symlink → fuente real, PR #25 fusionada); plan aprobado e iniciado para `local_usagereports` |
 
 ---
 
@@ -182,8 +182,9 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 
 ### Pendientes ⏳
 
-- [ ] **Sección 0 de cursos finales** — UI en editor de árboles para definir portada/bienvenida por curso final (ver ADR-005)
-- [ ] Reportes de progreso de estudiantes (completitud, calificaciones)
+- [x] Sección 0 de cursos finales — completada 2026-04-30 (ver ADR-005)
+- [ ] Reportes de progreso de estudiantes (completitud, calificaciones) — diferido explícitamente por el cliente ("por ahora no vamos a usar esas estadísticas")
+- [ ] **Reportes de uso de la plataforma (`local_usagereports`)** — EN CURSO desde 2026-09-07. Ver ADR-011 y `docs/local_usagereports-especificacion.md`
 - [ ] Tipos de pregunta GIFT adicionales (verdadero/falso, emparejamiento, respuesta corta, numérica)
 - [ ] Notificaciones por correo (SES)
 - [ ] Renovación/reutilización de pines usados
@@ -256,6 +257,18 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 - **Razón:** Moodle 5.2 cambió la arquitectura de compilación SCSS — ahora llama callbacks de padre E hijo automáticamente. Boost Union v5.1 fue diseñado asumiendo que solo se llamaría el callback del hijo, causando que variables de Bootstrap (`$white`, `$black`) y una variable propia no definida (`$logincontainer-shadow`) sean usadas antes de existir. La compilación falla silenciosamente y Moodle sirve el CSS precompilado del tema (sin estilos personalizados).
 - **Variables a añadir (documentadas en `snippets/conectatech-pre.scss`):** `$white: #fff !default`, `$black: #000 !default`, `$logincontainer-shadow: none !default`.
 - **Consecuencias:** Si en el futuro se instala una versión de Boost Union compatible con Moodle 5.2, estas definiciones son inofensivas por el `!default`. Si aparecen nuevos errores del mismo tipo, agregar la variable faltante a `scsspre` y al snippet del repo.
+
+### ADR-011 — Reportes de uso vía Report Builder nativo, sin plugins de terceros
+
+- **Fecha:** 2026-09-07
+- **Estado:** Aprobado, implementación iniciada (Fase 0)
+- **Decisión:** Construir `local_usagereports`, un plugin propio que registra una fuente de datos (`datasource`) en la Report Builder API nativa de Moodle 5.2 (mismo patrón que `mod_attendance`), en lugar de instalar `report_customsql`, IntelliBoard, Edwiser u otro plugin de reporting comercial/comunitario.
+- **Razón:** Restricción explícita del cliente — código propio, mantenido igual que el resto del `admin-module`. Las fuentes nativas del Report Builder no exponen `mdl_logstore_standard_log`, pero la API de extensión sí permite registrar una fuente nueva con las mismas capacidades (filtros, exportación, envío recurrente por correo vía la pestaña Schedules) sin tocar el núcleo.
+- **Alcance:** contadores de visualización/actividad/creación agrupables por Institución/Rol/Curso, clasificados vía `config/usage-events.json` (config externa editable, mismo patrón que `semantic-blocks.json`) en lugar de listas hardcodeadas en PHP.
+- **Ubicación del código:** `admin-module/backend/moodle-plugins/usagereports/` (repo) → `local/usagereports/` (servidor). Nombre de directorio sin prefijo `local_` (ver `moodle_plugin_install.md` — el prefijo va solo en el componente de `version.php`, no en el nombre de carpeta).
+- **Estrategia de prueba:** decisión explícita del cliente — instalar directo en producción bajo ventana de mantenimiento (no hay staging, ver ADR-006), con capacidad de desinstalar rápido si el datasource falla.
+- **Riesgo conocido a validar en Fase 4:** limitaciones históricas del Report Builder de Moodle para agregaciones SUM/COUNT agrupadas (`MDL-76392`). Si el generador visual no soporta el agrupado directo, se expone fila-por-evento y el conteo se resuelve en tabla dinámica sobre el CSV/Excel exportado — documentado en el `README.md` del plugin.
+- **Consecuencias:** cualquier nuevo tipo de actividad a contabilizar (ej. `mod_assign`, `mod_h5pactivity`) se agrega editando `usage-events.json`, no el código PHP. Ver `docs/local_usagereports-especificacion.md` para la especificación completa y el detalle de joins (`mdl_context`, `mdl_role_assignments`, `mdl_role`).
 
 ### ADR-008 — Git flow: hotfixes directos a main, feature branches para lo demás
 - **Fecha:** 2026-04-14
@@ -425,12 +438,29 @@ ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
 | `docs/instrucciones-inicio.md` | Protocolo de documentación con IA | Al refinar el proceso de documentación |
 | `docs/infraestructura-servidor.md` | Detalles del servidor EC2 y Apache | Al cambiar la configuración del servidor |
 | `docs/infraestructura-cdn.md` | CDN, S3, CloudFront, Lambda | Al cambiar la infraestructura de assets |
+| `docs/local_usagereports-especificacion.md` | Especificación técnica del plugin de reportes de uso (ver ADR-011) | Al ajustar el alcance, los eventos auditados o la estructura del plugin |
 
 ---
 
 ## 9. Contexto de la última sesión
 
-**Fecha:** 2026-04-27
+**Fecha:** 2026-09-07
+
+**Qué se hizo:**
+
+1. **Skill `slim-readme`: symlink → fuente real**
+   - `.claude/skills/slim-readme` era un symlink a `/Users/ocastelblanco/Documents/AgentesIA/VariasSkills/NASA-AMMOS/skills/slim-readme`, fuera del repo — rompía el skill para cualquier otro entorno/colaborador
+   - Reemplazado por el contenido real (`SKILL.md` + `assets/README.md`) dentro del repo; se eliminó también `.claude/skills/readme/SKILL.md` (skill anterior que reemplaza)
+   - PR #25 fusionada a `main`
+
+2. **Plan aprobado: `local_usagereports` (reportes de uso de la plataforma)**
+   - Cliente entregó `docs/local_usagereports-especificacion.md`: informe recurrente mensual por correo (visualizaciones/actividades/creación por Institución/Rol/Curso), vía Report Builder nativo de Moodle, sin plugins de terceros
+   - Ver ADR-011 para el detalle completo de la decisión de arquitectura
+   - Decisiones del cliente: código en `admin-module/backend/moodle-plugins/usagereports/`; prueba directa en producción con ventana de mantenimiento (no hay staging)
+   - `TODO.md` actualizado — Tarea 1 = Fase 0-2 (auditoría de eventos reales + esqueleto del plugin + `usage-events.json`)
+   - **Estado al cierre de esta sesión:** ver `TODO.md` para el detalle de qué paso quedó ejecutado
+
+### Sesión anterior — 2026-04-27
 
 **Qué se hizo:**
 
