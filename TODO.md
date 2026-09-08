@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 11)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 12)
 
 ---
 
@@ -20,38 +20,30 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Reportes de uso de la plataforma — Fase 0-2 (auditoría + esqueleto del plugin)
+## Tarea 1 — [FEATURE] Reportes de uso de la plataforma — Fase 3 (entidad + datasource Report Builder)
 
-**Origen:** Especificación aprobada por el cliente, `docs/local_usagereports-especificacion.md`. Ver ADR-011 en MEMORY.md.
+**Origen:** Continuación de ADR-011 / `docs/local_usagereports-especificacion.md`. Fase 0-2 (auditoría + esqueleto + `usage-events.json`) completada 2026-09-07 — ver Historial.
 
-**Problema:** No existe forma de generar un informe recurrente (envío mensual por correo) de uso de la plataforma (visualizaciones, actividades, creación de recursos) agrupado por Institución/Rol/Curso, porque las fuentes nativas del Report Builder de Moodle no exponen `mdl_logstore_standard_log`. La restricción explícita del cliente prohíbe usar plugins de reporting de terceros — se requiere un plugin propio (`local_usagereports`) que registre una fuente de datos vía la Report Builder API oficial.
+**Problema:** El plugin ya tiene el esqueleto y la lista de eventos validada contra datos reales, pero todavía no expone ninguna fuente en el Report Builder — falta la entidad y el datasource que Moodle necesita para que "Uso de la plataforma" aparezca como fuente al crear un informe personalizado.
 
 **Qué hacer:**
 
-### Paso 1 — Auditoría real de eventos
-Ejecutar contra la BD de producción (solo lectura, vía SSH/mysql CLI, sin instalar nada):
-```sql
-SELECT eventname, crud, edulevel, COUNT(*) AS total
-FROM mdl_logstore_standard_log
-WHERE timecreated > UNIX_TIMESTAMP(NOW() - INTERVAL 30 DAY)
-GROUP BY eventname, crud, edulevel
-ORDER BY total DESC;
-```
-Confirmar qué `eventname` se generan realmente con el contenido actual (recursos "Área de texto y medios" = `mod_label`/`mod_subsection`, cuestionarios GIFT = `mod_quiz`).
+### Paso 1 — Entidad
+`classes/local/entities/usage_event.php`, extendiendo `\core_reportbuilder\local\entities\base`. Joins a `mdl_user`, `mdl_context`, `mdl_role_assignments`, `mdl_role`, `mdl_course` (ver sección 3 de la especificación). Columnas: Institución, Rol, Curso, Tipo de evento (calculada leyendo `usage-events.json`), Fecha. Filtros: Institución (select), Rol (select), Curso (autocomplete), Rango de fecha, Tipo de evento (select).
 
-### Paso 2 — Esqueleto del plugin + config de eventos
-Crear la estructura base en `admin-module/backend/moodle-plugins/usagereports/` (nombre de carpeta **sin** prefijo `local_` — ver `moodle_plugin_install.md`, el componente `local_usagereports` va solo en `version.php`). Poblar `usage-events.json` con los `eventname` confirmados en el Paso 1, no con la lista candidata del documento.
+### Paso 2 — Datasource
+`classes/reportbuilder/datasource/usage_report.php`, extendiendo `\core_reportbuilder\datasource`. `initialise()` define la tabla principal (`mdl_logstore_standard_log`), agrega la entidad `usage_event` y las columnas/filtros por defecto.
 
 **Archivos a modificar / crear:**
-1. `admin-module/backend/moodle-plugins/usagereports/version.php`
-2. `admin-module/backend/moodle-plugins/usagereports/config/usage-events.json`
-3. `admin-module/backend/moodle-plugins/usagereports/README.md` — documenta los resultados de la auditoría y deja explícito que las Fases 3-6 (entidad/datasource, validación de agregación `MDL-76392`, deploy, git flow) quedan pendientes
+1. `admin-module/backend/moodle-plugins/usagereports/classes/local/entities/usage_event.php`
+2. `admin-module/backend/moodle-plugins/usagereports/classes/reportbuilder/datasource/usage_report.php`
+3. `admin-module/backend/moodle-plugins/usagereports/lang/es/local_usagereports.php` — lang strings para nombre de fuente, entidad, columnas y filtros
 
 **Definición de done:**
-- [ ] Auditoría ejecutada contra la BD real de producción, resultados documentados en el `README.md` del plugin
-- [ ] `usage-events.json` contiene los `eventname` confirmados por la auditoría (categorías: `visualizacion`, `actividad`, `creacion`)
-- [ ] `version.php` declara el componente `local_usagereports` con el nombre de directorio correcto (`usagereports`)
-- [ ] `README.md` deja documentado qué falta (Fases 3-6) como próximos pasos
+- [ ] La entidad expone las 5 columnas y 5 filtros descritos arriba
+- [ ] El datasource registra la entidad y pasa `php -l` sin errores de sintaxis
+- [ ] Todos los `get_string()` usados en entidad/datasource tienen su lang string correspondiente
+- [ ] `README.md` del plugin actualizado marcando la Fase 3 como completa
 
 ---
 
@@ -96,6 +88,7 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 | 2026-04-27 | [INFRA] Actualización Moodle 5.1.3 → 5.2 | Plugin `local_conectatech` desinstalado; upgrade limpio vía GitHub archive + composer install; `qtype_random` huérfano eliminado; todas las tablas `mdl_ct_*` y rol `ct_gestor` (22 capabilities) intactos |
 | 2026-04-30 | [FEATURE] Sección 0 de cursos finales | UI por nodo de curso final en editor de árboles; `PobladorService` pobla sección 0 al desplegar; retrocompatible con árboles sin contenido definido |
 | 2026-05-14 | [FEATURE] Dashboard + panel de instituciones | Dashboard con tabs por track comercial (instituciones/organizaciones/cursos); CRUD de instituciones directas (Track A); conteos reales via `path` de categorías Moodle; script de limpieza `limpiar-cms-huerfanos.php` con cron diario |
+| 2026-09-07 | [FEATURE] `local_usagereports` — Fase 0-2 | Auditoría real contra `mdl_logstore_standard_log` (30 días); hallazgo: `course_module_viewed` no se dispara (0 eventos), se usa `section_viewed` en su lugar; esqueleto del plugin (`version.php`) y `config/usage-events.json` poblado con eventos confirmados; `README.md` del plugin documenta la auditoría |
 
 ---
 
@@ -257,3 +250,17 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 - ⏸ Tipos de pregunta adicionales y Renovación de pines: Media prioridad, se desplazan
 
 **Resultado:** Tarea 1 = Reportes de uso de la plataforma — Fase 0-2 (auditoría de eventos reales + esqueleto del plugin + `usage-events.json`). Tarea 2 = Tipos de pregunta adicionales (desplazada, retoma como siguiente en cuanto se libere un slot).
+
+### 2026-09-07 — Revisión 12 (Fase 0-2 de `local_usagereports` completada, misma sesión)
+
+**Cambios en esta sesión:**
+- ✅ Auditoría SQL ejecutada contra la BD real de producción (RDS, solo lectura) — resultados y hallazgos documentados en `admin-module/backend/moodle-plugins/usagereports/README.md`
+- ✅ Esqueleto del plugin creado (`version.php`, `config/usage-events.json` con los eventos confirmados, `README.md`)
+- 🐛 Gotcha operativo: SSH dio timeout por IP local cambiada — Security Group `sg-039bcb1cb3a57db7f` actualizado con la nueva IP (ver sección "Security Group SSH" en MEMORY.md del sistema de memoria)
+
+**Comparación PRD vs MEMORY:**
+- ✅ Fase 0-2 de `local_usagereports`: completada
+- 🎯 **Fase 3 (entidad + datasource Report Builder)**: siguiente paso natural, sin bloqueos
+- ⏳ Tipos de pregunta adicionales: Media prioridad, sigue desplazada
+
+**Resultado:** Tarea 1 = Reportes de uso de la plataforma — Fase 3 (entidad + datasource). Tarea 2 = Tipos de pregunta adicionales.

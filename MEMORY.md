@@ -184,7 +184,7 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 
 - [x] Sección 0 de cursos finales — completada 2026-04-30 (ver ADR-005)
 - [ ] Reportes de progreso de estudiantes (completitud, calificaciones) — diferido explícitamente por el cliente ("por ahora no vamos a usar esas estadísticas")
-- [ ] **Reportes de uso de la plataforma (`local_usagereports`)** — EN CURSO desde 2026-09-07. Ver ADR-011 y `docs/local_usagereports-especificacion.md`
+- [ ] **Reportes de uso de la plataforma (`local_usagereports`)** — EN CURSO desde 2026-09-07. Fase 0-2 completada (auditoría real + esqueleto + `usage-events.json`); Fase 3 (entidad + datasource) es la siguiente. Ver ADR-011, `docs/local_usagereports-especificacion.md` y `admin-module/backend/moodle-plugins/usagereports/README.md`
 - [ ] Tipos de pregunta GIFT adicionales (verdadero/falso, emparejamiento, respuesta corta, numérica)
 - [ ] Notificaciones por correo (SES)
 - [ ] Renovación/reutilización de pines usados
