@@ -68,19 +68,30 @@ aws ec2 authorize-security-group-ingress --profile ct \
 
 ### 2. (Preparación, sin downtime) Descargar y verificar el tarball nuevo
 
-Se puede hacer con el sitio en producción, sin afectar a los usuarios:
+Se puede hacer con el sitio en producción, sin afectar a los usuarios.
+
+**Importante:** usar la URL de la versión exacta, no `moodle-latest-<branch>.tgz` — ese alias apunta al
+build empaquetado más reciente de la rama, que puede ir varios días rezagado respecto al release/tag
+recién anunciado (ver advertencias). Para obtener la URL exacta de una versión:
+
+1. Ir a `https://download.moodle.org/releases/latest/` (o la página de releases de la rama que
+   corresponda) y confirmar el número de versión y build anunciados.
+2. La URL directa de descarga (sin la página intersticial) tiene el patrón:
+   `https://packaging.moodle.org/stable<BRANCH>/moodle-<VERSION_DESTINO>.tgz`
+   (se puede llegar a ella siguiendo el redirect 302 de
+   `https://download.moodle.org/download.php/direct/stable<BRANCH>/moodle-<VERSION_DESTINO>.tgz`).
 
 ```bash
 command ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
-  "cd /tmp && curl -L -o moodle-<BRANCH>.tgz \
-   'https://packaging.moodle.org/stable<BRANCH>/moodle-latest-<BRANCH>.tgz' \
-   && tar -xzf moodle-<BRANCH>.tgz \
+  "cd /tmp && curl -L -o moodle-<VERSION_DESTINO>.tgz \
+   'https://packaging.moodle.org/stable<BRANCH>/moodle-<VERSION_DESTINO>.tgz' \
+   && tar -xzf moodle-<VERSION_DESTINO>.tgz \
    && echo 'Extracción OK'"
 
 command ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
-  "grep -E '^\\\$version|^\\\$release' /tmp/moodle/version.php"
-# Confirmar que el release coincide con <VERSION_DESTINO> antes de continuar.
-# Si no coincide, el build "latest" todavía no se actualizó — esperar o investigar.
+  "grep -E '^\\\$version|^\\\$release' /tmp/moodle/public/version.php"
+# version.php vive en /tmp/moodle/public/ en los tarballs recientes (no en la raíz del tarball).
+# Confirmar que el release coincide EXACTAMENTE con <VERSION_DESTINO> antes de continuar.
 ```
 
 ### 3. Activar modo mantenimiento
@@ -260,10 +271,19 @@ caso.
 - **Temas de terceros (`boost_union`, `moove`) y el plugin `local_usagereports` NO vienen en el tarball
   oficial** — hay que recopiarlos desde `moodle-old` después de mover el directorio nuevo, o el sitio
   pierde el theming y el reporte de uso al reiniciar.
-- El `latest` de `moodle-latest-<branch>.tgz` apunta al **build más reciente de la rama**, no
-  necesariamente al build/versión exacta anunciada — verificar `version.php` después de extraer, antes
-  de continuar con el swap de directorios. En el upgrade de 2026-06 esto causó que se instalara el build
-  20260630 en vez del 20260616 originalmente planeado.
+- El `latest` de `moodle-latest-<branch>.tgz` apunta al **build más reciente empaquetado de la rama**, no
+  necesariamente al release/versión recién anunciada — el empaquetado oficial (con lang packs) puede
+  publicarse varios días después del tag de código. Verificar `version.php` después de extraer, antes de
+  continuar con el swap de directorios.
+  - En el upgrade de 2026-06 esto causó que se instalara el build 20260630 en vez del 20260616
+    originalmente planeado (el `latest` había avanzado de más).
+  - En la preparación del upgrade a 5.2.3 (2026-09-15) fue el caso inverso: `moodle-latest-502.tgz`
+    todavía servía el build 20260911 (5.2.2+) el mismo día en que 5.2.3 (build 20260914) ya estaba
+    anunciado. Solución: usar la URL de versión exacta
+    `https://packaging.moodle.org/stable502/moodle-5.2.3.tgz` (ver paso 2 del procedimiento) en vez del
+    alias `latest`.
+- `version.php` en los tarballs recientes vive en `<extraído>/public/version.php`, no en la raíz del
+  tarball extraído.
 - **No existe** `/usr/local/bin/moodle-backup-db.sh` en el servidor pese a estar documentado en
   procedimientos viejos — el backup de BD siempre se ha hecho con `mysqldump` manual. Si en algún
   momento se crea el script, actualizar esta sección.
@@ -284,7 +304,7 @@ caso.
 | Fecha | Origen | Destino | Resultado | Incidencias |
 |---|---|---|---|---|
 | 2026-06-23 | 5.2 (Build: 20260420) | 5.2.1+ (Build: 20260630) | ✅ OK | Se planeó build 20260616 pero `latest` ya apuntaba a 20260630 (release intermedio). Hubo que recopiar `boost_union` y `moove` tras el swap. |
-| 2026-09-15 (en curso) | 5.2.1+ (Build: 20260630) | 5.2.3 | ⏳ Preparado, pendiente de ejecución (a la señal del usuario) | 5.2.3 incluye fix crítico de gradebook (MDL-89497, freeze de cálculo con penalización) y correcciones de seguridad aún no divulgadas por el equipo de Moodle (se publican ~1 semana después del release para dar tiempo de actualizar). Ruta directa desde 5.2.1+ confirmada como segura por moodledev.io. |
+| 2026-09-15 (en curso) | 5.2.1+ (Build: 20260630) | 5.2.3 (Build: 20260914) | ⏳ Preparado, pendiente de ejecución (a la señal del usuario) | 5.2.3 incluye fix crítico de gradebook (MDL-89497, freeze de cálculo con penalización) y correcciones de seguridad aún no divulgadas por el equipo de Moodle (se publican ~1 semana después del release para dar tiempo de actualizar). Ruta directa desde 5.2.1+ confirmada como segura por moodledev.io. El alias `latest-502` aún no apuntaba a este build al momento de preparar — se usó la URL de versión exacta. Tarball ya descargado y extraído en `/tmp/moodle` del servidor, versión verificada. |
 
 ## Registro de actualizaciones — extensiones locales
 
