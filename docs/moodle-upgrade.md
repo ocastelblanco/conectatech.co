@@ -292,8 +292,12 @@ caso.
   del hijo; Boost Union v5.1 no soportaba el doble callback). Fix aplicado con variables `!default` en el
   `scsspre`. Boost Union ya publicó `v5.2-r8` (compatible nativamente) — confirmar tras cada upgrade que
   el Raw SCSS se sigue aplicando de todos modos, por si aparecen nuevas variables no definidas.
-- Si SSH da timeout, la IP local cambió — el Security Group `sg-039bcb1cb3a57db7f` solo autoriza una
-  IP fija.
+- Si SSH da timeout, la primera sospecha es que la IP local cambió — el Security Group
+  `sg-039bcb1cb3a57db7f` solo autoriza una IP fija. Pero también pueden ocurrir timeouts intermitentes
+  sin relación con el SG (blips de red transitorios) — antes de tocar el SG, verificar con
+  `curl -s https://checkip.amazonaws.com` si la IP realmente cambió respecto a la autorizada; si coincide,
+  simplemente reintentar el comando SSH (visto en el upgrade de 2026-09-15, 2-3 timeouts sueltos sin
+  causa aparente, resueltos con reintento).
 - Verificar espacio en disco antes de empezar (`df -h /var/www/html`) — el tarball + extracción +
   directorio viejo conviven temporalmente (~3x el tamaño de una instalación).
 
@@ -304,7 +308,7 @@ caso.
 | Fecha | Origen | Destino | Resultado | Incidencias |
 |---|---|---|---|---|
 | 2026-06-23 | 5.2 (Build: 20260420) | 5.2.1+ (Build: 20260630) | ✅ OK | Se planeó build 20260616 pero `latest` ya apuntaba a 20260630 (release intermedio). Hubo que recopiar `boost_union` y `moove` tras el swap. |
-| 2026-09-15 (en curso) | 5.2.1+ (Build: 20260630) | 5.2.3 (Build: 20260914) | ⏳ Preparado, pendiente de ejecución (a la señal del usuario) | 5.2.3 incluye fix crítico de gradebook (MDL-89497, freeze de cálculo con penalización) y correcciones de seguridad aún no divulgadas por el equipo de Moodle (se publican ~1 semana después del release para dar tiempo de actualizar). Ruta directa desde 5.2.1+ confirmada como segura por moodledev.io. El alias `latest-502` aún no apuntaba a este build al momento de preparar — se usó la URL de versión exacta. Tarball ya descargado y extraído en `/tmp/moodle` del servidor, versión verificada. |
+| 2026-09-15 | 5.2.1+ (Build: 20260630) | 5.2.3 (Build: 20260914) | ✅ OK | Downtime ~5 min (21:56–22:01 UTC). 5.2.3 incluye fix crítico de gradebook (MDL-89497) y correcciones de seguridad aún no divulgadas por el equipo de Moodle. Ruta directa desde 5.2.1+ confirmada como segura por moodledev.io. El alias `latest-502` aún no apuntaba a este build al momento de preparar — se usó la URL de versión exacta `packaging.moodle.org/stable502/moodle-5.2.3.tgz`. `upgrade.php --non-interactive` finalizó sin errores. Verificación post-upgrade: HTTP 200 en `conectatech.co` y `admin.conectatech.co`, tema Boost Union con Raw SCSS custom aplicando correctamente (ADR-009 sin regresión, confirmado visualmente), sin errores en consola del navegador, panel admin redirige correctamente a login de Moodle cuando no hay sesión. **Gotcha nuevo:** hubo 2-3 timeouts SSH intermitentes durante la ejecución (no relacionados con el Security Group — la IP autorizada no había cambiado); simples reintentos resolvieron cada caso, sin impacto en el resultado. `/var/www/html/moodle-old` se deja sin borrar por unos días como ventana de rollback antes de ejecutar el paso 11 (limpieza). |
 
 ## Registro de actualizaciones — extensiones locales
 

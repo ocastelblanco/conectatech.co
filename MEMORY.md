@@ -1,6 +1,6 @@
 # MEMORY.md — ConectaTech.co
 > Documento de rehidratación de sesión · Leer al inicio de cada sesión
-> Última actualización: 2026-09-07
+> Última actualización: 2026-09-15
 
 ---
 
@@ -9,14 +9,14 @@
 | Atributo | Valor |
 |---|---|
 | **Versión frontend** | 1.2.0 (`admin-module/frontend/package.json`) |
-| **Moodle** | 5.2 (Build: 20260420) |
+| **Moodle** | 5.2.3 (Build: 20260914) |
 | **URL producción LMS** | `https://conectatech.co` |
 | **URL panel admin** | `https://admin.conectatech.co` |
 | **URL CDN** | `https://assets.conectatech.co` |
 | **URL API pública** | `https://api.conectatech.co` |
 | **URL API interna** | `https://conectatech.co/admin-api/` |
 | **Rama principal** | `main` |
-| **Última sesión relevante** | 2026-09-07 — Skill `slim-readme` (symlink → fuente real, PR #25 fusionada); plan aprobado e iniciado para `local_usagereports` |
+| **Última sesión relevante** | 2026-09-15 — Upgrade de Moodle 5.2.1+ (Build 20260630) → 5.2.3 (Build 20260914) completado en producción. Runbook consolidado en `docs/moodle-upgrade.md` (PR #30, pendiente de fusión). Fix crítico de gradebook MDL-89497 y parches de seguridad no divulgados incluidos. |
 
 ---
 
