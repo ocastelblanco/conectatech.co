@@ -1,0 +1,45 @@
+Copyright (c) 2026 Ideas Maestras Inc. (ConectaTech.co)
+All rights reserved.
+
+PROPRIETARY AND CONFIDENTIAL
+
+This repository and its contents, including source code, infrastructure
+definitions, scripts, documentation, designs and educational content (the
+"Software"), are the exclusive property of Ideas Maestras Inc., except for
+the third-party components described below.
+
+The Software is made publicly visible for reference only. No license or
+right is granted, expressly or by implication, to use, copy, modify, merge,
+publish, distribute, sublicense, sell or create derivative works of the
+Software, in whole or in part, without the prior written permission of
+Ideas Maestras Inc.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+--------------------------------------------------------------------------
+THIRD-PARTY COMPONENTS
+--------------------------------------------------------------------------
+
+The terms above do not apply to third-party components included in, or
+used by, this repository. Each of them remains subject to its own license
+(for example GPL v3+, Apache 2.0 or MIT), and nothing in this file limits
+the rights granted by those licenses. This includes:
+
+  * Any file or directory that carries its own license header or license
+    file.
+  * The components listed in THIRD_PARTY_NOTICES.md.
+  * Dependencies installed through package managers (npm, etc.), which are
+    not part of this repository and are governed by their own licenses.
+
+Where a component is released under a copyleft license (such as the Moodle
+plugin in admin-module/backend/moodle-plugins/, licensed under the GNU GPL
+v3 or later), that license governs the component, and Ideas Maestras Inc.
+retains the copyright on its own contributions to it.
+
+For licensing inquiries, contact ConectaTech through
+https://github.com/ocastelblanco.

@@ -3,5 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Reenvía correos entrantes @conectatech.co al Gmail correspondiente via AWS SES",
-  "main": "index.mjs"
+  "main": "index.mjs",
+  "private": true,
+  "license": "UNLICENSED"
 }

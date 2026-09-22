@@ -21,6 +21,7 @@
     ]
   },
   "private": true,
+  "license": "UNLICENSED",
   "dependencies": {
     "@angular/animations": "^21.2.2",
     "@angular/common": "^21.2.2",
