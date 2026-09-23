@@ -1,9 +1,11 @@
 # Redirecciones de inbound
 
-| Dirección | Propósito | Redirige a Gmail |
+| Dirección | Propósito | Redirige a |
 | --- | --- | --- |
-| `info@conectatech.co` | Información general | somos.conectatech@gmail.com |
-| `digital@conectatech.co` | Consultas técnicas | ocastelblanco@gmail.com |
-| `ana.mora@conectatech.co` | Correo de Ana Julia Mora | ajumoto@gmail.com |
-| `oliver.castelblanco@conectatech.co` | Correo de Oliver Castelblanco | ocastelblanco@gmail.com |
-| catch-all `@conectatech.co` | Cualquier otra dirección | somos.conectatech@gmail.com |
+| `info@conectatech.co` | Información general | <buzón corporativo> |
+| `digital@conectatech.co` | Consultas técnicas | <buzón de Oliver> |
+| `ana.mora@conectatech.co` | Correo de Ana Julia Mora | <buzón de Ana> |
+| `oliver.castelblanco@conectatech.co` | Correo de Oliver Castelblanco | <buzón de Oliver> |
+| catch-all `@conectatech.co` | Cualquier otra dirección | <buzón corporativo> |
+
+> Los buzones de destino reales no se publican (el repo es público). Viven solo en la variable de entorno `FORWARD_MAP` de la Lambda `conectatech-email-forwarder`, como arreglo JSON `[{"match","dest"}]` evaluado en orden (la última regla es el catch-all).

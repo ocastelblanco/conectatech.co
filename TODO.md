@@ -156,7 +156,7 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 - ✅ Sistema de correos AWS completado: SES + DKIM + MX + Lambda forwarder + Moodle SMTP
 - Inbound routing probado y funcionando (`conectatech-email-forwarder` procesando y reenviando)
 - 3 alarmas CloudWatch activas (Lambda errors, bounce rate, complaint rate)
-- Pendiente: salida del sandbox SES (Fase 4, aprobación humana 24–48h) y confirmación `ajumoto@gmail.com`
+- Pendiente: salida del sandbox SES (Fase 4, aprobación humana 24–48h) y confirmación `<buzón de Ana>`
 
 **Comparación PRD vs MEMORY:**
 - ✅ Sistema de correos AWS: completado

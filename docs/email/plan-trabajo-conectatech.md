@@ -64,15 +64,18 @@ _*.api / _*.assets              CNAME   → validaciones ACM (no tocar)
 
 ## 3. Tabla de Redirecciones
 
-Configuración a implementar en el `FORWARD_MAP` de la Lambda (fuente: `redireccion-emails.md`):
+Configuración del `FORWARD_MAP` de la Lambda (fuente: `redireccion-emails.md`):
+
+> Los buzones de destino reales no se publican (el repo es público). Viven solo en la variable de entorno `FORWARD_MAP` de la Lambda `conectatech-email-forwarder`, como arreglo JSON `[{"match","dest"}]` evaluado en orden (la última regla es el catch-all).
+
 
 | Dirección entrante | Destino Gmail |
 |---|---|
-| `info@conectatech.co` | `somos.conectatech@gmail.com` |
-| `digital@conectatech.co` | `ocastelblanco@gmail.com` |
-| `ana.mora@conectatech.co` | `ajumoto@gmail.com` |
-| `oliver.castelblanco@conectatech.co` | `ocastelblanco@gmail.com` |
-| `@conectatech.co` (catch-all) | `somos.conectatech@gmail.com` |
+| `info@conectatech.co` | `<buzón corporativo>` |
+| `digital@conectatech.co` | `<buzón de Oliver>` |
+| `ana.mora@conectatech.co` | `<buzón de Ana>` |
+| `oliver.castelblanco@conectatech.co` | `<buzón de Oliver>` |
+| `@conectatech.co` (catch-all) | `<buzón corporativo>` |
 
 ---
 
@@ -83,9 +86,9 @@ Mientras la cuenta esté en sandbox (`Max24HourSend = 200`):
 - **Solo se puede enviar correos a direcciones verificadas en SES.**
 - El reenvío de Lambda fallará silenciosamente si el Gmail de destino no está verificado.
 - **Para las pruebas en sandbox**, hay que verificar los 3 Gmail de destino como identidades en SES:
-  - `somos.conectatech@gmail.com`
-  - `ocastelblanco@gmail.com`
-  - `ajumoto@gmail.com`
+  - `<buzón corporativo>`
+  - `<buzón de Oliver>`
+  - `<buzón de Ana>`
 
 > Esto requiere que cada propietario del Gmail confirme el enlace de verificación que AWS envía.
 > Programado para inicios de la semana del 2026-04-07.
@@ -227,11 +230,11 @@ La solicitud de salida del sandbox (Fase 4) requiere intervención humana y apro
 | # | Acción | Responsable | Detalle |
 |---|--------|-------------|---------|
 | 5.1 | Prueba outbound Moodle | Agente/Humano | Moodle → Admin → Correo de prueba → verificar llegada (no spam) |
-| 5.2 | Prueba inbound `info@` | Humano | Enviar a `info@conectatech.co` → verificar en `somos.conectatech@gmail.com` |
-| 5.3 | Prueba inbound `digital@` | Humano | Enviar a `digital@conectatech.co` → verificar en `ocastelblanco@gmail.com` |
-| 5.4 | Prueba catch-all | Humano | Enviar a `xyz@conectatech.co` → verificar en `somos.conectatech@gmail.com` |
+| 5.2 | Prueba inbound `info@` | Humano | Enviar a `info@conectatech.co` → verificar en `<buzón corporativo>` |
+| 5.3 | Prueba inbound `digital@` | Humano | Enviar a `digital@conectatech.co` → verificar en `<buzón de Oliver>` |
+| 5.4 | Prueba catch-all | Humano | Enviar a `xyz@conectatech.co` → verificar en `<buzón corporativo>` |
 | 5.5 | Verificar headers | Humano | Gmail → "Mostrar original" → SPF pass, DKIM pass, no spam |
-| 5.6 | Alarma Lambda errors | Agente | CloudWatch: `conectatech-email-forwarder Errors > 0` → SNS → `ocastelblanco@gmail.com` |
+| 5.6 | Alarma Lambda errors | Agente | CloudWatch: `conectatech-email-forwarder Errors > 0` → SNS → `<buzón de Oliver>` |
 | 5.7 | Alarma SES bounces | Agente | CloudWatch: métrica `Bounce` SES > 5% |
 | 5.8 | Alarma SES complaints | Agente | CloudWatch: métrica `Complaint` SES > 0 |
 

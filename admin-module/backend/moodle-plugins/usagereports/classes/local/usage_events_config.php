@@ -28,7 +28,7 @@ use core_component;
  * ninguna clase PHP — ver README.md del plugin.
  *
  * @package    local_usagereports
- * @copyright  2026 ConectaTech.co
+ * @copyright  2026 ConectaTech - Oliver Castelblanco
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class usage_events_config {

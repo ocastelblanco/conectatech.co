@@ -36,7 +36,7 @@ use core_reportbuilder\local\report\{column, filter};
  * reutilizando las entidades core `user` y `course`.
  *
  * @package    local_usagereports
- * @copyright  2026 ConectaTech.co
+ * @copyright  2026 ConectaTech - Oliver Castelblanco
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class usage_event extends base {

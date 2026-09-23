@@ -30,7 +30,7 @@ use local_usagereports\reportbuilder\local\entities\usage_event;
  * igual que hace \core_role\reportbuilder\datasource\roles con `user`/`context`.
  *
  * @package    local_usagereports
- * @copyright  2026 ConectaTech.co
+ * @copyright  2026 ConectaTech - Oliver Castelblanco
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class usage_report extends datasource {
