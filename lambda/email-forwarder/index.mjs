@@ -4,6 +4,12 @@
  * Lee el correo entrante desde S3, elimina las cabeceras DKIM-Signature
  * del original (SES añade las suyas al reenviar), reemplaza el From por
  * forwarder@conectatech.co y reenvía al Gmail correspondiente.
+ *
+ * El mapeo de reenvío vive en la variable de entorno FORWARD_MAP (no en el
+ * repo, que es público): un arreglo JSON evaluado en orden, cuya última regla
+ * es el catch-all. Ejemplo:
+ *   [{"match":"info@conectatech.co","dest":"buzon@example.com"},
+ *    {"match":"@conectatech.co","dest":"catchall@example.com"}]
  */
 
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
@@ -15,13 +21,17 @@ const ses = new SESClient({ region: 'us-east-1' });
 const BUCKET            = 'conectatech-ses-incoming-emails';
 const FORWARDER_ADDRESS = 'forwarder@conectatech.co';
 
-const FORWARD_MAP = [
-  { match: 'info@conectatech.co',                dest: 'somos.conectatech@gmail.com' },
-  { match: 'digital@conectatech.co',             dest: 'ocastelblanco@gmail.com'     },
-  { match: 'ana.mora@conectatech.co',            dest: 'ajumoto@gmail.com'           },
-  { match: 'oliver.castelblanco@conectatech.co', dest: 'ocastelblanco@gmail.com'     },
-  { match: '@conectatech.co',                    dest: 'somos.conectatech@gmail.com' },
-];
+function loadForwardMap(raw) {
+  if (!raw) throw new Error('Falta la variable de entorno FORWARD_MAP');
+  const map = JSON.parse(raw);
+  const valid = Array.isArray(map) && map.length > 0 &&
+    map.every(r => typeof r?.match === 'string' && typeof r?.dest === 'string');
+  if (!valid) throw new Error('FORWARD_MAP debe ser un arreglo JSON no vacío de {match, dest}');
+  return map.map(r => ({ match: r.match.toLowerCase(), dest: r.dest }));
+}
+
+// Falla en el arranque si falta la variable: el correo queda en S3 y el error se ve en CloudWatch
+const FORWARD_MAP = loadForwardMap(process.env.FORWARD_MAP);
 
 function resolveDestination(recipients) {
   for (const recipient of recipients) {

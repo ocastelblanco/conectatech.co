@@ -167,6 +167,6 @@ Las reglas completas, el mapeo OWASP y el flujo de Git obligatorio están en el 
 
 ## Licencia
 
-**Copyright © 2026 Ideas Maestras Inc. (ConectaTech.co). Todos los derechos reservados.** Ver el [`LICENSE`](../LICENSE) raíz.
+**Copyright © 2026 ConectaTech - Oliver Castelblanco. Todos los derechos reservados.** Ver el [`LICENSE`](../LICENSE) raíz.
 
 El plugin de Moodle en `backend/moodle-plugins/usagereports/` se licencia bajo **GNU GPL v3 o posterior**, como lo exige Moodle a sus plugins. Los demás componentes de terceros están listados en [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md).

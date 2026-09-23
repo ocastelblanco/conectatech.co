@@ -1,8 +1,8 @@
 # Third-Party Notices · Avisos de terceros
 
-Everything in this repository is **Copyright © 2026 Ideas Maestras Inc. — All rights reserved** (see [`LICENSE`](LICENSE)), **except** the components listed below, which keep their original licenses.
+Everything in this repository is **Copyright © 2026 ConectaTech - Oliver Castelblanco — All rights reserved** (see [`LICENSE`](LICENSE)), **except** the components listed below, which keep their original licenses.
 
-Todo el contenido de este repositorio es **Copyright © 2026 Ideas Maestras Inc. — Todos los derechos reservados** (ver [`LICENSE`](LICENSE)), **excepto** los componentes listados abajo, que conservan sus licencias originales.
+Todo el contenido de este repositorio es **Copyright © 2026 ConectaTech - Oliver Castelblanco — Todos los derechos reservados** (ver [`LICENSE`](LICENSE)), **excepto** los componentes listados abajo, que conservan sus licencias originales.
 
 ## Components in this repository · Componentes en este repositorio
 
@@ -12,6 +12,10 @@ Todo el contenido de este repositorio es **Copyright © 2026 Ideas Maestras Inc.
 | [`.claude/skills/frontend-design/`](.claude/skills/frontend-design/) | `frontend-design` agent skill (Anthropic) | [Apache 2.0](.claude/skills/frontend-design/LICENSE.txt) | Full license text included. · Texto completo de la licencia incluido. |
 | [`.claude/skills/slim-readme/`](.claude/skills/slim-readme/) | README template from [NASA-AMMOS SLIM](https://github.com/NASA-AMMOS/slim) | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
 | [`.claude/skills/angular-best-practices-21/`](.claude/skills/angular-best-practices-21/) | `angular-best-practices` agent skill | MIT | As declared in its `package.json`. · Según su `package.json`. |
+
+The Moodle skills in `.claude/skills/` (`configure-ssl`, `install-moodle`, `moodle-deployment`, `optimize-system`, `provision-infrastructure`, `setup-backups`, `setup-monitoring`, `setup-moodle-server`, `troubleshoot-moodle`) come from [ocastelblanco/moodle-development](https://github.com/ocastelblanco/moodle-development), by the same copyright holder, and are covered by [`LICENSE`](LICENSE).
+
+Las skills de Moodle en `.claude/skills/` provienen de [ocastelblanco/moodle-development](https://github.com/ocastelblanco/moodle-development), del mismo titular, y están cubiertas por [`LICENSE`](LICENSE).
 
 ## Runtime dependencies · Dependencias de ejecución
 

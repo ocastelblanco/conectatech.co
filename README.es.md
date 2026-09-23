@@ -240,7 +240,7 @@ El código, los commits y la documentación se escriben en español colombiano.
 
 ## Licencia
 
-**Copyright © 2026 Ideas Maestras Inc. (ConectaTech.co). Todos los derechos reservados.** El código fuente es visible en este repositorio, pero no se otorga ninguna licencia para usarlo, copiarlo, modificarlo ni distribuirlo. Ver [`LICENSE`](LICENSE).
+**Copyright © 2026 ConectaTech - Oliver Castelblanco. Todos los derechos reservados.** El código fuente es visible en este repositorio, pero no se otorga ninguna licencia para usarlo, copiarlo, modificarlo ni distribuirlo. Ver [`LICENSE`](LICENSE).
 
 Los componentes de terceros conservan sus licencias originales (GPL v3+, Apache 2.0, MIT). Están listados en [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 

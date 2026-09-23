@@ -240,7 +240,7 @@ Code, commits and documentation are written in Colombian Spanish.
 
 ## License
 
-**Copyright © 2026 Ideas Maestras Inc. (ConectaTech.co). All rights reserved.** The source is visible in this repository, but no license to use, copy, modify or distribute it is granted. See [`LICENSE`](LICENSE).
+**Copyright © 2026 ConectaTech - Oliver Castelblanco. All rights reserved.** The source is visible in this repository, but no license to use, copy, modify or distribute it is granted. See [`LICENSE`](LICENSE).
 
 Third-party components keep their original licenses (GPL v3+, Apache 2.0, MIT). They are listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 

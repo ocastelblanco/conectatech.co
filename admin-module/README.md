@@ -167,6 +167,6 @@ Full rules, the OWASP mapping and the mandatory git flow are in the root [`CLAUD
 
 ## License
 
-**Copyright © 2026 Ideas Maestras Inc. (ConectaTech.co). All rights reserved.** See the root [`LICENSE`](../LICENSE).
+**Copyright © 2026 ConectaTech - Oliver Castelblanco. All rights reserved.** See the root [`LICENSE`](../LICENSE).
 
 The Moodle plugin in `backend/moodle-plugins/usagereports/` is licensed under the **GNU GPL v3 or later**, as Moodle plugins must be. Other third-party components are listed in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md).

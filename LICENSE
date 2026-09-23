@@ -1,18 +1,18 @@
-Copyright (c) 2026 Ideas Maestras Inc. (ConectaTech.co)
+Copyright (c) 2026 ConectaTech - Oliver Castelblanco
 All rights reserved.
 
 PROPRIETARY AND CONFIDENTIAL
 
 This repository and its contents, including source code, infrastructure
 definitions, scripts, documentation, designs and educational content (the
-"Software"), are the exclusive property of Ideas Maestras Inc., except for
-the third-party components described below.
+"Software"), are the exclusive property of ConectaTech - Oliver Castelblanco,
+except for the third-party components described below.
 
 The Software is made publicly visible for reference only. No license or
 right is granted, expressly or by implication, to use, copy, modify, merge,
 publish, distribute, sublicense, sell or create derivative works of the
 Software, in whole or in part, without the prior written permission of
-Ideas Maestras Inc.
+ConectaTech - Oliver Castelblanco
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -38,7 +38,7 @@ the rights granted by those licenses. This includes:
 
 Where a component is released under a copyleft license (such as the Moodle
 plugin in admin-module/backend/moodle-plugins/, licensed under the GNU GPL
-v3 or later), that license governs the component, and Ideas Maestras Inc.
+v3 or later), that license governs the component, and ConectaTech - Oliver Castelblanco
 retains the copyright on its own contributions to it.
 
 For licensing inquiries, contact ConectaTech through
