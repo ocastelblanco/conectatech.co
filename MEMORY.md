@@ -16,7 +16,7 @@
 | **URL API pública** | `https://api.conectatech.co` |
 | **URL API interna** | `https://conectatech.co/admin-api/` |
 | **Rama principal** | `main` |
-| **Última sesión relevante** | 2026-09-15 — Upgrade de Moodle 5.2.1+ (Build 20260630) → 5.2.3 (Build 20260914) completado en producción. Runbook consolidado en `docs/moodle-upgrade.md` (PR #30, pendiente de fusión). Fix crítico de gradebook MDL-89497 y parches de seguridad no divulgados incluidos. |
+| **Última sesión relevante** | 2026-10-05 — Preparación del upgrade a Moodle 5.3 LTS. Upgrade **bloqueado** hasta tener MariaDB ≥ 11.4 (RDS en 10.11.16) y Boost Union para 5.3. Higiene previa hecha en producción: Moove desinstalado, Boost Union `v5.2-r10`, `moodle-old` borrado y retención de RDS en 7 días. Siguiente: migración MariaDB 11.4 + ensayo del upgrade sobre un clon. Plan completo en `docs/moodle-upgrade.md` → "Plan vigente" (PR #32). |
 
 ---
 
@@ -190,6 +190,7 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 - [ ] Notificaciones por correo (SES)
 - [ ] Renovación/reutilización de pines usados
 - [ ] Importación masiva de PDFs
+- [ ] **Upgrade a Moodle 5.3 LTS** — Fases 0–1 hechas (2026-10-05). Pendiente: MariaDB 10.11 → 11.4 en RDS, ensayo en clon, decisiones D1–D9 y release de Boost Union para 5.3. Ver `docs/moodle-upgrade.md` → "Plan vigente"
 
 ---
 
