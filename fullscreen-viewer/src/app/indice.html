@@ -1,0 +1,14 @@
+<ol>
+  @for (subtema of subtemas(); track $index) {
+    <li>
+      <button
+        type="button"
+        [class.activo]="$index === actual()"
+        [attr.aria-current]="$index === actual() ? 'step' : null"
+        (click)="seleccionar.emit($index)"
+      >
+        {{ subtema.titulo }}
+      </button>
+    </li>
+  }
+</ol>

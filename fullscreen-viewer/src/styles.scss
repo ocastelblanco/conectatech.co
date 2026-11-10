@@ -1,0 +1,64 @@
+// Estilos globales del visor fullscreen.
+//
+// Los estilos del curso NO se copian: se compilan directamente desde snippets/
+// (la misma fuente que se pega en Boost Union), para que el visor se vea igual
+// que Moodle. Si cambian los snippets, hay que recompilar y redesplegar el visor.
+// Los snippets se anclan a clases del <body> (proyecto/área/grado) y al envoltorio
+// `.section-item > .activity-item`; ver parametros.ts y los templates.
+@import '../../snippets/conectatech-pre';
+
+// post.scss hace `@extend .btn-primary` (Bootstrap de Moodle). El visor no carga
+// Bootstrap: este selector vacío satisface el @extend sin traer ~200 kB de CSS.
+.btn-primary {
+}
+
+@import '../../snippets/conectatech-post';
+
+:root {
+  --ct-midnight: #{$conecta-midnight};
+  --ct-blue: #{$conecta-tech-blue};
+  --ct-coral: #{$conecta-coral};
+  --ct-border: #dee2e6;
+  --ct-muted: #5b6770;
+  --ct-fondo-indice: #eef1f4;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+// Base mínima que en Moodle aporta Bootstrap/Boost.
+body {
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: $conecta-midnight;
+  background: #f8f9fa;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+figure {
+  margin: 0 0 1rem;
+}
+
+blockquote {
+  margin: 0 0 1rem;
+}

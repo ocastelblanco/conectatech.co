@@ -1,0 +1,121 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.barra {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--ct-midnight);
+  color: #fff;
+}
+
+.titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(1rem, 2.4vw, 1.4rem);
+  line-height: 1.25;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icono {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--ct-coral);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.cabecera {
+  flex: 0 0 auto;
+  padding: 0.75rem 1rem 0;
+  max-height: 30dvh;
+  overflow-y: auto;
+}
+
+.cuerpo {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  margin-top: 0.75rem;
+
+  &.sin-indice {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.indice {
+  min-height: 0;
+  background: var(--ct-fondo-indice);
+  border-right: 1px solid var(--ct-border);
+}
+
+.estado {
+  margin: 3rem auto;
+  padding: 0 1rem;
+  max-width: 36rem;
+  text-align: center;
+  color: var(--ct-muted);
+}
+
+.reintentar {
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--ct-blue);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--ct-coral);
+    outline-offset: 2px;
+  }
+}
+
+// Pantallas estrechas: el índice es un cajón sobre el contenido.
+@media (max-width: 767.98px) {
+  .cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .indice {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 2;
+    width: min(85vw, 320px);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.25);
+  }
+}

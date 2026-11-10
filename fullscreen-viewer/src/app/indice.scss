@@ -1,0 +1,52 @@
+:host {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+  padding: 1rem 0.75rem;
+}
+
+ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--ct-border);
+  border-left: 4px solid transparent;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--ct-midnight);
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+
+  &:hover {
+    border-left-color: var(--ct-blue);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--ct-coral);
+    outline-offset: 2px;
+  }
+
+  &.activo {
+    border-left-color: var(--ct-coral);
+    background: var(--ct-midnight);
+    border-color: var(--ct-midnight);
+    border-left-color: var(--ct-coral);
+    color: #fff;
+    font-weight: 600;
+  }
+}
