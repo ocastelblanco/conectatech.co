@@ -31,6 +31,7 @@
  *   POST /api/activar/gestor                   → crear cuenta de gestor (público)
  *   POST /api/activar/login                    → verificar credenciales Moodle (público)
  *   POST /api/activar/pin                      → matricular usuario en curso del pin (público)
+ *   GET  /api/visor/tema?course=&section=      → contenido de un tema para el visor fullscreen (docentes)
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -118,6 +119,7 @@ require_once LIB_DIR . '/GestorService.php';
 require_once LIB_DIR . '/ActivacionService.php';
 require_once LIB_DIR . '/InstitucionService.php';
 require_once LIB_DIR . '/DashboardService.php';
+require_once LIB_DIR . '/VisorService.php';           // visor fullscreen (ADR-012)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Routing
@@ -471,6 +473,14 @@ try {
         case $method === 'GET' && $seg0 === 'dashboard' && $seg1 === 'organizaciones':
             require API_DIR . '/handlers/dashboard.php';
             handleGetDashboardOrganizaciones();
+            break;
+
+        // ── Visor fullscreen (docentes y gestores; auth en auth.php) ─────────
+
+        // GET /api/visor/tema?course=ID&section=ID
+        case $method === 'GET' && $seg0 === 'visor' && $seg1 === 'tema':
+            require API_DIR . '/handlers/visor.php';
+            handleGetVisorTema();
             break;
 
         // ── Instituciones (Track A) ───────────────────────────────────────────

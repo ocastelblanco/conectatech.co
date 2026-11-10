@@ -441,6 +441,7 @@ Label oculto con el botón ──clic──▶ script de additionalhtmlfooter (s
 
 ```json
 {
+  "ok": true,
   "titulo": "La célula: Incluso lo más pequeño fue creado por Él",
   "cabecera": "<div class=\"cita-biblica resaltado\">…</div>",
   "subtemas": [
@@ -457,6 +458,18 @@ Reglas de armado (`VisorService`):
 - Se excluyen: el label del botón (`.ct-exponer`), presaberes (`.moodle-quiz-container` / `[data-quiz-block]`), quizzes y labels cuyo contenido es solo un `<iframe>`.
 
 **Auth:** sesión Moodle no invitada (401) + `moodle/course:viewhiddenactivities` en el contexto del curso (403) — la misma capability que permite ver el label oculto del botón. `course` y `section` se validan como enteros y la sección debe pertenecer al curso (404). Solo GET.
+
+**Cambios en el núcleo de la API y cómo revertirlos** (Fase 1, aprobados por el cliente el 2026-11-10). Son tres ediciones pequeñas y aditivas; ninguna modifica código de Moodle:
+
+| Archivo | Cambio | Revertir |
+|---|---|---|
+| `api/index.php` | `require_once` de `VisorService.php` y un `case` para `GET visor/tema` | Borrar esas dos piezas |
+| `api/auth.php` | Rama `visor/*` antes de la de gestor: sesión + `moodle/course:viewhiddenactivities` | Borrar el bloque `if (… 'visor' …)` |
+| `backend/crear-rol-gestor.php` | Añade `moodle/course:viewhiddenactivities` al rol `ct_gestor` | Quitar la línea y volver a ejecutar el script; además `assign_capability(…, CAP_INHERIT, …)` o quitarla en Administración → Usuarios → Permisos → Definir roles |
+
+Al desplegar hay que **ejecutar** `crear-rol-gestor.php` (el rol vive en la BD, no en el código). Para desactivar el visor sin revertir código basta retirar el label del botón o la rama `visor/*`.
+
+**Sensibilidad a upgrades de Moodle** (revisar en cada upgrade mayor, p. ej. 5.3): `VisorService` usa `get_fast_modinfo()`, `cm_info::get_formatted_content()`, `get_section_name()` y la relación `course_sections.component = 'mod_subsection'` / `itemid = subsection.id` (la misma de `MoodleContentBuilder::createSubsectionModule`). Si cambia alguna, el endpoint devuelve temas vacíos o error 500, no corrupción de datos.
 
 **Estilos:** `fullscreen-viewer/src/styles.scss` compila `snippets/conectatech-pre.scss` + Bootstrap 5.3 (requerido por `@extend .btn-primary`) + `snippets/conectatech-post.scss` sin copiarlos; la plantilla reproduce el envoltorio `body.<proyecto>.<área> .section-item > .activity-item` al que están anclados esos estilos. Cambiar los snippets implica recompilar y redesplegar el visor. Plan B si la compilación falla: extraer el §16 de `post.scss` a un parcial compartido.
 

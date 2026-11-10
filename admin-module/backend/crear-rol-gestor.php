@@ -56,6 +56,9 @@ $allows = [
     'mod/page:view',
     'mod/url:view',
     'mod/label:view',
+    // Visor fullscreen (ADR-012): ver el label oculto «Exponer contenido» y leer
+    // el tema vía GET /admin-api/visor/tema. Solo lectura.
+    'moodle/course:viewhiddenactivities',
     'mod/folder:view',
     'mod/quiz:view',
     'mod/quiz:viewreports',
