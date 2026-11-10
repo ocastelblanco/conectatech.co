@@ -63,7 +63,7 @@ Todo lo que llega por la URL se valida en [`src/app/parametros.ts`](src/app/para
 
 ## Desarrollo
 
-Requiere Node.js 22+ (desarrollado con 24).
+Requiere Node.js 22.22+ o 24.15+ (mínimos del CLI de Angular 22; desarrollado con 24).
 
 ```bash
 npm install
