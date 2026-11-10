@@ -1,0 +1,24 @@
+Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+https://creativecommons.org/licenses/by-sa/4.0/legalcode
+
+Everything inside this references/ directory is licensed under CC BY-SA 4.0,
+because it adapts material from the following OWASP works, all published under
+CC BY-SA 4.0:
+
+  - OWASP Application Security Verification Standard (ASVS) 5.0.0
+    https://github.com/OWASP/ASVS/tree/v5.0.0
+  - OWASP Top 10:2025
+    https://top10.owasp.org/2025/
+  - OWASP Cheat Sheet Series
+    https://cheatsheetseries.owasp.org/
+
+Changes: requirement texts were extracted into JSON and indexed; checklists,
+facet guides and mappings are adaptations written for this skill.
+
+Adapted by Oliver Castelblanco, 2026. You may share and adapt this material,
+including commercially, provided you give appropriate credit, indicate if
+changes were made, and distribute your contributions under the same license.
+
+The code under scripts/ and templates/ is NOT covered by this file; it is
+licensed under the Apache License 2.0 (see the LICENSE file at the repository
+root).

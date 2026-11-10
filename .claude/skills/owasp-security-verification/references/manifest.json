@@ -1,0 +1,421 @@
+{
+  "schema": 1,
+  "about": "Facetas: qué señales del repositorio activan cada una. Los chequeos declaran sus facetas en checks.json; este archivo solo decide cuáles aplican.",
+  "facets": {
+    "baseline": {
+      "title": "Base transversal (secretos, dependencias, errores, datos personales)",
+      "always": true,
+      "guide": "facets/baseline.md",
+      "cheatsheets": [
+        "Secrets_Management",
+        "Vulnerable_Dependency_Management",
+        "Logging",
+        "Error_Handling",
+        "User_Privacy_Protection"
+      ]
+    },
+    "angular-spa": {
+      "title": "Angular SPA / SSR",
+      "detect": {
+        "files": [
+          "angular.json"
+        ],
+        "npm": [
+          "@angular/core"
+        ]
+      },
+      "guide": "facets/angular-spa.md",
+      "cheatsheets": [
+        "Web_Frontend_Security",
+        "Cross_Site_Scripting_Prevention",
+        "DOM_based_XSS_Prevention",
+        "Content_Security_Policy",
+        "HTTP_Headers",
+        "Third_Party_Javascript_Management"
+      ]
+    },
+    "node-backend": {
+      "title": "Backend Node.js (Express, Lambda, Functions)",
+      "detect": {
+        "npm": [
+          "express",
+          "fastify",
+          "koa",
+          "@nestjs/core",
+          "@hapi/hapi",
+          "@types/aws-lambda",
+          "aws-lambda",
+          "firebase-functions",
+          "@aws-sdk/client-dynamodb",
+          "@aws-sdk/lib-dynamodb",
+          "@aws-sdk/*"
+        ],
+        "files": [
+          "**/handler.js",
+          "**/handler.ts",
+          "**/handler.mjs"
+        ],
+        "content": [
+          {
+            "files": [
+              "**/*.mjs",
+              "**/*.js",
+              "**/*.ts",
+              "**/*.cjs"
+            ],
+            "pattern": "export\\s+(const|async\\s+function|function)\\s+handler\\b|exports\\.handler\\s*="
+          }
+        ]
+      },
+      "guide": "facets/node-backend.md",
+      "cheatsheets": [
+        "Nodejs_Security",
+        "NPM_Security",
+        "Mass_Assignment",
+        "Insecure_Direct_Object_Reference_Prevention",
+        "Prototype_Pollution_Prevention"
+      ]
+    },
+    "serverless-aws": {
+      "title": "Serverless en AWS (Lambda, API Gateway, DynamoDB, S3, SES)",
+      "detect": {
+        "files": [
+          "serverless.yml",
+          "serverless.yaml",
+          "serverless.ts",
+          "cdk.json",
+          "samconfig.toml"
+        ],
+        "content": [
+          {
+            "files": [
+              "template.yaml",
+              "template.yml"
+            ],
+            "pattern": "AWS::Serverless"
+          },
+          {
+            "files": [
+              "**/*.mjs",
+              "**/*.js",
+              "**/*.ts",
+              "**/*.cjs"
+            ],
+            "pattern": "export\\s+(const|async\\s+function|function)\\s+handler\\b|exports\\.handler\\s*="
+          }
+        ],
+        "npm": [
+          "@types/aws-lambda",
+          "@aws-sdk/*"
+        ]
+      },
+      "guide": "facets/serverless-aws.md",
+      "cheatsheets": [
+        "Serverless_FaaS_Security",
+        "Secure_Cloud_Architecture",
+        "NoSQL_Security"
+      ]
+    },
+    "firebase": {
+      "title": "Firebase (Auth, Firestore, Hosting, Functions)",
+      "detect": {
+        "files": [
+          "firebase.json",
+          "firestore.rules",
+          "storage.rules",
+          "database.rules.json"
+        ],
+        "npm": [
+          "firebase",
+          "firebase-admin",
+          "@angular/fire",
+          "firebase-functions"
+        ]
+      },
+      "guide": "facets/firebase.md",
+      "cheatsheets": [
+        "Authorization",
+        "JSON_Web_Token",
+        "Authentication",
+        "Multi_Tenant_Security"
+      ]
+    },
+    "supabase": {
+      "title": "Supabase (Postgres con RLS, API REST autogenerada)",
+      "detect": {
+        "files": [
+          "supabase/config.toml",
+          "supabase/**/*.sql"
+        ],
+        "npm": [
+          "@supabase/supabase-js"
+        ],
+        "pip": [
+          "supabase"
+        ]
+      },
+      "guide": "facets/supabase.md",
+      "cheatsheets": [
+        "Database_Security",
+        "Authorization",
+        "Multi_Tenant_Security"
+      ]
+    },
+    "php-app": {
+      "title": "Aplicación PHP (incluye Moodle)",
+      "detect": {
+        "files": [
+          "composer.json",
+          "**/*.php"
+        ],
+        "content": [
+          {
+            "files": [
+              "**/*.php"
+            ],
+            "pattern": "MOODLE_INTERNAL|\\$CFG->wwwroot|require_login\\("
+          }
+        ]
+      },
+      "guide": "facets/php-app.md",
+      "cheatsheets": [
+        "PHP_Configuration",
+        "SQL_Injection_Prevention",
+        "Query_Parameterization",
+        "XML_External_Entity_Prevention",
+        "File_Upload",
+        "OS_Command_Injection_Defense"
+      ]
+    },
+    "python-web": {
+      "title": "Servicio web Python (Flask, FastAPI, Django)",
+      "detect": {
+        "pip": [
+          "flask",
+          "fastapi",
+          "django",
+          "starlette",
+          "aiohttp"
+        ]
+      },
+      "guide": "facets/python-web.md",
+      "cheatsheets": [
+        "Input_Validation",
+        "File_Upload",
+        "Deserialization",
+        "Denial_of_Service",
+        "FastAPI_Security",
+        "Django_Security"
+      ]
+    },
+    "llm-integration": {
+      "title": "Integración con LLM (prompts, RAG, agentes)",
+      "detect": {
+        "npm": [
+          "openai",
+          "@anthropic-ai/sdk",
+          "@google/generative-ai",
+          "@google/genai",
+          "langchain",
+          "@langchain/core",
+          "ollama",
+          "ai"
+        ],
+        "pip": [
+          "openai",
+          "anthropic",
+          "google-generativeai",
+          "google-genai",
+          "langchain",
+          "ollama",
+          "chromadb",
+          "sentence-transformers",
+          "llama-index",
+          "transformers"
+        ],
+        "content": [
+          {
+            "files": [
+              "docker-compose*.yml",
+              "docker-compose*.yaml",
+              "compose.yml",
+              "compose.yaml"
+            ],
+            "pattern": "image:\\s*['\"]?ollama/"
+          },
+          {
+            "files": [
+              "**/*.json"
+            ],
+            "pattern": "\"@n8n/n8n-nodes-langchain\\.|generativelanguage\\.googleapis\\.com|api\\.openai\\.com|api\\.anthropic\\.com"
+          }
+        ]
+      },
+      "guide": "facets/llm-integration.md",
+      "cheatsheets": [
+        "LLM_Prompt_Injection_Prevention",
+        "AI_Agent_Security",
+        "RAG_Security",
+        "Secure_Coding_with_AI"
+      ]
+    },
+    "auth-service": {
+      "title": "Servicio de autenticación propio (sesiones, JWT emitidos, LDAP, OAuth/OIDC)",
+      "detect": {
+        "npm": [
+          "openid-client",
+          "passport",
+          "ldapts",
+          "ldapjs",
+          "express-session",
+          "oidc-provider",
+          "bcrypt",
+          "bcryptjs",
+          "argon2",
+          "@node-saml/node-saml"
+        ],
+        "pip": [
+          "flask-login",
+          "authlib",
+          "python-jose",
+          "pyjwt",
+          "passlib",
+          "ldap3",
+          "python-ldap"
+        ],
+        "composer": [
+          "firebase/php-jwt",
+          "league/oauth2-server",
+          "league/oauth2-client"
+        ]
+      },
+      "level_signal": "custom_auth",
+      "guide": "facets/auth-service.md",
+      "cheatsheets": [
+        "Authentication",
+        "Session_Management",
+        "OAuth2",
+        "JSON_Web_Token",
+        "LDAP_Injection_Prevention",
+        "Password_Storage",
+        "Credential_Stuffing_Prevention"
+      ]
+    },
+    "containers": {
+      "title": "Contenedores y despliegue autoalojado (Docker, Compose, proxy inverso)",
+      "detect": {
+        "files": [
+          "Dockerfile",
+          "Dockerfile.*",
+          "*.Dockerfile",
+          "docker-compose*.yml",
+          "docker-compose*.yaml",
+          "compose.yml",
+          "compose.yaml",
+          "Caddyfile",
+          "nginx*.conf"
+        ]
+      },
+      "guide": "facets/containers.md",
+      "cheatsheets": [
+        "Docker_Security",
+        "NodeJS_Docker",
+        "Network_Segmentation",
+        "Transport_Layer_Security",
+        "HTTP_Strict_Transport_Security"
+      ]
+    },
+    "iac": {
+      "title": "Infraestructura como código (Terraform, Serverless, CDK, CloudFormation)",
+      "detect": {
+        "files": [
+          "*.tf",
+          "serverless.yml",
+          "serverless.yaml",
+          "cdk.json",
+          "Pulumi.yaml"
+        ],
+        "content": [
+          {
+            "files": [
+              "*.yaml",
+              "*.yml",
+              "*.json"
+            ],
+            "pattern": "(^|\\n)\\s*\"?AWSTemplateFormatVersion\"?\\s*:\\s*['\"]?20\\d\\d"
+          }
+        ]
+      },
+      "guide": "facets/iac.md",
+      "cheatsheets": [
+        "Infrastructure_as_Code_Security",
+        "Secure_Cloud_Architecture",
+        "Secrets_Management"
+      ]
+    },
+    "automation-lowcode": {
+      "title": "Automatización low-code (n8n, webhooks entrantes)",
+      "detect": {
+        "content": [
+          {
+            "files": [
+              "**/*.json"
+            ],
+            "pattern": "\"type\"\\s*:\\s*\"n8n-nodes-base\\."
+          },
+          {
+            "files": [
+              "docker-compose*.yml",
+              "docker-compose*.yaml",
+              "compose.yml",
+              "compose.yaml"
+            ],
+            "pattern": "image:\\s*['\"]?(docker\\.)?n8nio/n8n"
+          }
+        ]
+      },
+      "guide": "facets/automation-lowcode.md",
+      "cheatsheets": [
+        "Webhook_Security",
+        "Server_Side_Request_Forgery_Prevention",
+        "Secrets_Management"
+      ]
+    },
+    "ci-cd": {
+      "title": "CI/CD (GitHub Actions y similares)",
+      "detect": {
+        "files": [
+          ".github/workflows/*.yml",
+          ".github/workflows/*.yaml",
+          ".gitlab-ci.yml",
+          "bitbucket-pipelines.yml",
+          "Jenkinsfile"
+        ]
+      },
+      "guide": "facets/ci-cd.md",
+      "cheatsheets": [
+        "CI_CD_Security",
+        "GitHub_Actions_Security",
+        "Software_Supply_Chain_Security"
+      ]
+    }
+  },
+  "level_signals": {
+    "about": "Si aparece cualquiera de estas señales en la documentación del proyecto, el nivel sugerido sube a L2. El agente lo confirma con el usuario en el modo profile.",
+    "docs": [
+      "CLAUDE.md",
+      "AGENTS.md",
+      "README.md",
+      "PRD.md",
+      "tech-specs.md",
+      "docs/PRD.md",
+      "docs/tech-specs.md",
+      "docs/*.md"
+    ],
+    "signals": {
+      "pii": "datos personales|habeas data|ley 1581|c[ée]dula|hojas? de vida|historia cl[ií]nica|personal data|\\bPII\\b|GDPR|datos sensibles",
+      "payments": "pasarela de pagos?|payment gateway|\\bBold\\b|Stripe|Wompi|PayU|Mercado ?Pago|ePayco|tarjeta de cr[ée]dito|link de pagos?",
+      "custom_auth": "\\bLDAP\\b|\\bSAML\\b|Azure AD|Entra ID|OpenID Connect|\\bOIDC\\b|JWT (propio|RS256|HS256)|express-session|almacenamiento de contraseñas"
+    }
+  }
+}
