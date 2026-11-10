@@ -1,6 +1,6 @@
 # MEMORY.md — ConectaTech.co
 > Documento de rehidratación de sesión · Leer al inicio de cada sesión
-> Última actualización: 2026-09-15
+> Última actualización: 2026-11-09
 
 ---
 
@@ -186,6 +186,7 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 - [x] Sección 0 de cursos finales — completada 2026-04-30 (ver ADR-005)
 - [ ] Reportes de progreso de estudiantes (completitud, calificaciones) — diferido explícitamente por el cliente ("por ahora no vamos a usar esas estadísticas")
 - [x] **Reportes de uso de la plataforma (`local_usagereports`)** — completado 2026-09-07. Informe real "Uso de la plataforma": columnas Institución/Rol/Curso/Tipo de evento agregadas por "Cuenta", Fecha como filtro de rango (no columna agrupada), Audiencia = solo admin de ConectaTech, Schedule mensual CSV. Exportación bajo demanda vía botón "Exportar" en la vista del informe. Ver ADR-011, `docs/local_usagereports-especificacion.md` y `admin-module/backend/moodle-plugins/usagereports/README.md`
+- [ ] **Visor fullscreen de temas** — plan aprobado 2026-11-09, sin código aún. 5 fases (endpoint → app Angular 22 → botón en el pipeline → lanzador en Moodle → retrocompatibilidad y despliegue). Ver ADR-012, `tech-specs.md` §6.4, `docs/visualizador-fullscreen.md` y `TODO.md`
 - [ ] Tipos de pregunta GIFT adicionales (verdadero/falso, emparejamiento, respuesta corta, numérica)
 - [ ] Notificaciones por correo (SES)
 - [ ] Renovación/reutilización de pines usados
@@ -273,6 +274,18 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 - **Consecuencias:** cualquier nuevo tipo de actividad a contabilizar (ej. `mod_assign`, `mod_h5pactivity`) se agrega editando `usage-events.json`, no el código PHP. Ver `docs/local_usagereports-especificacion.md` para la especificación completa y el detalle de joins (`mdl_context`, `mdl_role_assignments`, `mdl_role`).
 - **Corrección a la especificación (Fase 3, 2026-09-07):** la ruta real de las entidades del Report Builder en Moodle 5.2 es `classes/reportbuilder/local/entities/`, no `classes/local/entities/` como asumía el documento original — confirmado leyendo el código fuente de plugins core (`admin/roles`, `admin`) en el servidor antes de escribir código. El datasource reutiliza las entidades core `\core_reportbuilder\local\entities\user` y `\core_reportbuilder\local\entities\course` (mismo patrón que `\core_role\reportbuilder\datasource\roles`) en vez de reimplementar esos joins — reduce el código propio a mantener.
 - **Validación real en producción (Fase 4, 2026-09-07):** instalado bajo ventana de mantenimiento; en la UI real del Report Builder, agrupar/contar por Institución+Rol+Curso+Tipo de evento **funciona sin errores** — `MDL-76392` no bloquea este datasource, no hace falta la alternativa de fila-por-evento. Hallazgo de diseño: la columna Fecha tiene granularidad de minuto — en el informe real debe usarse como **filtro** de rango, no como columna agrupada, o el conteo mensual pierde sentido (casi un grupo por evento). Fase 5 (informe real con Audiencia/Schedule) queda bloqueada en que el cliente confirme destinatarios y formato.
+
+### ADR-012 — Visor fullscreen: mismo origen que Moodle y lectura en vivo
+
+- **Fecha:** 2026-11-09
+- **Estado:** Aprobado, sin implementar
+- **Decisión:** El visor fullscreen (`fullscreen-viewer/`, Angular 22) se sirve desde `conectatech.co/ct-visor/` y obtiene el contenido de un endpoint de solo lectura (`GET /admin-api/visor/tema`) que arma el tema leyendo los labels de la sección en Moodle en el momento de la petición. El botón «▶ Exponer contenido» es un `mod_label` oculto para estudiantes, sin IDs, que el pipeline crea al inicio de cada tema.
+- **Razón:** (1) HTMLPurifier elimina `<script>` de los labels, así que el comportamiento va en el script global de Boost Union. (2) Un iframe en `assets.conectatech.co` no recibe la cookie `MoodleSession` (mismo motivo que ADR-002) y obligaría a publicar contenido de pago en un JSON público. (3) Los IDs de curso y sección cambian al clonar con `MoodleSectionCloner`; leer en vivo y resolver los IDs en el clic evita cualquier clave que mantener sincronizada.
+- **Alternativas descartadas:** JSON por tema en el CDN generado por el pipeline (contenido público, EC2 necesitaría escribir en S3, cache behavior adicional en CloudFront, no refleja ediciones hechas en Moodle); botón inyectado por JS en todos los temas (se aparta de la especificación: el botón debe ser un Área de texto y medios).
+- **Audiencia:** solo docentes y gestores. El label se crea con `visible = 0` y el endpoint exige `moodle/course:viewhiddenactivities` — un único criterio para ver el botón y para leer el contenido.
+- **Estilos:** el visor compila `snippets/conectatech-pre.scss` + Bootstrap 5.3 + `snippets/conectatech-post.scss` sin copiarlos y reproduce el envoltorio DOM de Moodle. Consecuencia: cada cambio en los snippets exige recompilar y redesplegar el visor.
+- **Consecuencias:** el visor depende de que la sesión Moodle esté activa; no hay copia del contenido fuera de Moodle; los cursos existentes necesitan el script `agregar-boton-visor.php`; el directorio `/var/www/html/ct-visor/` queda fuera de `/var/www/html/admin/` a propósito (el `rsync --delete` del panel lo borraría).
+- **Decisiones del cliente (2026-11-09):** contenido en vivo desde Moodle; script de retrocompatibilidad; solo docentes y gestores; presaberes excluidos.
 
 ### ADR-008 — Git flow: hotfixes directos a main, feature branches para lo demás
 - **Fecha:** 2026-04-14
@@ -443,12 +456,24 @@ ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
 | `docs/infraestructura-servidor.md` | Detalles del servidor EC2 y Apache | Al cambiar la configuración del servidor |
 | `docs/infraestructura-cdn.md` | CDN, S3, CloudFront, Lambda | Al cambiar la infraestructura de assets |
 | `docs/local_usagereports-especificacion.md` | Especificación técnica del plugin de reportes de uso (ver ADR-011) | Al ajustar el alcance, los eventos auditados o la estructura del plugin |
+| `docs/visualizador-fullscreen.md` | Especificación del visor fullscreen y decisiones de diseño (ver ADR-012) | Al cambiar el alcance o las decisiones del visor |
 
 ---
 
 ## 9. Contexto de la última sesión
 
-**Fecha:** 2026-09-07
+**Fecha:** 2026-11-09
+
+**Qué se hizo:**
+
+1. **Plan aprobado: visor fullscreen de temas** — solo planeación y documentación, sin código
+   - Cliente entregó `docs/visualizador-fullscreen.md`; se exploró el pipeline, los snippets y el CDN, y se aprobó el plan (ver ADR-012 y `tech-specs.md` §6.4)
+   - Documentación actualizada: `PRD.md` §5.9 y §6, `tech-specs.md`, `CLAUDE.md`, `TODO.md` rev. 16 (Fases 1 y 2 del visor)
+   - Hallazgos de la exploración que conviene recordar: `tech-specs.md` §6.2 está desactualizada respecto al parser real (usa `[evaluacion]`, `[presaberes]` y `{tipo: …}`, no comentarios HTML); `viewer-pdf/` sigue sin script de deploy y con `<base href="/">`; `www.conectatech.co` no está en el `frame-ancestors` del CDN
+
+**Próxima tarea sugerida:** Ver TODO.md — Tarea 1: endpoint de lectura del visor; Tarea 2: app Angular 22.
+
+### Sesión anterior — 2026-09-07
 
 **Qué se hizo:**
 

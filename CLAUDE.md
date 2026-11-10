@@ -1,6 +1,6 @@
 # CLAUDE.md
 > Instrucciones permanentes para IA · ConectaTech.co
-> Idioma: español colombiano · Última actualización: 2026-04-14
+> Idioma: español colombiano · Última actualización: 2026-11-09
 
 ---
 
@@ -44,6 +44,9 @@ admin-module/frontend/   → Angular SPA (panel admin)
 admin-module/api/        → API REST PHP
 admin-module/backend/    → Scripts CLI + librerías PHP
 api-service/             → Lambda Node.js (API pública de PDFs)
+viewer-pdf/              → Visor PDF (Angular, SPA estática en el CDN)
+fullscreen-viewer/       → Visor fullscreen de temas (Angular 22; planeado, ver tech-specs.md §6.4)
+snippets/                → SCSS y JS de Boost Union (fuente de estilos del LMS y del visor)
 docs/                    → Documentación de infraestructura
 PRD.md                   → Requisitos de producto
 tech-specs.md            → Especificaciones técnicas
@@ -62,6 +65,26 @@ TODO.md                  → Motor JIT: 2 tareas atómicas
 - Componentes standalone; signals para estado local; OnPush en listas
 - `loadComponent()` para todas las rutas (lazy loading)
 - Prettier: `printWidth: 100`, `singleQuote: true`
+
+---
+
+## Registro de esfuerzo
+
+Este proyecto lleva un registro de esfuerzo y costo en `metrics/events/`,
+un archivo JSONL por sesión, versionado en git.
+
+**Al cerrar cualquier unidad de trabajo**, invoca `/ai-effort-tracking capture`.
+
+Reglas no negociables:
+- Nunca escribas tokens, costo, duraciones ni nivel de esfuerzo de memoria.
+  Ejecuta siempre el adaptador de la superficie activa.
+- Si un dato no se puede medir, escribe `null` y baja `capture_level`. No lo estimes.
+- Los precios salen de `metrics/pricing.json`, jamás de tu conocimiento previo.
+  Si el proveedor está `unverified`, deja `cost.usd` en `null`.
+- `input_uncached` y `cache_read` son disjuntos; `thinking` va dentro de `output`.
+- El registro es append-only y cada sesión escribe solo su archivo.
+  Para corregir, emite un evento nuevo con `corrects`.
+- Referencia siempre el `trace_id` de la tarea de `TODO.md` (formato `T-NNNN`).
 
 ---
 

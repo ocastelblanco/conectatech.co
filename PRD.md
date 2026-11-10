@@ -1,7 +1,7 @@
 # PRD — ConectaTech.co
 > Product Requirements Document · Audiencia: IA / autor del proyecto
 > Idioma: español colombiano · Nivel: referencia
-> Última actualización: 2026-04-14
+> Última actualización: 2026-11-09
 
 ---
 
@@ -213,6 +213,21 @@ Página pública (`/activar`) donde un estudiante ingresa su pin y:
 
 ---
 
+### 5.9 Visor de contenidos a pantalla completa *(en desarrollo)*
+
+Herramienta para que el docente proyecte en clase el contenido de un tema sin las distracciones de la interfaz de la plataforma.
+
+- Al inicio de cada tema hay un botón **▶ Exponer contenido**, visible solo para docentes y gestores
+- Al pulsarlo, el contenido del tema se despliega a pantalla completa, con un índice lateral colapsible de subtemas y botones para avanzar y retroceder
+- Muestra únicamente el contenido expositivo: las evaluaciones y los presaberes se siguen resolviendo en la plataforma
+- Conserva la identidad visual del curso (proyecto, área y grado)
+- El botón se crea automáticamente al procesar el contenido del curso repositorio y se propaga a los cursos finales; para los cursos que ya existen hay un proceso de actualización
+- Siempre muestra el contenido vigente del curso, incluidos los ajustes hechos directamente en la plataforma
+
+Especificación: [docs/visualizador-fullscreen.md](docs/visualizador-fullscreen.md).
+
+---
+
 ## 6. Roadmap de funcionalidades futuras
 
 | Funcionalidad | Descripción | Prioridad |
@@ -223,6 +238,7 @@ Página pública (`/activar`) donde un estudiante ingresa su pin y:
 | **Notificaciones por correo** | Enviar correo al gestor cuando se crea un paquete para su organización; al estudiante cuando se activa su pin | Alta |
 | **Actualizar Moodle a la versión 5.2.x** | Migrar la plataforma actual a la versión más reciente de Moodle, valorando cuidadosamente las acciones que se deben tomar, para conservar la integridad de la información y, especialmente, las funcionalidades que hemos construído. Revisar las [nuevas features](https://docs.moodle.org/502/en/New_features). | Alta |
 | ~~**Sección 0 de cursos finales**~~ ✅ | ~~Al desplegar un árbol curricular, cada curso final debe tener contenido de portada/bienvenida. El panel admin necesita una UI para definir ese contenido por curso dentro del editor de árboles.~~ | ~~Alta~~ |
+| **Visor de contenidos a pantalla completa** | Botón «▶ Exponer contenido» al inicio de cada tema que despliega el contenido expositivo a pantalla completa, con índice de subtemas y navegación, solo para docentes y gestores. Ver §5.9 y [docs/visualizador-fullscreen.md](docs/visualizador-fullscreen.md) | Alta |
 | **Reportes de progreso** | Dashboard con métricas de avance de estudiantes por organización: completitud de cursos, calificaciones promedio, actividad reciente | Alta |
 | **Tipos de pregunta adicionales** | El pipeline Markdown soporta actualmente solo opción múltiple y ensayo. Pendiente: verdadero/falso, emparejamiento, respuesta corta, numérica | Media |
 | **Renovación y reutilización de pines** | Flujo para que el administrador recupere pines "usados" de cursos completados y los reasigne a nuevos estudiantes | Media |

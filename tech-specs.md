@@ -1,7 +1,7 @@
 # Tech Specs — ConectaTech.co
 > Especificaciones técnicas · Audiencia: IA / autor del proyecto
 > Idioma: español colombiano (términos técnicos en inglés) · Nivel: referencia
-> Última actualización: 2026-04-14
+> Última actualización: 2026-11-09
 > Ver PRD §2 para el contexto de negocio de cada componente.
 
 ---
@@ -165,12 +165,13 @@ conectatech.co/
 │   ├── infraestructura-cdn.md
 │   └── infraestructura-servidor.md
 │
-├── snippets/                  # HTML/JS snippets para Moodle
+├── snippets/                  # SCSS y JS de Boost Union (pre.scss, post.scss, end-snippet.html)
 ├── templates/                 # Templates de cursos y secciones
 ├── terraform/                 # (vacío / experimental)
 ├── scripts/                   # Scripts de operaciones AWS
 ├── config/                    # Configuración general del repo
-└── viewer-pdf/                # Aplicación visor PDF (SPA estática en CDN)
+├── viewer-pdf/                # Aplicación visor PDF (SPA estática en CDN)
+└── fullscreen-viewer/         # Visor fullscreen de temas (Angular 22, se sirve en conectatech.co/ct-visor/) — ver §6.4
 ```
 
 **Datos que NO están en el repositorio (solo en servidor):**
@@ -294,6 +295,7 @@ Todos los endpoints requieren sesión Moodle activa + rol administrador, excepto
 | GET | `/admin-api/gestor/pines` | `gestor.php` | **[gestor]** Pines de la organización |
 | POST | `/admin-api/gestor/pines/{hash}/asignar` | `gestor.php` | **[gestor]** Asignar pin a estudiante |
 | GET | `/admin-api/matriculas` | `matriculas.php` | **[gestor]** Listar matrículas |
+| GET | `/admin-api/visor/tema?course=ID&section=ID` | `visor.php` | **[docente]** *(planeado)* Contenido expositivo de un tema para el visor fullscreen — ver §6.4 |
 
 **Arquitectura del bootstrap PHP:**
 1. Apache recibe petición en `conectatech.co/admin-api/*`
@@ -410,6 +412,60 @@ enunciado: Describe con tus palabras...
 | `Undefined constant "STDERR"` | `fwrite(STDERR, ...)` solo funciona en CLI; la API es web | Usar `error_log()` siempre |
 | Output HTML de Moodle corrompe el JSON de respuesta | Moodle imprime HTML en algunos contextos de inicialización | `ob_start()` al inicio de `index.php` y `ob_end_clean()` antes de JSON |
 
+### 6.4 Visor fullscreen de temas *(planeado — ver PRD §5.9, ADR-012)*
+
+Visor a pantalla completa del contenido expositivo de un tema (sección H1). Estado: diseño aprobado el 2026-11-09, sin implementar. Fases en `TODO.md`.
+
+```
+Label oculto con el botón ──clic──▶ script de additionalhtmlfooter (snippets/conectatech-end-snippet.html)
+                                      │  overlay + <iframe> mismo origen + requestFullscreen()
+                                      │  /ct-visor/?course=ID&section=ID&clases=cosmovision-cristiana+ciencias-naturales+grado-6
+                                      ▼
+                           App Angular 22 (fullscreen-viewer/)
+                                      │  GET /admin-api/visor/tema?course=ID&section=ID  (cookie MoodleSession)
+                                      ▼
+                           handlers/visor.php → lib/VisorService.php
+```
+
+**Componentes**
+
+| Pieza | Ubicación | Responsabilidad |
+|---|---|---|
+| Botón | `MoodleContentBuilder::processSection` | Crea, antes de las subsecciones, un `mod_label` con `visible = 0` y HTML `<div class="ct-exponer"><a href="#" class="btn btn-primary ct-exponer-btn" role="button">▶ Exponer contenido</a></div>`. Sin IDs: sobrevive al backup/restore de `MoodleSectionCloner` |
+| Lanzador | `snippets/conectatech-end-snippet.html` | Listener delegado sobre `.ct-exponer-btn`; resuelve curso (`M.cfg.courseId`) y sección (DOM) en el clic; pasa las clases de proyecto/área/grado del `<body>`. Debe quedar fuera de los marcadores `CT:MAP` que reescribe `ArbolCurricularService::regenerarHtmlAdicional()` |
+| Endpoint | `handlers/visor.php` + `lib/VisorService.php` | Arma el tema leyendo Moodle en vivo |
+| App | `fullscreen-viewer/` | Angular 22: standalone, zoneless, signals, sin PrimeNG. `base-href /ct-visor/` |
+| Retrocompatibilidad | `backend/agregar-boton-visor.php` | CLI idempotente (`--course` \| `--all`, `--dry-run`) que inserta el botón en temas existentes |
+
+**Contrato del endpoint**
+
+```json
+{
+  "titulo": "La célula: Incluso lo más pequeño fue creado por Él",
+  "cabecera": "<div class=\"cita-biblica resaltado\">…</div>",
+  "subtemas": [
+    { "titulo": "Estructura y función de la célula…", "bloques": ["<div class=\"…\">…</div>"] }
+  ]
+}
+```
+
+Reglas de armado (`VisorService`):
+- Recorre `get_fast_modinfo()` de la sección; solo `mod_label` con `uservisible`; HTML vía `format_text()`.
+- Label de sección con `.cita-biblica` antes del primer subtema → `cabecera` (referente bíblico del tema; `null` si no hay).
+- Cada `mod_subsection` → un subtema (título = nombre de la subsección; bloques = sus labels en orden). Las subsecciones sin labels (evaluaciones) se omiten.
+- Label suelto en la sección (`h2-texto-directo`) → subtema propio; título = primer encabezado de su HTML.
+- Se excluyen: el label del botón (`.ct-exponer`), presaberes (`.moodle-quiz-container` / `[data-quiz-block]`), quizzes y labels cuyo contenido es solo un `<iframe>`.
+
+**Auth:** sesión Moodle no invitada (401) + `moodle/course:viewhiddenactivities` en el contexto del curso (403) — la misma capability que permite ver el label oculto del botón. `course` y `section` se validan como enteros y la sección debe pertenecer al curso (404). Solo GET.
+
+**Estilos:** `fullscreen-viewer/src/styles.scss` compila `snippets/conectatech-pre.scss` + Bootstrap 5.3 (requerido por `@extend .btn-primary`) + `snippets/conectatech-post.scss` sin copiarlos; la plantilla reproduce el envoltorio `body.<proyecto>.<área> .section-item > .activity-item` al que están anclados esos estilos. Cambiar los snippets implica recompilar y redesplegar el visor. Plan B si la compilación falla: extraer el §16 de `post.scss` a un parcial compartido.
+
+**Seguridad en el cliente:** el HTML de los bloques se inserta con `[innerHTML]` y el sanitizador por defecto de Angular (nunca `bypassSecurityTrust*`); el parámetro `clases` se filtra con `^[a-z0-9-]+$` antes de aplicarlo al `<body>`.
+
+**Limitaciones conocidas:** el sanitizador descarta `<iframe>` (los labels del visor PDF no se muestran); en iPhone no hay Fullscreen API para páginas, se usa un overlay `position: fixed` al 100 % del viewport.
+
+**Puntos a confirmar al implementar:** que HTMLPurifier conserve `class` en `<a>` dentro del label; atributo del DOM con el ID de sección en Moodle 5.2 / Boost Union; que `ct_gestor` tenga `moodle/course:viewhiddenactivities`; tratamiento de "Cierre espiritual" cuando cuelga de un H2 con H3 `[evaluacion]`.
+
 ---
 
 ## 7. Infraestructura y despliegue
@@ -495,6 +551,26 @@ ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R apache:apache /var/www/html/admin && sudo chmod -R 755 /var/www/html/admin"
 ```
 
+#### Deploy del visor fullscreen *(planeado — §6.4)*
+
+El visor vive en `/var/www/html/ct-visor/`, **fuera** de `/var/www/html/admin/`, para que el `rsync --delete` del panel no lo borre. Se expone con `Alias /ct-visor /var/www/html/ct-visor` en `/etc/httpd/conf.d/moodle-le-ssl.conf` (mismo VirtualHost que `/admin-api`).
+
+```bash
+# 1. Build local (en primer plano; nunca en paralelo con el rsync)
+cd fullscreen-viewer && npm audit && npm run build
+
+# 2. chown → rsync → chown
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
+  "sudo chown -R ec2-user:ec2-user /var/www/html/ct-visor"
+rsync -e "ssh -i ~/.ssh/ClaveCT.pem" -a --delete \
+  dist/fullscreen-viewer/browser/ \
+  ec2-user@54.86.113.27:/var/www/html/ct-visor/
+ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
+  "sudo chown -R apache:apache /var/www/html/ct-visor"
+```
+
+Los cambios en `snippets/` (lanzador y estilos del botón) se aplican aparte en Boost Union: `additionalhtmlfooter` y Raw SCSS.
+
 #### Deploy de la Lambda (API pública de PDFs)
 
 ```bash
@@ -541,11 +617,12 @@ No hay archivo `.env` explícito. La configuración vive en:
 
 ## 8. Autenticación y seguridad
 
-### 8.1 Tres niveles de auth
+### 8.1 Niveles de auth
 
 | Nivel | Quién | Mecanismo | Verificación server-side |
 |---|---|---|---|
 | **Público** | Cualquier visitante | Ninguna | — |
+| **Docente** *(planeado, solo `visor/*`)* | Docentes y gestores del curso | Cookie `MoodleSession` + capability | `moodle/course:viewhiddenactivities` en el contexto del curso — ver §6.4 |
 | **Gestor** | Representante de organización | Cookie `MoodleSession` + consulta a `ct_gestor` | `GestorAuth::verificar()` — consulta BD |
 | **Administrador** | Equipo ConectaTech | Cookie `MoodleSession` + `is_siteadmin()` | `auth.php` — llama API Moodle |
 
@@ -623,6 +700,7 @@ Ver PRD §6 para el contexto de negocio de cada item.
 | Feature | Archivos a crear / modificar | Dependencias técnicas |
 |---|---|---|
 | **Sección 0 de cursos finales** | `features/arboles/arbol-editor.component.ts`, `handlers/arboles.php`, `lib/ArbolCurricularService.php` | UI de edición en el árbol; campo de contenido por curso final; deploy en Moodle al desplegar el árbol |
+| **Visor fullscreen** (§6.4) | `lib/VisorService.php`, `handlers/visor.php`, `api/auth.php`, `api/index.php`, `fullscreen-viewer/` (nuevos); `lib/MoodleContentBuilder.php`, `handlers/markdown.php`, `snippets/conectatech-end-snippet.html`, `snippets/conectatech-post.scss`, `backend/agregar-boton-visor.php` | Angular 22.x; Bootstrap 5.3 (solo para compilar los snippets); Alias Apache `/ct-visor`; capability `viewhiddenactivities` en `ct_gestor` |
 | **Reportes de progreso** | `features/reportes/` (nuevo), `handlers/reportes.php` (ampliar) | API Moodle de completion; queries a `mdl_course_completions` |
 | **Tipos de pregunta GIFT adicionales** | `lib/GiftConverter.php`, `lib/MarkdownParser.php` | Definir convención Markdown para cada tipo; implementar en `GiftConverter` |
 | **Notificaciones por correo** | `lib/NotificacionService.php` (nuevo), AWS SES | Configurar SES, IAM policy, templates de correo |

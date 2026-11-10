@@ -1,5 +1,5 @@
 # TODO.md — Motor JIT · ConectaTech.co
-> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-09-07 (rev. 15)
+> Siempre exactamente 2 tareas atómicas · Última actualización: 2026-11-09 (rev. 16)
 
 ---
 
@@ -20,56 +20,64 @@
 
 ---
 
-## Tarea 1 — [FEATURE] Renovación y reutilización de pines
+## Tarea 1 (T-0001) — [FEATURE] Visor fullscreen · Fase 1: endpoint de lectura del tema
 
-**Origen:** PRD §6 (Media)
+**Origen:** PRD §5.9 y §6 (Alta) · tech-specs §6.4 · ADR-012 · `docs/visualizador-fullscreen.md`
 
-**Problema:** Cuando un estudiante completa su curso, el pin queda "usado" y no se puede reutilizar. El administrador no tiene forma de recuperar pines de cursos completados y reasignarlos a nuevos estudiantes, lo que genera costo innecesario de nuevos pines.
+**Problema:** El visor necesita el contenido expositivo de un tema (sección Moodle) ya estructurado en subtemas. Hoy ese contenido solo existe como labels sueltos dentro de la sección y de sus subsecciones delegadas, y ningún endpoint lo expone a usuarios que no sean administradores.
 
 **Qué hacer:**
 
-### Paso 1 — Endpoint de renovación
-En `handlers/pines.php`, agregar un endpoint `POST /pines/{id}/renovar` que, dado un pin activado cuyo estudiante haya completado el curso, lo marque como disponible nuevamente (desmatricula al estudiante anterior y resetea el estado del pin).
+### Paso 1 — `VisorService`
+Clase que, dado un curso y una sección, recorre `get_fast_modinfo()` y arma `{titulo, cabecera, subtemas[{titulo, bloques[]}]}` siguiendo las reglas de tech-specs §6.4: solo `mod_label` con `uservisible`; HTML vía `format_text()`; referente bíblico del tema → `cabecera`; cada `mod_subsection` → un subtema; label suelto → subtema propio; se excluyen el botón (`.ct-exponer`), presaberes, quizzes y labels con solo `<iframe>`.
 
-### Paso 2 — UI en el panel de pines
-En el componente de pines del gestor, añadir un botón "Renovar" visible solo en pines con estado `usado` + curso completado, con confirmación antes de ejecutar.
+### Paso 2 — Handler y auth
+`GET /admin-api/visor/tema?course=ID&section=ID`. Nueva rama `visor/*` en `auth.php`: sesión no invitada (401) + `moodle/course:viewhiddenactivities` en el contexto del curso (403). Validar que `course` y `section` sean enteros y que la sección pertenezca al curso (404 si no).
 
 **Archivos a modificar / crear:**
-1. `admin-module/api/handlers/pines.php` — endpoint de renovación
-2. `admin-module/frontend/src/app/features/pines/` — botón de renovación en tabla
+1. `admin-module/backend/lib/VisorService.php` — nuevo
+2. `admin-module/api/handlers/visor.php` — nuevo
+3. `admin-module/api/auth.php` — rama `visor/*` (más la línea de ruta en `admin-module/api/index.php`)
 
 **Definición de done:**
-- [ ] El endpoint desmatricula al estudiante anterior y cambia el estado del pin a disponible
-- [ ] El botón solo aparece para pines que califican (usados + curso completado)
-- [ ] Confirmación antes de ejecutar la renovación
-- [ ] El pin renovado puede ser activado por un nuevo estudiante sin errores
+- [ ] Con sesión de docente del curso, el endpoint devuelve el tema de `Ciencias 6_01_CELULA` con su referente bíblico en `cabecera` y un subtema por cada H2 expositivo
+- [ ] Sin sesión → 401; estudiante matriculado → 403; sección de otro curso → 404
+- [ ] Ninguna evaluación ni bloque de presaberes aparece en la respuesta
+- [ ] Verificado que el rol `ct_gestor` tiene `moodle/course:viewhiddenactivities` (o se añade al rol y se documenta)
+- [ ] `php -l` sin errores; sin SQL concatenado
 
 ---
 
-## Tarea 2 — [FEATURE] Tipos de pregunta adicionales
+## Tarea 2 (T-0002) — [FEATURE] Visor fullscreen · Fase 2: app Angular 22 `fullscreen-viewer/`
 
-**Origen:** PRD §6 (Media)
+**Origen:** PRD §5.9 y §6 (Alta) · tech-specs §6.4 · ADR-012 · `docs/visualizador-fullscreen.md`
 
-**Problema:** El pipeline Markdown soporta actualmente solo opción múltiple y ensayo. Los autores de contenido necesitan más variedad para construir evaluaciones completas.
+**Problema:** No existe la aplicación que presenta el tema a pantalla completa. Puede construirse en paralelo a la Tarea 1 usando un JSON de ejemplo con el contrato de tech-specs §6.4.
 
 **Qué hacer:**
 
-### Paso 1 — Parser: reconocer nuevos tipos en el Markdown
-En `MarkdownParser.php` y `GiftConverter.php`, añadir soporte para las sintaxis de verdadero/falso, emparejamiento, respuesta corta y numérica según el formato GIFT de Moodle.
+### Paso 1 — Proyecto
+`ng new` con Angular 22.x en `fullscreen-viewer/` (skill `angular-developer`): standalone, zoneless, signals, OnPush, prefijo `cnt`, Prettier del repo, `base-href /ct-visor/`. Sin PrimeNG.
 
-### Paso 2 — Preview: iconos diferenciados en el árbol
-En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()` para que el árbol de estructura muestre íconos distintos por tipo de pregunta.
+### Paso 2 — Estilos heredados
+`src/styles.scss` compila `snippets/conectatech-pre.scss` + Bootstrap 5.3 + `snippets/conectatech-post.scss` sin copiarlos, y la plantilla reproduce el envoltorio `body.<clases> .section-item > .activity-item`. Las clases llegan por el parámetro `clases`, filtradas con `^[a-z0-9-]+$`.
+
+### Paso 3 — Interfaz
+Título y cabecera del tema, índice lateral colapsible, panel de contenido con scroll, botones Anterior/Siguiente, teclado (←/→, Esc), estados de carga, error y tema sin contenido. El HTML de los bloques se inserta con `[innerHTML]` y el sanitizador por defecto de Angular.
 
 **Archivos a modificar / crear:**
-1. `admin-module/backend/lib/MarkdownParser.php` — reconocer nuevas sintaxis
-2. `admin-module/backend/lib/GiftConverter.php` — generar GIFT para los nuevos tipos
-3. `admin-module/frontend/src/app/features/contenido/contenido.component.ts` — iconos del preview
+1. `fullscreen-viewer/src/app/` — componente raíz, servicio de datos y componentes de índice/panel
+2. `fullscreen-viewer/src/styles.scss` — importación de los snippets
+3. `fullscreen-viewer/angular.json` — `baseHref`, budgets y rutas de inclusión de SCSS
 
 **Definición de done:**
-- [ ] Verdadero/falso se procesa correctamente en GIFT
-- [ ] Respuesta corta se procesa correctamente en GIFT
-- [ ] Los nuevos tipos aparecen en el árbol de estructura con ícono diferenciado
-- [ ] Los tipos existentes (opción múltiple, ensayo) no se ven afectados
+- [ ] `npm run build` pasa sin errores ni budgets excedidos; `npm audit` sin vulnerabilidades altas
+- [ ] Con el JSON de ejemplo se ve el esquema de `docs/visualizador-fullscreen.md`: título, referente del tema, índice y panel
+- [ ] Los bloques `.cita-biblica` y `.cierre-espiritual` se ven igual que en Moodle para `cosmovision-cristiana` + un área
+- [ ] El índice se colapsa; Anterior/Siguiente y las flechas del teclado cambian de subtema; ambos paneles hacen scroll
+- [ ] Usable a 375 px de ancho
+
+**Fases siguientes (entran al TODO al liberarse un cupo):** Fase 3 botón en el pipeline · Fase 4 lanzador en Moodle · Fase 5 retrocompatibilidad, despliegue y README.
 
 ---
 
@@ -310,3 +318,17 @@ En `ContenidoComponent`, añadir los nuevos `nodeType` al método `getNodeIcon()
 - ⏳ Tipos de pregunta adicionales: Media prioridad, sigue en el TODO
 
 **Resultado:** Tarea 1 = Renovación y reutilización de pines. Tarea 2 = Tipos de pregunta adicionales.
+
+### 2026-11-09 — Revisión 16 (nueva prioridad del cliente — visor fullscreen)
+
+**Cambios en esta sesión:**
+- Cliente entregó `docs/visualizador-fullscreen.md` y aprobó el plan de acción (ver ADR-012 en MEMORY.md): visor a pantalla completa por tema, servido desde el mismo dominio de Moodle, con lectura en vivo del contenido, solo para docentes y gestores
+- Decisiones del cliente: contenido en vivo desde Moodle (no JSON en el CDN); script de retrocompatibilidad para cursos existentes; audiencia = docentes y gestores; presaberes excluidos
+- Documentación actualizada: PRD §5.9 y §6, tech-specs §3/§5.1/§6.4/§7.2/§8.1/§11, MEMORY (ADR-012), CLAUDE.md
+
+**Comparación PRD vs MEMORY:**
+- 🆕 **Visor fullscreen**: nuevo, Alta prioridad — 5 fases; las dos primeras son independientes entre sí
+- ⏸ Renovación y reutilización de pines: Media prioridad, desplazada
+- ⏸ Tipos de pregunta adicionales: Media prioridad, desplazada
+
+**Resultado:** Tarea 1 = Visor fullscreen — Fase 1 (endpoint de lectura). Tarea 2 = Visor fullscreen — Fase 2 (app Angular 22). Fases 3-5 entran a medida que se liberen cupos; después retoman Renovación de pines y Tipos de pregunta.
