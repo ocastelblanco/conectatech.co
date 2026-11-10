@@ -431,6 +431,7 @@ class ArbolCurricularService
 
         $cursosService  = new CursosService(dirname(__DIR__) . '/config');
         $pobladorService = new PobladorService();
+        $botonVisor      = new BotonVisorService();
 
         foreach ($arbol['grados'] as $grado) {
             foreach ($grado['cursos'] as $curso) {
@@ -510,6 +511,12 @@ class ArbolCurricularService
                         $entry['action'] = 'created';
                         $summary['created']++;
                     }
+
+                    // Botón del visor fullscreen (ADR-012) en TODOS los temas del curso: los cursos
+                    // con matrículas no se repueblan, así que el botón del repositorio no les llega.
+                    if (!$dryRun) {
+                        $entry['boton_visor'] = $this->asegurarBotonVisor($botonVisor, $shortnameMoodle);
+                    }
                 } catch (Throwable $e) {
                     $entry['action'] = 'error';
                     $entry['error']  = $e->getMessage();
@@ -530,6 +537,27 @@ class ArbolCurricularService
             'summary' => $summary,
             'results' => $results,
         ];
+    }
+
+    /**
+     * Asegura el botón del visor en el curso recién procesado. Nunca lanza: un fallo aquí
+     * no debe marcar el curso como erróneo ni abortar el resto del árbol; se informa en
+     * la entrada de resultados del curso (`boton_visor`).
+     *
+     * @return array{agregado:int, movido:int, ya_correcto:int, sin_contenido:int, error:int}|array{error_general:string}
+     */
+    private function asegurarBotonVisor(BotonVisorService $servicio, string $shortname): array
+    {
+        global $DB;
+
+        try {
+            $course = $DB->get_record('course', ['shortname' => $shortname], '*', MUST_EXIST);
+            return $servicio->asegurarEnCurso($course)['totales'];
+        } catch (Throwable $e) {
+            $DB->force_transaction_rollback();
+            error_log("WARN botón del visor en '{$shortname}': " . $e->getMessage());
+            return ['error_general' => $e->getMessage()];
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

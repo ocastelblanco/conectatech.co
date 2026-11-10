@@ -1080,3 +1080,30 @@ body {
 		border-left-width: 4px;
 	}
 }
+
+// ----------------------------------------------------------------------------
+// VISOR FULLSCREEN (ADR-012) — overlay que abre el botón «▶ Exponer contenido»
+// ----------------------------------------------------------------------------
+
+.ct-visor-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1100; // por encima de la navbar (1030) y los drawers de Moodle
+	background: #f8f9fa;
+
+	iframe {
+		display: block;
+		width: 100%;
+		height: 100%;
+		border: 0;
+	}
+}
+
+html.ct-visor-abierto {
+	overflow: hidden;
+}
+
+.ct-exponer {
+	margin-bottom: 1rem;
+}
+

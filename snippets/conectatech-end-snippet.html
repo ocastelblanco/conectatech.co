@@ -132,6 +132,74 @@
     }
   }
 
+  // ************* ConectaTech — Lanzador del visor fullscreen (ADR-012) ***********************
+  // El label «▶ Exponer contenido» solo trae un enlace .ct-exponer-btn (Moodle elimina los scripts
+  // de los labels). Este listener abre /ct-visor/ en un overlay a pantalla completa. El visor
+  // vive en el mismo origen, así que comparte la sesión; su API valida el permiso en el servidor.
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest ? e.target.closest('.ct-exponer-btn') : null;
+    if (!btn) return;
+    e.preventDefault();
+    abrirVisorCT(btn);
+  });
+
+  function abrirVisorCT(btn) {
+    const seccion = btn.closest('[data-for="section"][data-id], li.section[data-id]');
+    const claseCurso = Array.from(document.body.classList).map(c => c.match(/^course-(\d+)$/)).find(Boolean);
+    const cursoId = claseCurso ? claseCurso[1] : (window.M && M.cfg ? M.cfg.courseId : null);
+    if (!seccion || !cursoId || document.querySelector('.ct-visor-overlay')) return;
+
+    // Clases de proyecto/área (mapa del árbol curricular) + grado y nivel que añade generaDivGrado()
+    const clases = (CT_COURSES[cursoId] || []).concat(
+      Array.from(document.body.classList).filter(c => /^(grado-\d+|primaria|secundaria|edmedia)$/.test(c))
+    );
+    const url = '/ct-visor/?course=' + encodeURIComponent(cursoId) +
+      '&section=' + encodeURIComponent(seccion.dataset.id) +
+      '&clases=' + encodeURIComponent(clases.join('+'));
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ct-visor-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Visor de contenidos');
+    const marco = document.createElement('iframe');
+    marco.src = url;
+    marco.title = 'Visor de contenidos';
+    marco.setAttribute('allow', 'fullscreen');
+    overlay.appendChild(marco);
+    document.body.appendChild(overlay);
+    document.documentElement.classList.add('ct-visor-abierto');
+
+    let cerrado = false;
+    function cerrar() {
+      if (cerrado) return;
+      cerrado = true;
+      window.removeEventListener('message', alMensaje);
+      document.removeEventListener('keydown', alTecla);
+      document.removeEventListener('fullscreenchange', alCambiarPantalla);
+      if (document.fullscreenElement) document.exitFullscreen().catch(function () { });
+      overlay.remove();
+      document.documentElement.classList.remove('ct-visor-abierto');
+      btn.focus();
+    }
+    // Solo se acepta el mensaje de cierre que viene del propio iframe y del mismo origen.
+    function alMensaje(ev) {
+      if (ev.origin === window.location.origin && ev.source === marco.contentWindow &&
+        ev.data && ev.data.type === 'ct-visor:cerrar') cerrar();
+    }
+    function alTecla(ev) { if (ev.key === 'Escape') cerrar(); }
+    // En pantalla completa el navegador consume Esc para salir: se interpreta como cerrar el visor.
+    function alCambiarPantalla() { if (!document.fullscreenElement) cerrar(); }
+
+    window.addEventListener('message', alMensaje);
+    document.addEventListener('keydown', alTecla);
+    document.addEventListener('fullscreenchange', alCambiarPantalla);
+    marco.addEventListener('load', function () { marco.focus(); });
+
+    // Pantalla completa real donde exista (no en iPhone); si falla, el overlay ya ocupa toda la ventana.
+    if (overlay.requestFullscreen) overlay.requestFullscreen().catch(function () { });
+  }
+
   // ************* ConectaTech — Presaberes Interactive Quiz v1.0 ****************************
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-quiz-block]').forEach(function (block) {

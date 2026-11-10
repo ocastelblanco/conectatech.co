@@ -295,7 +295,7 @@ Todos los endpoints requieren sesión Moodle activa + rol administrador, excepto
 | GET | `/admin-api/gestor/pines` | `gestor.php` | **[gestor]** Pines de la organización |
 | POST | `/admin-api/gestor/pines/{hash}/asignar` | `gestor.php` | **[gestor]** Asignar pin a estudiante |
 | GET | `/admin-api/matriculas` | `matriculas.php` | **[gestor]** Listar matrículas |
-| GET | `/admin-api/visor/tema?course=ID&section=ID` | `visor.php` | **[docente]** *(planeado)* Contenido expositivo de un tema para el visor fullscreen — ver §6.4 |
+| GET | `/admin-api/visor/tema?course=ID&section=ID` | `visor.php` | **[docente]** Contenido expositivo de un tema para el visor fullscreen — ver §6.4 |
 
 **Arquitectura del bootstrap PHP:**
 1. Apache recibe petición en `conectatech.co/admin-api/*`
@@ -412,9 +412,9 @@ enunciado: Describe con tus palabras...
 | `Undefined constant "STDERR"` | `fwrite(STDERR, ...)` solo funciona en CLI; la API es web | Usar `error_log()` siempre |
 | Output HTML de Moodle corrompe el JSON de respuesta | Moodle imprime HTML en algunos contextos de inicialización | `ob_start()` al inicio de `index.php` y `ob_end_clean()` antes de JSON |
 
-### 6.4 Visor fullscreen de temas *(planeado — ver PRD §5.9, ADR-012)*
+### 6.4 Visor fullscreen de temas *(ver PRD §5.9, ADR-012)*
 
-Visor a pantalla completa del contenido expositivo de un tema (sección H1). Estado: diseño aprobado el 2026-11-09, sin implementar. Fases en `TODO.md`.
+Visor a pantalla completa del contenido expositivo de un tema (sección H1). Estado (2026-11-10): API y visor **desplegados en producción** (`/ct-visor/`); lanzador en Boost Union, botón en el pipeline y script de retrocompatibilidad **escritos, pendientes de desplegar**. Detalle en `TODO.md`.
 
 ```
 Label oculto con el botón ──clic──▶ script de additionalhtmlfooter (snippets/conectatech-end-snippet.html)
@@ -435,12 +435,15 @@ Label oculto con el botón ──clic──▶ script de additionalhtmlfooter (s
 | Lanzador | `snippets/conectatech-end-snippet.html` | Listener delegado sobre `.ct-exponer-btn`; resuelve curso (`M.cfg.courseId`) y sección (DOM) en el clic; pasa las clases de proyecto/área/grado del `<body>`. Debe quedar fuera de los marcadores `CT:MAP` que reescribe `ArbolCurricularService::regenerarHtmlAdicional()` |
 | Endpoint | `handlers/visor.php` + `lib/VisorService.php` | Arma el tema leyendo Moodle en vivo |
 | App | `fullscreen-viewer/` | Angular 22: standalone, zoneless, signals, sin PrimeNG. `base-href /ct-visor/` |
-| Retrocompatibilidad | `backend/agregar-boton-visor.php` | CLI idempotente (`--course` \| `--all`, `--dry-run`) que inserta el botón en temas existentes |
+| Garantía del botón | `lib/BotonVisorService.php` | Lógica única e idempotente: crea el label oculto como primer recurso de cada tema con contenido expositivo, o lo reposiciona si existe mal colocado. No toca contenido, notas ni matrículas |
+| Ingesta de árboles | `ArbolCurricularService::ejecutar()` | Tras procesar cada curso (nuevo, repoblado o con matrículas) llama a `BotonVisorService`. Necesario porque los cursos con matrículas no se repueblan y el botón del repositorio no les llega. Un fallo aquí no marca el curso como erróneo: se informa en `boton_visor` de su entrada de resultados |
+| Retrocompatibilidad | `backend/agregar-boton-visor.php` | CLI (`--course` \| `--all`, `--dry-run`) sobre `BotonVisorService`, para cursos que no pasan por la ingesta (p. ej. repositorios ya publicados) |
 
 **Contrato del endpoint**
 
 ```json
 {
+  "ok": true,
   "titulo": "La célula: Incluso lo más pequeño fue creado por Él",
   "cabecera": "<div class=\"cita-biblica resaltado\">…</div>",
   "subtemas": [
@@ -457,6 +460,18 @@ Reglas de armado (`VisorService`):
 - Se excluyen: el label del botón (`.ct-exponer`), presaberes (`.moodle-quiz-container` / `[data-quiz-block]`), quizzes y labels cuyo contenido es solo un `<iframe>`.
 
 **Auth:** sesión Moodle no invitada (401) + `moodle/course:viewhiddenactivities` en el contexto del curso (403) — la misma capability que permite ver el label oculto del botón. `course` y `section` se validan como enteros y la sección debe pertenecer al curso (404). Solo GET.
+
+**Cambios en el núcleo de la API y cómo revertirlos** (Fase 1, aprobados por el cliente el 2026-11-10). Son tres ediciones pequeñas y aditivas; ninguna modifica código de Moodle:
+
+| Archivo | Cambio | Revertir |
+|---|---|---|
+| `api/index.php` | `require_once` de `VisorService.php` y un `case` para `GET visor/tema` | Borrar esas dos piezas |
+| `api/auth.php` | Rama `visor/*` antes de la de gestor: sesión + `moodle/course:viewhiddenactivities` | Borrar el bloque `if (… 'visor' …)` |
+| `backend/crear-rol-gestor.php` | Añade `moodle/course:viewhiddenactivities` al rol `ct_gestor` | Quitar la línea y volver a ejecutar el script; además `assign_capability(…, CAP_INHERIT, …)` o quitarla en Administración → Usuarios → Permisos → Definir roles |
+
+Al desplegar hay que **ejecutar** `crear-rol-gestor.php` (el rol vive en la BD, no en el código). Para desactivar el visor sin revertir código basta retirar el label del botón o la rama `visor/*`.
+
+**Sensibilidad a upgrades de Moodle** (revisar en cada upgrade mayor, p. ej. 5.3): `VisorService` usa `get_fast_modinfo()`, `cm_info::get_formatted_content()`, `get_section_name()` y la relación `course_sections.component = 'mod_subsection'` / `itemid = subsection.id` (la misma de `MoodleContentBuilder::createSubsectionModule`). Si cambia alguna, el endpoint devuelve temas vacíos o error 500, no corrupción de datos.
 
 **Estilos:** `fullscreen-viewer/src/styles.scss` compila `snippets/conectatech-pre.scss` + Bootstrap 5.3 (requerido por `@extend .btn-primary`) + `snippets/conectatech-post.scss` sin copiarlos; la plantilla reproduce el envoltorio `body.<proyecto>.<área> .section-item > .activity-item` al que están anclados esos estilos. Cambiar los snippets implica recompilar y redesplegar el visor. Plan B si la compilación falla: extraer el §16 de `post.scss` a un parcial compartido.
 
@@ -551,7 +566,7 @@ ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R apache:apache /var/www/html/admin && sudo chmod -R 755 /var/www/html/admin"
 ```
 
-#### Deploy del visor fullscreen *(planeado — §6.4)*
+#### Deploy del visor fullscreen *(§6.4)*
 
 El visor vive en `/var/www/html/ct-visor/`, **fuera** de `/var/www/html/admin/`, para que el `rsync --delete` del panel no lo borre. Se expone con `Alias /ct-visor /var/www/html/ct-visor` en `/etc/httpd/conf.d/moodle-le-ssl.conf` (mismo VirtualHost que `/admin-api`).
 
@@ -622,7 +637,7 @@ No hay archivo `.env` explícito. La configuración vive en:
 | Nivel | Quién | Mecanismo | Verificación server-side |
 |---|---|---|---|
 | **Público** | Cualquier visitante | Ninguna | — |
-| **Docente** *(planeado, solo `visor/*`)* | Docentes y gestores del curso | Cookie `MoodleSession` + capability | `moodle/course:viewhiddenactivities` en el contexto del curso — ver §6.4 |
+| **Docente** *(solo `visor/*`)* | Docentes y gestores del curso | Cookie `MoodleSession` + capability | `moodle/course:viewhiddenactivities` en el contexto del curso — ver §6.4 |
 | **Gestor** | Representante de organización | Cookie `MoodleSession` + consulta a `ct_gestor` | `GestorAuth::verificar()` — consulta BD |
 | **Administrador** | Equipo ConectaTech | Cookie `MoodleSession` + `is_siteadmin()` | `auth.php` — llama API Moodle |
 

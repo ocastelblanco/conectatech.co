@@ -63,6 +63,19 @@ function handleMarkdownPreview(): void
                 'leaf'     => false,
             ];
 
+            // Botón «Exponer contenido» del visor fullscreen: primer recurso del tema. Sin
+            // subsectionIdx, así que la reconstrucción del Markdown en el frontend lo ignora.
+            if (MoodleContentBuilder::temaTieneContenidoExpositivo($section)) {
+                $sectionNode['children'][] = [
+                    'key'       => "s{$sIdx}-visor",
+                    'label'     => '▶ Exponer contenido',
+                    'data'      => ['moodleResource' => 'Área de texto y medios', 'hiddenTitle' => true, 'nodeType' => 'boton-visor'],
+                    'leaf'      => true,
+                    'draggable' => false,
+                    'droppable' => false,
+                ];
+            }
+
             foreach (($section['subsections'] ?? []) as $ssIdx => $sub) {
                 $moodleResource = mdPreviewGetMoodleResource($sub['type']);
                 $hiddenTitle    = in_array($sub['type'], ['referente-biblico-seccion', 'h2-texto-directo'], true);

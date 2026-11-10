@@ -12,6 +12,20 @@
 
 class MoodleContentBuilder
 {
+    /**
+     * HTML del botón del visor fullscreen (ADR-012). Sin IDs ni scripts: el
+     * comportamiento lo pone el script global de Boost Union (snippets/).
+     * Compartido con agregar-boton-visor.php para que ambos creen el mismo label.
+     */
+    public const BOTON_VISOR_HTML =
+        '<div class="ct-exponer"><a href="#" class="btn btn-primary ct-exponer-btn" role="button">'
+        . '▶ Exponer contenido</a></div>';
+
+    public const BOTON_VISOR_NOMBRE = 'Exponer contenido';
+
+    /** Tipos de H2 cuyo contenido muestra el visor (los demás son evaluaciones/presaberes). */
+    private const TIPOS_EXPOSITIVOS = ['subseccion-regular', 'h2-texto-directo'];
+
     private string               $shortname;
     private array                $courseData;
     private HtmlConverter        $htmlConverter;
@@ -72,6 +86,20 @@ class MoodleContentBuilder
     // =========================================================================
 
     /**
+     * ¿El tema tiene algo que mostrar en el visor? (al menos un H2 expositivo).
+     * También lo usa el preview para decidir si dibuja el nodo del botón.
+     */
+    public static function temaTieneContenidoExpositivo(array $section): bool
+    {
+        foreach ($section['subsections'] ?? [] as $sub) {
+            if (in_array($sub['type'] ?? '', self::TIPOS_EXPOSITIVOS, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Procesa una sección H1: detecta si ya existe en Moodle y actúa en consecuencia.
      *
      * @param array $section      Árbol de la sección del parser
@@ -106,6 +134,23 @@ class MoodleContentBuilder
                 $sectionNum = (int)$newSection->section;
                 $this->updateSectionMeta($sectionNum, $section['title']);
                 $result['action'] = 'created';
+            }
+
+            // Botón «Exponer contenido» (visor fullscreen): primer recurso del tema, oculto
+            // para estudiantes (visible = 0); ver ADR-012. Un fallo aquí no debe abortar el tema.
+            if (self::temaTieneContenidoExpositivo($section)) {
+                try {
+                    $this->createLabelModule(
+                        $sectionNum,
+                        self::BOTON_VISOR_HTML,
+                        self::BOTON_VISOR_NOMBRE,
+                        false
+                    );
+                } catch (Throwable $e) {
+                    $result['errors'][] = 'Botón del visor: ' . $e->getMessage();
+                    error_log("WARN botón del visor en '{$section['title']}': " . $e->getMessage());
+                    $DB->force_transaction_rollback();
+                }
             }
 
             // Procesar subsecciones (cada llamada Moodle maneja su propia transacción)
@@ -227,8 +272,12 @@ class MoodleContentBuilder
     /**
      * Crea un mod_label (Área de texto y medios) en la sección indicada.
      */
-    private function createLabelModule(int $sectionNum, string $html, ?string $title = null): void
-    {
+    private function createLabelModule(
+        int     $sectionNum,
+        string  $html,
+        ?string $title   = null,
+        bool    $visible = true
+    ): void {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/course/modlib.php');
 
@@ -239,7 +288,7 @@ class MoodleContentBuilder
         $info->module         = $mod->id;
         $info->course         = $this->course->id;
         $info->section        = $sectionNum;
-        $info->visible        = 1;
+        $info->visible        = $visible ? 1 : 0;
         $info->intro          = $html;
         $info->introformat    = FORMAT_HTML;
         $info->name           = $title ?: 'label';

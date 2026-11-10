@@ -1,0 +1,72 @@
+<header class="barra">
+  <button
+    type="button"
+    class="icono"
+    aria-controls="visor-indice"
+    [attr.aria-expanded]="indiceAbierto()"
+    aria-label="Mostrar u ocultar el índice de subtemas"
+    [disabled]="!tema()"
+    (click)="alternarIndice()"
+  >
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path
+        d="M4 7h16M4 12h16M4 17h16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+    </svg>
+  </button>
+  <h1 class="titulo">{{ tema()?.titulo ?? 'Visor de contenidos' }}</h1>
+  @if (enOverlay) {
+    <button type="button" class="icono" aria-label="Cerrar el visor" (click)="cerrar()">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path
+          d="M6 6l12 12M18 6L6 18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+  }
+</header>
+
+@if (tema(); as t) {
+  @if (t.cabecera) {
+    <!-- Referente bíblico del tema -->
+    <div class="cabecera section-item">
+      <div class="activity-item" [innerHTML]="t.cabecera"></div>
+    </div>
+  }
+
+  @if (t.subtemas.length === 0) {
+    <p class="estado" role="status">Este tema todavía no tiene contenido para exponer.</p>
+  } @else {
+    <div class="cuerpo" [class.sin-indice]="!indiceAbierto()">
+      <nav id="visor-indice" class="indice" aria-label="Subtemas" [hidden]="!indiceAbierto()">
+        <cnt-indice [subtemas]="t.subtemas" [actual]="actual()" (seleccionar)="ir($event)" />
+      </nav>
+      @if (subtema(); as s) {
+        <cnt-panel
+          [subtema]="s"
+          [posicion]="actual()"
+          [total]="total()"
+          (anterior)="anterior()"
+          (siguiente)="siguiente()"
+        />
+      }
+    </div>
+  }
+} @else if (recurso.isLoading()) {
+  <p class="estado" role="status">Cargando contenido…</p>
+} @else {
+  <div class="estado" role="alert">
+    <p>{{ error() }}</p>
+    @if (!sinParametros) {
+      <button type="button" class="reintentar" (click)="reintentar()">Reintentar</button>
+    }
+  </div>
+}

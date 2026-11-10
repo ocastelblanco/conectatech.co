@@ -130,6 +130,7 @@ export class ContenidoComponent implements OnInit {
       case 'subseccion-presaberes':     return 'pi pi-lightbulb text-teal-500 text-base';
       case 'referente-biblico-seccion':
       case 'h2-texto-directo':          return 'pi pi-book text-gray-400 text-base';
+      case 'boton-visor':               return 'pi pi-window-maximize text-sky-500 text-base';
       case 'label':                     return 'pi pi-file-edit text-gray-500 text-base';
       case 'quiz':                      return 'pi pi-question-circle text-purple-400 text-base';
       default:                          return 'pi pi-file text-gray-400 text-base';

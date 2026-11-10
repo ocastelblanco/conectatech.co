@@ -39,45 +39,30 @@ Clase que, dado un curso y una sección, recorre `get_fast_modinfo()` y arma `{t
 2. `admin-module/api/handlers/visor.php` — nuevo
 3. `admin-module/api/auth.php` — rama `visor/*` (más la línea de ruta en `admin-module/api/index.php`)
 
+**Estado (2026-11-10):** **desplegada y verificada en producción (etapa 1).** Backup previo en el servidor: `/home/ec2-user/backup-visor-20261110-0103/` (index.php, auth.php, markdown.php, MoodleContentBuilder.php, crear-rol-gestor.php y `moodle-le-ssl.conf`).
+
 **Definición de done:**
-- [ ] Con sesión de docente del curso, el endpoint devuelve el tema de `Ciencias 6_01_CELULA` con su referente bíblico en `cabecera` y un subtema por cada H2 expositivo
-- [ ] Sin sesión → 401; estudiante matriculado → 403; sección de otro curso → 404
-- [ ] Ninguna evaluación ni bloque de presaberes aparece en la respuesta
-- [ ] Verificado que el rol `ct_gestor` tiene `moodle/course:viewhiddenactivities` (o se añade al rol y se documenta)
-- [ ] `php -l` sin errores; sin SQL concatenado
-
----
-
-## Tarea 2 (T-0002) — [FEATURE] Visor fullscreen · Fase 2: app Angular 22 `fullscreen-viewer/`
-
-**Origen:** PRD §5.9 y §6 (Alta) · tech-specs §6.4 · ADR-012 · `docs/visualizador-fullscreen.md`
-
-**Problema:** No existe la aplicación que presenta el tema a pantalla completa. Puede construirse en paralelo a la Tarea 1 usando un JSON de ejemplo con el contrato de tech-specs §6.4.
-
-**Qué hacer:**
-
-### Paso 1 — Proyecto
-`ng new` con Angular 22.x en `fullscreen-viewer/` (skill `angular-developer`): standalone, zoneless, signals, OnPush, prefijo `cnt`, Prettier del repo, `base-href /ct-visor/`. Sin PrimeNG.
-
-### Paso 2 — Estilos heredados
-`src/styles.scss` compila `snippets/conectatech-pre.scss` + Bootstrap 5.3 + `snippets/conectatech-post.scss` sin copiarlos, y la plantilla reproduce el envoltorio `body.<clases> .section-item > .activity-item`. Las clases llegan por el parámetro `clases`, filtradas con `^[a-z0-9-]+$`.
-
-### Paso 3 — Interfaz
-Título y cabecera del tema, índice lateral colapsible, panel de contenido con scroll, botones Anterior/Siguiente, teclado (←/→, Esc), estados de carga, error y tema sin contenido. El HTML de los bloques se inserta con `[innerHTML]` y el sanitizador por defecto de Angular.
+- [x] Con sesión de docente del curso, el endpoint devuelve el tema con su referente bíblico en `cabecera` y un subtema por cada H2 expositivo — verificado en `REP-CC-CN-6-7` (7 temas; «La célula»: cabecera + 6 subtemas, 16 bloques) con `VisorService` vía CLI y en el navegador con sesión de administrador
+- [x] Sin sesión → 401 (probado con `curl`); sección de otro curso → `null`/404; sección 0 → `null`. Estudiante → sin permiso: `has_capability` da NO para un estudiante en su propio curso; docente, docente sin edición y gestor dan SÍ en los cursos que su rol cubre y NO en los ajenos *(el 403 por HTTP con sesión de estudiante no se probó: no hay credenciales de estudiante)*
+- [x] Ninguna evaluación ni bloque de presaberes aparece en la respuesta (0 bloques con `ct-exponer` o `data-quiz-block`)
+- [x] `crear-rol-gestor.php` ejecutado en el servidor: `ct_gestor` pasó de 22 a 23 capacidades, con `moodle/course:viewhiddenactivities` en ALLOW
+- [x] `php -l` sin errores; sin SQL concatenado
 
 **Archivos a modificar / crear:**
 1. `fullscreen-viewer/src/app/` — componente raíz, servicio de datos y componentes de índice/panel
 2. `fullscreen-viewer/src/styles.scss` — importación de los snippets
 3. `fullscreen-viewer/angular.json` — `baseHref`, budgets y rutas de inclusión de SCSS
 
-**Definición de done:**
-- [ ] `npm run build` pasa sin errores ni budgets excedidos; `npm audit` sin vulnerabilidades altas
-- [ ] Con el JSON de ejemplo se ve el esquema de `docs/visualizador-fullscreen.md`: título, referente del tema, índice y panel
-- [ ] Los bloques `.cita-biblica` y `.cierre-espiritual` se ven igual que en Moodle para `cosmovision-cristiana` + un área
-- [ ] El índice se colapsa; Anterior/Siguiente y las flechas del teclado cambian de subtema; ambos paneles hacen scroll
-- [ ] Usable a 375 px de ancho
+**Estado (2026-11-10):** completada, **desplegada** en `https://conectatech.co/ct-visor/` y verificada en producción con el tema real «La célula» (11 pruebas unitarias, build de 212 kB, `npm audit` en 0). Alias Apache añadido en `moodle-le-ssl.conf` (copia previa en el backup de la Tarea 1).
 
-**Fases siguientes (entran al TODO al liberarse un cupo):** Fase 3 botón en el pipeline · Fase 4 lanzador en Moodle · Fase 5 retrocompatibilidad, despliegue y README.
+**Definición de done:**
+- [x] `npm run build` pasa sin errores ni budgets excedidos; `npm audit` sin vulnerabilidades altas
+- [x] Con el JSON de ejemplo se ve el esquema de `docs/visualizador-fullscreen.md`: título, referente del tema, índice y panel
+- [x] Los bloques `.cita-biblica` y `.cierre-espiritual` se ven igual que en Moodle para `cosmovision-cristiana` + un área *(comparado con los estilos de `snippets/`; falta cotejo visual lado a lado con un curso real)*
+- [x] El índice se colapsa; Anterior/Siguiente y las flechas del teclado cambian de subtema; ambos paneles hacen scroll
+- [x] Usable a 375 px de ancho
+
+**Fases 3, 4 y 5 (código ya escrito en la misma rama, sin desplegar):** botón en el pipeline (`MoodleContentBuilder`, preview), lanzador y estilos del overlay (`snippets/`), `agregar-boton-visor.php` y `fullscreen-viewer/README*.md`. **Etapa 2 (2026-11-10): completada en `REP-CC-CN-6-7`.** Desplegados `MoodleContentBuilder.php`, `markdown.php`, `agregar-boton-visor.php` y el frontend del panel; lanzador y estilos del overlay pegados en Boost Union por el cliente (CSS compilado de 1,33 MB, con `ct-visor-overlay`). Los 7 temas del repositorio tienen el botón oculto como primer recurso. Probado en el navegador con sesión de administrador: el botón abre el overlay, el visor carga el tema correcto (resuelve curso y sección desde el DOM) y ✕ lo cierra y limpia. **Actualización 2026-11-10 (tarde):** `BotonVisorService` desplegado y llamado desde `ArbolCurricularService::ejecutar()` tras cada curso (respaldo previo en `/home/ec2-user/backup-ingesta-boton-20261110-1447/`). Botones creados en los 23 repositorios con contenido expositivo (111 botones: `REP-CC-CN-6-7` 7, `REP-CC-MA-6-7` 12 y los 92 restantes; `REP-CC-CS-10-11` no tiene temas expositivos). Verificado en solo lectura: 129 botones en total, 0 visibles y 0 secciones con más de uno. **Propagación confirmada por el cliente:** la repoblación de `COL-MCC-2026-MA-6` trajo el botón en cada tema (backup/restore de sección). Probado en el curso final de CN-6 con los estilos de proyecto/área. **Pendiente:** (1) ingestar con repoblación y con un curso con matrículas para validar la llamada desde `ejecutar()` (`boton_visor` en los resultados); (2) comprobar con una cuenta de estudiante que el botón no aparece y que el endpoint responde 403 (el cliente ya confirmó que no lo ve en el repositorio); (3) probar pantalla completa real con un clic humano y en móvil; (4) revisar los 3 temas «sin contenido» de Planeta Lector/Física, que no tienen texto expositivo y por eso no reciben botón.
 
 ---
 
