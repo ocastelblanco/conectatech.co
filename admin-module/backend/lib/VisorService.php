@@ -27,10 +27,12 @@ class VisorService
     private const MARCAS_EXCLUIDAS = ['ct-exponer', 'data-quiz-block', 'moodle-quiz-container'];
 
     /**
+     * @param int|null $userId  Usuario para quien se evalúa la visibilidad; null = el actual.
+     *                          Los scripts CLI pasan el administrador (no hay sesión).
      * @return array{titulo:string, cabecera:?string, subtemas:array}|null
      *         null si la sección no existe en el curso indicado.
      */
-    public function obtenerTema(int $courseId, int $sectionId): ?array
+    public function obtenerTema(int $courseId, int $sectionId, ?int $userId = null): ?array
     {
         global $DB, $CFG, $PAGE;
         require_once($CFG->dirroot . '/course/lib.php');
@@ -46,7 +48,7 @@ class VisorService
         // format_module_intro()/format_text() necesitan un contexto de página.
         $PAGE->set_context(context_course::instance($courseId));
 
-        $modinfo     = get_fast_modinfo($course);
+        $modinfo     = get_fast_modinfo($course, $userId ?? 0);
         $sectionInfo = $modinfo->get_section_info((int)$section->section, MUST_EXIST);
         if (!$sectionInfo->uservisible) {
             return null;
