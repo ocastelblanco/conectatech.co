@@ -39,40 +39,21 @@ Clase que, dado un curso y una sección, recorre `get_fast_modinfo()` y arma `{t
 2. `admin-module/api/handlers/visor.php` — nuevo
 3. `admin-module/api/auth.php` — rama `visor/*` (más la línea de ruta en `admin-module/api/index.php`)
 
-**Estado (2026-11-10):** código escrito en la rama `feature/visor-fullscreen` (`VisorService.php`, `handlers/visor.php`, rama `visor/*` en `auth.php`, ruta en `index.php`, capability en `crear-rol-gestor.php`). **Falta desplegar y probar contra Moodle real** — no hay staging (ADR-006).
+**Estado (2026-11-10):** **desplegada y verificada en producción (etapa 1).** Backup previo en el servidor: `/home/ec2-user/backup-visor-20261110-0103/` (index.php, auth.php, markdown.php, MoodleContentBuilder.php, crear-rol-gestor.php y `moodle-le-ssl.conf`).
 
 **Definición de done:**
-- [ ] Con sesión de docente del curso, el endpoint devuelve el tema de `Ciencias 6_01_CELULA` con su referente bíblico en `cabecera` y un subtema por cada H2 expositivo *(requiere servidor)*
-- [ ] Sin sesión → 401; estudiante matriculado → 403; sección de otro curso → 404 *(requiere servidor)*
-- [ ] Ninguna evaluación ni bloque de presaberes aparece en la respuesta *(requiere servidor)*
-- [ ] `crear-rol-gestor.php` ejecutado en el servidor: `ct_gestor` tiene `moodle/course:viewhiddenactivities`
+- [x] Con sesión de docente del curso, el endpoint devuelve el tema con su referente bíblico en `cabecera` y un subtema por cada H2 expositivo — verificado en `REP-CC-CN-6-7` (7 temas; «La célula»: cabecera + 6 subtemas, 16 bloques) con `VisorService` vía CLI y en el navegador con sesión de administrador
+- [x] Sin sesión → 401 (probado con `curl`); sección de otro curso → `null`/404; sección 0 → `null`. Estudiante → sin permiso: `has_capability` da NO para un estudiante en su propio curso; docente, docente sin edición y gestor dan SÍ en los cursos que su rol cubre y NO en los ajenos *(el 403 por HTTP con sesión de estudiante no se probó: no hay credenciales de estudiante)*
+- [x] Ninguna evaluación ni bloque de presaberes aparece en la respuesta (0 bloques con `ct-exponer` o `data-quiz-block`)
+- [x] `crear-rol-gestor.php` ejecutado en el servidor: `ct_gestor` pasó de 22 a 23 capacidades, con `moodle/course:viewhiddenactivities` en ALLOW
 - [x] `php -l` sin errores; sin SQL concatenado
-
----
-
-## Tarea 2 (T-0002) — [FEATURE] Visor fullscreen · Fase 2: app Angular 22 `fullscreen-viewer/`
-
-**Origen:** PRD §5.9 y §6 (Alta) · tech-specs §6.4 · ADR-012 · `docs/visualizador-fullscreen.md`
-
-**Problema:** No existe la aplicación que presenta el tema a pantalla completa. Puede construirse en paralelo a la Tarea 1 usando un JSON de ejemplo con el contrato de tech-specs §6.4.
-
-**Qué hacer:**
-
-### Paso 1 — Proyecto
-`ng new` con Angular 22.x en `fullscreen-viewer/` (skill `angular-developer`): standalone, zoneless, signals, OnPush, prefijo `cnt`, Prettier del repo, `base-href /ct-visor/`. Sin PrimeNG.
-
-### Paso 2 — Estilos heredados
-`src/styles.scss` compila `snippets/conectatech-pre.scss` + Bootstrap 5.3 + `snippets/conectatech-post.scss` sin copiarlos, y la plantilla reproduce el envoltorio `body.<clases> .section-item > .activity-item`. Las clases llegan por el parámetro `clases`, filtradas con `^[a-z0-9-]+$`.
-
-### Paso 3 — Interfaz
-Título y cabecera del tema, índice lateral colapsible, panel de contenido con scroll, botones Anterior/Siguiente, teclado (←/→, Esc), estados de carga, error y tema sin contenido. El HTML de los bloques se inserta con `[innerHTML]` y el sanitizador por defecto de Angular.
 
 **Archivos a modificar / crear:**
 1. `fullscreen-viewer/src/app/` — componente raíz, servicio de datos y componentes de índice/panel
 2. `fullscreen-viewer/src/styles.scss` — importación de los snippets
 3. `fullscreen-viewer/angular.json` — `baseHref`, budgets y rutas de inclusión de SCSS
 
-**Estado (2026-11-10):** completada y verificada en local (navegador, 11 pruebas unitarias, build de producción de 212 kB y `npm audit` en 0). Falta solo desplegarla (Fase 5).
+**Estado (2026-11-10):** completada, **desplegada** en `https://conectatech.co/ct-visor/` y verificada en producción con el tema real «La célula» (11 pruebas unitarias, build de 212 kB, `npm audit` en 0). Alias Apache añadido en `moodle-le-ssl.conf` (copia previa en el backup de la Tarea 1).
 
 **Definición de done:**
 - [x] `npm run build` pasa sin errores ni budgets excedidos; `npm audit` sin vulnerabilidades altas
@@ -81,7 +62,7 @@ Título y cabecera del tema, índice lateral colapsible, panel de contenido con 
 - [x] El índice se colapsa; Anterior/Siguiente y las flechas del teclado cambian de subtema; ambos paneles hacen scroll
 - [x] Usable a 375 px de ancho
 
-**Fases 3, 4 y 5 (código ya escrito en la misma rama, sin desplegar):** botón en el pipeline (`MoodleContentBuilder`, preview), lanzador y estilos del overlay (`snippets/`), `agregar-boton-visor.php` y `fullscreen-viewer/README*.md`. Pendiente: despliegue en producción (ver `fullscreen-viewer/README.md` y `tech-specs.md` §7.2) y verificación extremo a extremo con un docente y un estudiante reales.
+**Fases 3, 4 y 5 (código ya escrito en la misma rama, sin desplegar):** botón en el pipeline (`MoodleContentBuilder`, preview), lanzador y estilos del overlay (`snippets/`), `agregar-boton-visor.php` y `fullscreen-viewer/README*.md`. **Pendiente (etapa 2, requiere confirmación del cliente):** (a) pegar el lanzador y los estilos del overlay en Boost Union (`additionalhtmlfooter` y SCSS adicional); (b) desplegar `MoodleContentBuilder.php`, `markdown.php`, `agregar-boton-visor.php` y el frontend del panel; (c) ejecutar `agregar-boton-visor.php --course REP-CC-CN-6-7 --dry-run` y luego real; (d) probar el botón como docente y comprobar que un estudiante no lo ve; (e) repoblar un curso final sin estudiantes para confirmar que el botón viaja en el backup/restore.
 
 ---
 

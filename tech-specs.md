@@ -295,7 +295,7 @@ Todos los endpoints requieren sesión Moodle activa + rol administrador, excepto
 | GET | `/admin-api/gestor/pines` | `gestor.php` | **[gestor]** Pines de la organización |
 | POST | `/admin-api/gestor/pines/{hash}/asignar` | `gestor.php` | **[gestor]** Asignar pin a estudiante |
 | GET | `/admin-api/matriculas` | `matriculas.php` | **[gestor]** Listar matrículas |
-| GET | `/admin-api/visor/tema?course=ID&section=ID` | `visor.php` | **[docente]** *(planeado)* Contenido expositivo de un tema para el visor fullscreen — ver §6.4 |
+| GET | `/admin-api/visor/tema?course=ID&section=ID` | `visor.php` | **[docente]** Contenido expositivo de un tema para el visor fullscreen — ver §6.4 |
 
 **Arquitectura del bootstrap PHP:**
 1. Apache recibe petición en `conectatech.co/admin-api/*`
@@ -412,9 +412,9 @@ enunciado: Describe con tus palabras...
 | `Undefined constant "STDERR"` | `fwrite(STDERR, ...)` solo funciona en CLI; la API es web | Usar `error_log()` siempre |
 | Output HTML de Moodle corrompe el JSON de respuesta | Moodle imprime HTML en algunos contextos de inicialización | `ob_start()` al inicio de `index.php` y `ob_end_clean()` antes de JSON |
 
-### 6.4 Visor fullscreen de temas *(planeado — ver PRD §5.9, ADR-012)*
+### 6.4 Visor fullscreen de temas *(ver PRD §5.9, ADR-012)*
 
-Visor a pantalla completa del contenido expositivo de un tema (sección H1). Estado: diseño aprobado el 2026-11-09, sin implementar. Fases en `TODO.md`.
+Visor a pantalla completa del contenido expositivo de un tema (sección H1). Estado (2026-11-10): API y visor **desplegados en producción** (`/ct-visor/`); lanzador en Boost Union, botón en el pipeline y script de retrocompatibilidad **escritos, pendientes de desplegar**. Detalle en `TODO.md`.
 
 ```
 Label oculto con el botón ──clic──▶ script de additionalhtmlfooter (snippets/conectatech-end-snippet.html)
@@ -564,7 +564,7 @@ ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
   "sudo chown -R apache:apache /var/www/html/admin && sudo chmod -R 755 /var/www/html/admin"
 ```
 
-#### Deploy del visor fullscreen *(planeado — §6.4)*
+#### Deploy del visor fullscreen *(§6.4)*
 
 El visor vive en `/var/www/html/ct-visor/`, **fuera** de `/var/www/html/admin/`, para que el `rsync --delete` del panel no lo borre. Se expone con `Alias /ct-visor /var/www/html/ct-visor` en `/etc/httpd/conf.d/moodle-le-ssl.conf` (mismo VirtualHost que `/admin-api`).
 
@@ -635,7 +635,7 @@ No hay archivo `.env` explícito. La configuración vive en:
 | Nivel | Quién | Mecanismo | Verificación server-side |
 |---|---|---|---|
 | **Público** | Cualquier visitante | Ninguna | — |
-| **Docente** *(planeado, solo `visor/*`)* | Docentes y gestores del curso | Cookie `MoodleSession` + capability | `moodle/course:viewhiddenactivities` en el contexto del curso — ver §6.4 |
+| **Docente** *(solo `visor/*`)* | Docentes y gestores del curso | Cookie `MoodleSession` + capability | `moodle/course:viewhiddenactivities` en el contexto del curso — ver §6.4 |
 | **Gestor** | Representante de organización | Cookie `MoodleSession` + consulta a `ct_gestor` | `GestorAuth::verificar()` — consulta BD |
 | **Administrador** | Equipo ConectaTech | Cookie `MoodleSession` + `is_siteadmin()` | `auth.php` — llama API Moodle |
 

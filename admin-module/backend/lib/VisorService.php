@@ -40,8 +40,9 @@ class VisorService
         $course  = $DB->get_record('course', ['id' => $courseId], '*', MUST_EXIST);
         $section = $DB->get_record('course_sections', ['id' => $sectionId, 'course' => $courseId]);
 
-        // Una sección delegada (subtema) no es un tema: el visor solo abre secciones H1.
-        if (!$section || (string)$section->component !== '') {
+        // El visor solo abre temas (secciones H1): ni la portada (sección 0) ni una
+        // sección delegada (subtema de un mod_subsection).
+        if (!$section || (int)$section->section === 0 || (string)$section->component !== '') {
             return null;
         }
 
