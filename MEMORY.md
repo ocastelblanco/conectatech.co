@@ -186,7 +186,7 @@ $logincontainer-shadow: none !default; // Bug Boost Union v5.1: usado en post.sc
 - [x] Sección 0 de cursos finales — completada 2026-04-30 (ver ADR-005)
 - [ ] Reportes de progreso de estudiantes (completitud, calificaciones) — diferido explícitamente por el cliente ("por ahora no vamos a usar esas estadísticas")
 - [x] **Reportes de uso de la plataforma (`local_usagereports`)** — completado 2026-09-07. Informe real "Uso de la plataforma": columnas Institución/Rol/Curso/Tipo de evento agregadas por "Cuenta", Fecha como filtro de rango (no columna agrupada), Audiencia = solo admin de ConectaTech, Schedule mensual CSV. Exportación bajo demanda vía botón "Exportar" en la vista del informe. Ver ADR-011, `docs/local_usagereports-especificacion.md` y `admin-module/backend/moodle-plugins/usagereports/README.md`
-- [ ] **Visor fullscreen de temas** — plan aprobado 2026-11-09, sin código aún. 5 fases (endpoint → app Angular 22 → botón en el pipeline → lanzador en Moodle → retrocompatibilidad y despliegue). Ver ADR-012, `tech-specs.md` §6.4, `docs/visualizador-fullscreen.md` y `TODO.md`
+- [ ] **Visor fullscreen de temas** — implementado y desplegado 2026-11-10 (PR #34); botón activo solo en `REP-CC-CN-6-7`. Falta prueba con estudiante, curso final y `--all` (ver `TODO.md`). Plan original: 5 fases (endpoint → app Angular 22 → botón en el pipeline → lanzador en Moodle → retrocompatibilidad y despliegue). Ver ADR-012, `tech-specs.md` §6.4, `docs/visualizador-fullscreen.md` y `TODO.md`
 - [ ] Tipos de pregunta GIFT adicionales (verdadero/falso, emparejamiento, respuesta corta, numérica)
 - [ ] Notificaciones por correo (SES)
 - [ ] Renovación/reutilización de pines usados
@@ -439,6 +439,8 @@ ssh -i ~/.ssh/ClaveCT.pem ec2-user@54.86.113.27 \
 | **Boost Union SCSS falla silenciosamente en Moodle 5.2** | Moodle 5.2 llama doble callback (padre + hijo), Boost Union v5.1 usa `$white`/`$logincontainer-shadow` antes de que existan | Añadir variables faltantes al `scsspre` con `!default`. Ver sección 1d. |
 | **`mysql -u root` falla en EC2** | La BD es RDS, no hay MySQL local | `mysql -h [rds-endpoint] -u moodleadmin -p[pass] moodle -e "..."` |
 | **CSS de Boost Union mide 1.9 MB → estilos propios NO se aplican** | La compilación SCSS falló y Moodle sirve el CSS precompilado de fallback del tema | Ver sección 1d para diagnóstico y fix |
+| **`moveto_module()` lanza `is_mod_type_visible_on_course(): Argument #1 ($modname) must be of type string, null given`** | Se le pasó una fila cruda de `course_modules`, que no trae `modname` | Obtener el módulo con `get_coursemodule_from_id('label', $cmid, $courseid, false, MUST_EXIST)`. Ojo: `add_moduleinfo()` ya creó el módulo antes del fallo — el script debe poder repetirse (ver `agregar-boton-visor.php`) |
+| **El visor fullscreen se ve sin estilos de proyecto en un repositorio** | Los cursos repositorio no están en `CT_COURSES` (solo los finales), así que el `<body>` no tiene clases de proyecto/área que pasarle al visor | Es el mismo comportamiento que Moodle; probar los estilos en un curso final |
 | **`sudo -u apache php /tmp/script.php` falla con exit 255 via SSH** | El archivo en `/tmp/` pertenece a `ec2-user` y apache no puede leerlo, o la conexión SSH se corta | Copiar el script con `rsync` y darle permisos antes de ejecutar, o usar `mysql` CLI directamente |
 
 ---

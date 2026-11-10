@@ -177,7 +177,7 @@
       window.removeEventListener('message', alMensaje);
       document.removeEventListener('keydown', alTecla);
       document.removeEventListener('fullscreenchange', alCambiarPantalla);
-      if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
+      if (document.fullscreenElement) document.exitFullscreen().catch(function () { });
       overlay.remove();
       document.documentElement.classList.remove('ct-visor-abierto');
       btn.focus();
@@ -185,7 +185,7 @@
     // Solo se acepta el mensaje de cierre que viene del propio iframe y del mismo origen.
     function alMensaje(ev) {
       if (ev.origin === window.location.origin && ev.source === marco.contentWindow &&
-          ev.data && ev.data.type === 'ct-visor:cerrar') cerrar();
+        ev.data && ev.data.type === 'ct-visor:cerrar') cerrar();
     }
     function alTecla(ev) { if (ev.key === 'Escape') cerrar(); }
     // En pantalla completa el navegador consume Esc para salir: se interpreta como cerrar el visor.
@@ -197,7 +197,7 @@
     marco.addEventListener('load', function () { marco.focus(); });
 
     // Pantalla completa real donde exista (no en iPhone); si falla, el overlay ya ocupa toda la ventana.
-    if (overlay.requestFullscreen) overlay.requestFullscreen().catch(function () {});
+    if (overlay.requestFullscreen) overlay.requestFullscreen().catch(function () { });
   }
 
   // ************* ConectaTech — Presaberes Interactive Quiz v1.0 ****************************
