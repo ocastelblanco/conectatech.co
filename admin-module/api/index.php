@@ -120,6 +120,7 @@ require_once LIB_DIR . '/ActivacionService.php';
 require_once LIB_DIR . '/InstitucionService.php';
 require_once LIB_DIR . '/DashboardService.php';
 require_once LIB_DIR . '/VisorService.php';           // visor fullscreen (ADR-012)
+require_once LIB_DIR . '/BotonVisorService.php';      // botón del visor en la ingesta de árboles
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Routing

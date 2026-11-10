@@ -435,7 +435,9 @@ Label oculto con el botón ──clic──▶ script de additionalhtmlfooter (s
 | Lanzador | `snippets/conectatech-end-snippet.html` | Listener delegado sobre `.ct-exponer-btn`; resuelve curso (`M.cfg.courseId`) y sección (DOM) en el clic; pasa las clases de proyecto/área/grado del `<body>`. Debe quedar fuera de los marcadores `CT:MAP` que reescribe `ArbolCurricularService::regenerarHtmlAdicional()` |
 | Endpoint | `handlers/visor.php` + `lib/VisorService.php` | Arma el tema leyendo Moodle en vivo |
 | App | `fullscreen-viewer/` | Angular 22: standalone, zoneless, signals, sin PrimeNG. `base-href /ct-visor/` |
-| Retrocompatibilidad | `backend/agregar-boton-visor.php` | CLI idempotente (`--course` \| `--all`, `--dry-run`) que inserta el botón en temas existentes |
+| Garantía del botón | `lib/BotonVisorService.php` | Lógica única e idempotente: crea el label oculto como primer recurso de cada tema con contenido expositivo, o lo reposiciona si existe mal colocado. No toca contenido, notas ni matrículas |
+| Ingesta de árboles | `ArbolCurricularService::ejecutar()` | Tras procesar cada curso (nuevo, repoblado o con matrículas) llama a `BotonVisorService`. Necesario porque los cursos con matrículas no se repueblan y el botón del repositorio no les llega. Un fallo aquí no marca el curso como erróneo: se informa en `boton_visor` de su entrada de resultados |
+| Retrocompatibilidad | `backend/agregar-boton-visor.php` | CLI (`--course` \| `--all`, `--dry-run`) sobre `BotonVisorService`, para cursos que no pasan por la ingesta (p. ej. repositorios ya publicados) |
 
 **Contrato del endpoint**
 
