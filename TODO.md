@@ -39,12 +39,14 @@ Clase que, dado un curso y una sección, recorre `get_fast_modinfo()` y arma `{t
 2. `admin-module/api/handlers/visor.php` — nuevo
 3. `admin-module/api/auth.php` — rama `visor/*` (más la línea de ruta en `admin-module/api/index.php`)
 
+**Estado (2026-11-10):** código escrito en la rama `feature/visor-fullscreen` (`VisorService.php`, `handlers/visor.php`, rama `visor/*` en `auth.php`, ruta en `index.php`, capability en `crear-rol-gestor.php`). **Falta desplegar y probar contra Moodle real** — no hay staging (ADR-006).
+
 **Definición de done:**
-- [ ] Con sesión de docente del curso, el endpoint devuelve el tema de `Ciencias 6_01_CELULA` con su referente bíblico en `cabecera` y un subtema por cada H2 expositivo
-- [ ] Sin sesión → 401; estudiante matriculado → 403; sección de otro curso → 404
-- [ ] Ninguna evaluación ni bloque de presaberes aparece en la respuesta
-- [ ] Verificado que el rol `ct_gestor` tiene `moodle/course:viewhiddenactivities` (o se añade al rol y se documenta)
-- [ ] `php -l` sin errores; sin SQL concatenado
+- [ ] Con sesión de docente del curso, el endpoint devuelve el tema de `Ciencias 6_01_CELULA` con su referente bíblico en `cabecera` y un subtema por cada H2 expositivo *(requiere servidor)*
+- [ ] Sin sesión → 401; estudiante matriculado → 403; sección de otro curso → 404 *(requiere servidor)*
+- [ ] Ninguna evaluación ni bloque de presaberes aparece en la respuesta *(requiere servidor)*
+- [ ] `crear-rol-gestor.php` ejecutado en el servidor: `ct_gestor` tiene `moodle/course:viewhiddenactivities`
+- [x] `php -l` sin errores; sin SQL concatenado
 
 ---
 
@@ -70,14 +72,16 @@ Título y cabecera del tema, índice lateral colapsible, panel de contenido con 
 2. `fullscreen-viewer/src/styles.scss` — importación de los snippets
 3. `fullscreen-viewer/angular.json` — `baseHref`, budgets y rutas de inclusión de SCSS
 
-**Definición de done:**
-- [ ] `npm run build` pasa sin errores ni budgets excedidos; `npm audit` sin vulnerabilidades altas
-- [ ] Con el JSON de ejemplo se ve el esquema de `docs/visualizador-fullscreen.md`: título, referente del tema, índice y panel
-- [ ] Los bloques `.cita-biblica` y `.cierre-espiritual` se ven igual que en Moodle para `cosmovision-cristiana` + un área
-- [ ] El índice se colapsa; Anterior/Siguiente y las flechas del teclado cambian de subtema; ambos paneles hacen scroll
-- [ ] Usable a 375 px de ancho
+**Estado (2026-11-10):** completada y verificada en local (navegador, 11 pruebas unitarias, build de producción de 212 kB y `npm audit` en 0). Falta solo desplegarla (Fase 5).
 
-**Fases siguientes (entran al TODO al liberarse un cupo):** Fase 3 botón en el pipeline · Fase 4 lanzador en Moodle · Fase 5 retrocompatibilidad, despliegue y README.
+**Definición de done:**
+- [x] `npm run build` pasa sin errores ni budgets excedidos; `npm audit` sin vulnerabilidades altas
+- [x] Con el JSON de ejemplo se ve el esquema de `docs/visualizador-fullscreen.md`: título, referente del tema, índice y panel
+- [x] Los bloques `.cita-biblica` y `.cierre-espiritual` se ven igual que en Moodle para `cosmovision-cristiana` + un área *(comparado con los estilos de `snippets/`; falta cotejo visual lado a lado con un curso real)*
+- [x] El índice se colapsa; Anterior/Siguiente y las flechas del teclado cambian de subtema; ambos paneles hacen scroll
+- [x] Usable a 375 px de ancho
+
+**Fases 3, 4 y 5 (código ya escrito en la misma rama, sin desplegar):** botón en el pipeline (`MoodleContentBuilder`, preview), lanzador y estilos del overlay (`snippets/`), `agregar-boton-visor.php` y `fullscreen-viewer/README*.md`. Pendiente: despliegue en producción (ver `fullscreen-viewer/README.md` y `tech-specs.md` §7.2) y verificación extremo a extremo con un docente y un estudiante reales.
 
 ---
 
