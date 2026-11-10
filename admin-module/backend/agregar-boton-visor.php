@@ -14,9 +14,10 @@
  *
  * Sin --course ni --all no hace nada. Siempre probar primero con --dry-run.
  *
- * Idempotente: omite los temas que ya tienen el botón y los que no tienen contenido
- * expositivo (misma regla que VisorService: lo que el visor mostraría). El label se
- * crea oculto (visible = 0) como primer recurso del tema.
+ * Idempotente: omite los temas que ya tienen el botón bien colocado y los que no tienen
+ * contenido expositivo (misma regla que VisorService: lo que el visor mostraría). El label
+ * se crea oculto (visible = 0) como primer recurso del tema. Si un botón existe pero no es
+ * el primer recurso (p. ej. tras una ejecución interrumpida), se reposiciona al inicio.
  */
 
 define('BACKEND_DIR', __DIR__);
@@ -66,7 +67,7 @@ println("Botón del visor — " . ($dryRun ? 'DRY-RUN (no modifica nada)' : 'EJE
 println(str_repeat('─', 60));
 
 $visor  = new VisorService();
-$totals = ['agregados' => 0, 'ya_tenian' => 0, 'sin_contenido' => 0, 'errores' => 0];
+$totals = ['agregados' => 0, 'reposicionados' => 0, 'ya_tenian' => 0, 'sin_contenido' => 0, 'errores' => 0];
 
 foreach ($courses as $course) {
     $sections = $DB->get_records_select(
@@ -80,9 +81,19 @@ foreach ($courses as $course) {
         $etiqueta = "[{$course->shortname}] sección {$section->section}";
 
         try {
-            if (tieneBoton((int)$course->id, (int)$section->id)) {
-                $totals['ya_tenian']++;
-                println("  YA     {$etiqueta}");
+            $botonId = buscarBoton((int)$section->id);
+            if ($botonId !== null) {
+                if (primerRecursoId($section) === $botonId) {
+                    $totals['ya_tenian']++;
+                    println("  YA     {$etiqueta}");
+                } elseif ($dryRun) {
+                    $totals['reposicionados']++;
+                    println("  MOVER  {$etiqueta} — el botón existe pero no es el primer recurso");
+                } else {
+                    moverAlInicio($course, $section, $botonId);
+                    $totals['reposicionados']++;
+                    println("  MOVIDO {$etiqueta} — botón colocado como primer recurso");
+                }
                 continue;
             }
 
@@ -114,41 +125,48 @@ foreach ($courses as $course) {
 
 println(str_repeat('─', 60));
 println(sprintf(
-    "%s: %d  |  ya tenían el botón: %d  |  sin contenido: %d  |  errores: %d",
-    $dryRun ? 'A añadir' : 'Añadidos',
-    $totals['agregados'], $totals['ya_tenian'], $totals['sin_contenido'], $totals['errores']
+    "%s: %d  |  %s: %d  |  ya correctos: %d  |  sin contenido: %d  |  errores: %d",
+    $dryRun ? 'A añadir' : 'Añadidos', $totals['agregados'],
+    $dryRun ? 'a reposicionar' : 'reposicionados', $totals['reposicionados'],
+    $totals['ya_tenian'], $totals['sin_contenido'], $totals['errores']
 ));
 exit($totals['errores'] > 0 ? 2 : 0);
 
 // ─── Funciones ────────────────────────────────────────────────────────────────
 
-/** ¿La sección ya tiene un label con el botón? */
-function tieneBoton(int $courseId, int $sectionId): bool
+/** cmid del label con el botón en la sección (id de course_sections), o null. */
+function buscarBoton(int $sectionId): ?int
 {
     global $DB;
 
-    return $DB->record_exists_sql(
-        "SELECT 1
+    $id = $DB->get_field_sql(
+        "SELECT MIN(cm.id)
            FROM {course_modules} cm
            JOIN {modules} m ON m.id = cm.module AND m.name = 'label'
            JOIN {label} l   ON l.id = cm.instance
-          WHERE cm.course = ? AND cm.section = ? AND cm.deletioninprogress = 0
+          WHERE cm.section = ? AND cm.deletioninprogress = 0
             AND " . $DB->sql_like('l.intro', '?'),
-        [$courseId, $sectionId, '%ct-exponer-btn%']
+        [$sectionId, '%ct-exponer-btn%']
     );
+    return $id ? (int)$id : null;
+}
+
+/** cmid del primer recurso de la sección según su secuencia, o null si está vacía. */
+function primerRecursoId(stdClass $section): ?int
+{
+    global $DB;
+
+    $sequence = (string)$DB->get_field('course_sections', 'sequence', ['id' => $section->id]);
+    foreach (array_filter(explode(',', $sequence)) as $id) {
+        return (int)$id;
+    }
+    return null;
 }
 
 /** Crea el label oculto con el botón y lo deja como primer recurso de la sección. */
 function insertarBoton(stdClass $course, stdClass $section): void
 {
     global $DB;
-
-    // Primer recurso actual de la sección (antes de crear el botón).
-    $primerCmId = null;
-    foreach (array_filter(explode(',', (string)$section->sequence)) as $id) {
-        $primerCmId = (int)$id;
-        break;
-    }
 
     $mod = $DB->get_record('modules', ['name' => 'label'], '*', MUST_EXIST);
 
@@ -163,18 +181,37 @@ function insertarBoton(stdClass $course, stdClass $section): void
     $info->name        = MoodleContentBuilder::BOTON_VISOR_NOMBRE;
 
     $creado = add_moduleinfo($info, $course);
-    $nuevoCmId = (int)$creado->coursemodule;
+    moverAlInicio($course, $section, (int)$creado->coursemodule);
+}
 
-    if ($primerCmId !== null) {
-        $nuevoCm    = $DB->get_record('course_modules', ['id' => $nuevoCmId], '*', MUST_EXIST);
-        $primerCm   = $DB->get_record('course_modules', ['id' => $primerCmId], '*', MUST_EXIST);
+/**
+ * Deja el módulo como primer recurso de la sección y garantiza que siga oculto.
+ * moveto_module() exige un registro con `modname`, por eso se usa get_coursemodule_from_id()
+ * y no una fila cruda de course_modules.
+ */
+function moverAlInicio(stdClass $course, stdClass $section, int $cmId): void
+{
+    global $DB;
+
+    $primerId = null;
+    $sequence = (string)$DB->get_field('course_sections', 'sequence', ['id' => $section->id]);
+    foreach (array_filter(explode(',', $sequence)) as $id) {
+        if ((int)$id !== $cmId) {
+            $primerId = (int)$id;
+            break;
+        }
+    }
+
+    if ($primerId !== null) {
+        $cm         = get_coursemodule_from_id('label', $cmId, $course->id, false, MUST_EXIST);
+        $primerCm   = $DB->get_record('course_modules', ['id' => $primerId], '*', MUST_EXIST);
         $seccionAct = $DB->get_record('course_sections', ['id' => $section->id], '*', MUST_EXIST);
-        moveto_module($nuevoCm, $seccionAct, $primerCm);
+        moveto_module($cm, $seccionAct, $primerCm);
     }
 
     // moveto_module() puede reajustar la visibilidad según la sección: el botón debe quedar oculto.
-    if ((int)$DB->get_field('course_modules', 'visible', ['id' => $nuevoCmId]) !== 0) {
-        set_coursemodule_visible($nuevoCmId, 0);
+    if ((int)$DB->get_field('course_modules', 'visible', ['id' => $cmId]) !== 0) {
+        set_coursemodule_visible($cmId, 0);
     }
     rebuild_course_cache((int)$course->id, true);
 }
