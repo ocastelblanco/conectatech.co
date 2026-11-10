@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "project": "mi-proyecto",
+  "confirmed": true,
+  "confirmed_at": "2026-10-07",
+  "level": 2,
+  "signals": { "pii": true, "payments": false, "custom_auth": false },
+  "facets": ["baseline", "angular-spa", "node-backend", "serverless-aws", "firebase", "iac", "ci-cd"],
+  "facets_disabled": [],
+  "exclude_paths": ["legacy/**"],
+  "accepted": [
+    {
+      "check": "BASE-15",
+      "paths": ["api/catalogo-publico/**"],
+      "reason": "Catálogo público de solo lectura, sin cookies ni credenciales: CORS * es intencional.",
+      "expires": "2027-04-30",
+      "at": "2026-10-07"
+    }
+  ],
+  "live": {
+    "urls": [{ "url": "https://app.example.com" }, { "url": "https://api.example.com/health" }],
+    "aws": { "profile": "mi-perfil", "region": "us-east-1" }
+  }
+}

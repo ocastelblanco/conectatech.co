@@ -1,0 +1,34 @@
+{
+  "standard": "OWASP Top 10",
+  "version": "2025",
+  "source": "https://top10.owasp.org/2025/",
+  "license": "CC BY-SA 4.0",
+  "categories": {
+    "A01": "Broken Access Control",
+    "A02": "Security Misconfiguration",
+    "A03": "Software Supply Chain Failures",
+    "A04": "Cryptographic Failures",
+    "A05": "Injection",
+    "A06": "Insecure Design",
+    "A07": "Authentication Failures",
+    "A08": "Software or Data Integrity Failures",
+    "A09": "Security Logging and Alerting Failures",
+    "A10": "Mishandling of Exceptional Conditions"
+  },
+  "from_2021": {
+    "A01": "A01",
+    "A02": "A04",
+    "A03": "A05",
+    "A04": "A06",
+    "A05": "A02",
+    "A06": "A03",
+    "A07": "A07",
+    "A08": "A08",
+    "A09": "A09",
+    "A10": "A01"
+  },
+  "notes_2021": {
+    "A10": "SSRF dejó de ser categoría propia y se integró en A01:2025.",
+    "A06": "A03:2025 amplía el alcance a toda la cadena de suministro (dependencias, build, distribución)."
+  }
+}
